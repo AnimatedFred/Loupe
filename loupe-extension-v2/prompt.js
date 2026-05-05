@@ -396,7 +396,7 @@ async function checkBridge() {
   const lblFigma  = document.getElementById('lbl-figma');
 
   try {
-    const res = await fetch('http://localhost:3333/api/state');
+    const res = await fetch('https://web-production-9cce.up.railway.app/api/state');
     if (!res.ok) throw new Error('not ok');
     const data = await res.json();
 
@@ -469,7 +469,7 @@ btnPush.addEventListener('click', async () => {
 
   try {
     // Push via /api/ai/push so the Figma plugin auto-imports without user needing to click
-    await fetch('http://localhost:3333/api/ai/push', {
+    await fetch('https://web-production-9cce.up.railway.app/api/ai/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

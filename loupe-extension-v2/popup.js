@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     btnSync.disabled = true;
 
     try {
-      await fetch('http://localhost:3333/api/update', {
+      await fetch('https://web-production-9cce.up.railway.app/api/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Bridge Status ---
   async function checkBridge() {
     try {
-      const res = await fetch('http://localhost:3333/api/state');
+      const res = await fetch('https://web-production-9cce.up.railway.app/api/state');
       if (res.ok) {
         const data = await res.json();
         const bridgeStatusText = document.getElementById('bridge-status-text');

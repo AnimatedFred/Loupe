@@ -6,7 +6,7 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": [
-      "http://localhost:3333"
+      "https://web-production-9cce.up.railway.app"
     ],
     "reasoning": "Syncing captured UI elements from the local Loupe bridge."
   }

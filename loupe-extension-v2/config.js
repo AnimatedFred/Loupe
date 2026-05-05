@@ -1,5 +1,5 @@
 var LOUPE_CONFIG = {
-  SERVER_URL: 'http://localhost:3333',
+  SERVER_URL: 'https://web-production-9cce.up.railway.app',
   VERSION: '2.0.0',
 
   TIERS: {
@@ -22,7 +22,7 @@ var LOUPE_CONFIG = {
   CURRENT_TIER: 'PRO', 
   
   // --- MCP Bridge Settings ---
-  MCP_ENDPOINT: 'http://localhost:3333/api/update',
+  MCP_ENDPOINT: 'https://web-production-9cce.up.railway.app/api/update',
   MCP_TOKEN: '',
 
   // --- Performance & Features ---

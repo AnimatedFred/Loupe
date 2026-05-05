@@ -148,7 +148,7 @@
 
     async function checkState() {
       try {
-        const res = await fetch('http://localhost:3333/api/state?source=figma');
+        const res = await fetch('https://web-production-9cce.up.railway.app/api/state?source=figma');
         if (res.ok) {
           const data = await res.json();
           lastData = data;

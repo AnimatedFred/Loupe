@@ -39,7 +39,7 @@
     };
     safeSendMessage(payload);
     
-    fetch('http://localhost:3333/api/update', {
+    fetch('https://web-production-9cce.up.railway.app/api/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

@@ -3,13 +3,26 @@ import React, { useState, useEffect } from 'react'
 function App() {
   const [view, setView] = useState('landing'); // 'landing' or 'dashboard'
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [cloudStatus, setCloudStatus] = useState('active'); // active, syncing, offline
+  // Ping live cloud bridge to check status
+  useEffect(() => {
+    const checkBridge = async () => {
+      try {
+        const res = await fetch('https://web-production-9cce.up.railway.app/api/state', { mode: 'cors' });
+        setCloudStatus(res.ok ? 'active' : 'offline');
+      } catch (e) {
+        setCloudStatus('offline');
+      }
+    };
+    checkBridge();
+    const interval = setInterval(checkBridge, 10000); // Ping every 10s for cloud
+    return () => clearInterval(interval);
+  }, []);
 
   const mcpConfig = {
     "mcpServers": {
       "loupe": {
         "command": "npx",
-        "args": ["-y", "loupe-cloud-bridge", "--endpoint", "https://loupe-bridge.up.railway.app", "--key", "LOUPE_PRO_KEY_XXXX"]
+        "args": ["-y", "loupe-cloud-bridge", "--endpoint", "https://web-production-9cce.up.railway.app", "--key", "LOUPE_PRO_KEY_XXXX"]
       }
     }
   };
