@@ -1,0 +1,13 @@
+{
+  "name": "Loupe Designer",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": [
+      "http://localhost:3333"
+    ],
+    "reasoning": "Syncing captured UI elements from the local Loupe bridge."
+  }
+}

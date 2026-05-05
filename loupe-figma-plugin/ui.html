@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --accent: #6366f1;
+      --success: #10b981;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .hub-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .status-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.3s;
+    }
+    .status-card.active { border-color: var(--accent); background: rgba(99, 102, 241, 0.05); }
+
+    .icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-info { flex: 1; }
+    .status-label { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+    .status-value { font-size: 13px; font-weight: 600; }
+
+    .indicator { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
+    .indicator.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .indicator.pulse { background: var(--accent); animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+
+    .feed {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      height: 120px;
+      margin-top: 20px;
+      padding: 12px;
+      font-size: 11px;
+      overflow-y: auto;
+    }
+    .feed-title { font-size: 10px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; }
+    .feed-item { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .feed-time { color: var(--text-dim); }
+
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="hub-title">Intelligence Hub</div>
+
+  <div class="status-card" id="extPill">
+    <div class="icon-box">🔍</div>
+    <div class="status-info">
+      <div class="status-label">Extension Connection</div>
+      <div class="status-value" id="extStatus">Waiting...</div>
+    </div>
+    <div class="indicator" id="extIndicator"></div>
+  </div>
+
+  <div class="status-card" id="aiPill">
+    <div class="icon-box">🧠</div>
+    <div class="status-info">
+      <div class="status-label">Claude AI Connection</div>
+      <div class="status-value" id="aiStatus">Idle</div>
+    </div>
+    <div class="indicator" id="aiIndicator"></div>
+  </div>
+
+  <button id="syncBtn" disabled>Sync Selection</button>
+
+  <div class="feed">
+    <div class="feed-title">Activity Feed</div>
+    <div id="feedList" style="color: var(--text-dim);">Waiting for activity...</div>
+  </div>
+
+  <script>
+    const extStatus = document.getElementById('extStatus');
+    const extIndicator = document.getElementById('extIndicator');
+    const aiStatus = document.getElementById('aiStatus');
+    const aiIndicator = document.getElementById('aiIndicator');
+    const extPill = document.getElementById('extPill');
+    const aiPill = document.getElementById('aiPill');
+    const syncBtn = document.getElementById('syncBtn');
+    const feedList = document.getElementById('feedList');
+
+    let lastProcessedAiId = 0;
+    let lastData = null;
+    let lastProcessedSyncId = "";
+
+    function addLog(msg, type = 'info') {
+      const item = document.createElement('div');
+      item.className = 'feed-item';
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      item.innerHTML = `
+        <div style="color: ${type === 'ai' ? '#818cf8' : '#10b981'}">${msg}</div>
+        <div class="feed-time">${time}</div>
+      `;
+      if (feedList.innerText.includes('Waiting')) feedList.innerHTML = '';
+      feedList.prepend(item);
+    }
+
+    async function checkState() {
+      try {
+        const res = await fetch('http://localhost:3333/api/state?source=figma');
+        if (res.ok) {
+          const data = await res.json();
+          lastData = data;
+          
+          // Extension Status
+          if (data.elements && data.elements.length > 0) {
+            extIndicator.className = 'indicator on';
+            extStatus.innerText = 'Syncing ' + data.elements.length + ' elements';
+            extPill.classList.add('active');
+            syncBtn.disabled = false;
+            
+            const syncId = data.elements[0].rect.top + '-' + data.elements.length;
+            if (syncId !== lastProcessedSyncId) {
+              lastProcessedSyncId = syncId;
+              addLog(`Captured ${data.elements.length} elements`);
+            }
+          } else {
+            extIndicator.className = 'indicator';
+            extStatus.innerText = 'Waiting for selection...';
+            extPill.classList.remove('active');
+            syncBtn.disabled = true;
+          }
+
+          // AI Status
+          if (data.aiMessage) {
+            aiIndicator.className = 'indicator pulse';
+            aiStatus.innerText = 'Command Ready';
+            aiPill.classList.add('active');
+            
+            if (data.aiMessage.id > lastProcessedAiId) {
+              lastProcessedAiId = data.aiMessage.id;
+              addLog(`AI: ${data.aiMessage.type} Instruction`, 'ai');
+              parent.postMessage({ 
+                pluginMessage: { type: data.aiMessage.type, data: data.aiMessage } 
+              }, '*');
+            }
+          } else {
+            aiIndicator.className = 'indicator';
+            aiStatus.innerText = 'Idle';
+            aiPill.classList.remove('active');
+          }
+        }
+      } catch (e) {
+        extStatus.innerText = 'Bridge Offline';
+        extIndicator.className = 'indicator';
+      }
+    }
+
+    syncBtn.onclick = () => {
+      if (lastData && lastData.elements) {
+        parent.postMessage({ 
+          pluginMessage: { type: 'IMPORT_ELEMENTS', elements: lastData.elements } 
+        }, '*');
+      }
+    };
+
+    checkState(); // Register immediately on load
+    setInterval(checkState, 2000);
+  </script>
+</body>
+</html>

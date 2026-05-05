@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Loupe — Prompt Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0f172a;
+      --panel:   #1e293b;
+      --border:  #334155;
+      --accent:  #6366f1;
+      --accent2: #818cf8;
+      --text:    #f8fafc;
+      --muted:   #94a3b8;
+      --success: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Single header bar (Loupe Studio style) ── */
+    header {
+      height: 64px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    /* Left third */
+    .hd-left {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .hd-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .page-context {
+      font-size: 12px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Center */
+    .hd-center {
+      flex-shrink: 0;
+    }
+
+    .toggle-group {
+      display: flex;
+      background: #0f172a80;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .tog {
+      padding: 6px 18px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tog.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Right third */
+    .hd-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: #ffffff08;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .status-chip.online {
+      background: #10b98115;
+      border-color: #10b98140;
+      color: var(--success);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #475569;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+
+    .status-dot.on {
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-ghost {
+      background: #ffffff10;
+      color: var(--text);
+    }
+
+    .btn-ghost:hover { background: #ffffff1c; }
+
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-accent:hover { background: #4f46e5; }
+    .btn-accent:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn-accent:disabled:hover { background: var(--accent); }
+
+    /* ── Body layout ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 256px;
+      flex-shrink: 0;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-hd {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .big-count {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    .el-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .el-list::-webkit-scrollbar { width: 3px; }
+    .el-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+    .el-card {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.12s;
+      border-left: 2px solid transparent;
+    }
+
+    .el-card:hover { background: #f8fafc; }
+    .el-card.active { background: #eef2ff; border-left-color: var(--accent); }
+
+    .el-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .el-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      background: #eef2ff;
+      color: var(--accent);
+      padding: 2px 5px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .el-tag { font-weight: 700; font-size: 12px; color: #1e293b; }
+
+    .el-cls {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #64748b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 130px;
+    }
+
+    .el-txt {
+      font-size: 11px;
+      color: #64748b;
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 4px;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.10);
+      flex-shrink: 0;
+    }
+
+    .swatch-dim {
+      font-size: 9px;
+      color: #94a3b8;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ── Main ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+
+    /* ── Output (white) ── */
+    .output-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    .output-wrap::-webkit-scrollbar { width: 6px; }
+    .output-wrap::-webkit-scrollbar-track { background: transparent; }
+    .output-wrap::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+
+    .output-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    .output-box-hd {
+      padding: 9px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+    }
+
+    .mac-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    pre.output {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      line-height: 1.75;
+      color: #1e293b;
+      padding: 20px 22px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      background: #ffffff;
+    }
+
+    /* Element section highlighting */
+    .el-section {
+      display: block;
+      border-radius: 4px;
+      transition: background 0.25s;
+    }
+
+    .el-section.hl {
+      background: #fffbeb;
+      outline: 2px solid #fde68a;
+      outline-offset: 1px;
+      border-radius: 4px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 9px 15px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.2s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <!-- Left: logo + page context -->
+    <div class="hd-left">
+      <div class="logo">
+        <div class="logo-icon">L</div>
+        Prompt Studio
+      </div>
+      <div class="hd-sep"></div>
+      <div class="page-context" id="page-context">Loading...</div>
+    </div>
+
+    <!-- Center: mode toggle -->
+    <div class="hd-center">
+      <div class="toggle-group">
+        <button class="tog active" id="tog-prompt">Prompt</button>
+        <button class="tog" id="tog-css">CSS</button>
+      </div>
+    </div>
+
+    <!-- Right: status + actions -->
+    <div class="hd-right">
+      <div class="status-chip" id="chip-mcp">
+        <div class="status-dot" id="dot-mcp"></div>
+        <span id="lbl-mcp">MCP OFFLINE</span>
+      </div>
+      <div class="status-chip" id="chip-figma">
+        <div class="status-dot" id="dot-figma"></div>
+        <span id="lbl-figma">FIGMA WAITING</span>
+      </div>
+      <div class="hd-sep"></div>
+      <button class="btn btn-ghost" id="btn-copy">Copy</button>
+      <button class="btn btn-accent" id="btn-push" disabled>Sync to Figma</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-hd">
+        <div class="label">Selected Elements</div>
+        <div class="big-count" id="el-count">0</div>
+      </div>
+      <div class="el-list" id="el-list">
+        <div style="padding:28px 14px; text-align:center; font-size:11px; color:var(--muted);">No elements selected</div>
+      </div>
+    </aside>
+
+    <!-- Main output -->
+    <main class="main">
+      <div class="output-wrap">
+        <div class="output-box">
+          <div class="output-box-hd">
+            <div class="mac-dot" style="background:#ef4444;"></div>
+            <div class="mac-dot" style="background:#f59e0b;"></div>
+            <div class="mac-dot" style="background:#10b981;"></div>
+            <span style="font-size:11px; color:#94a3b8; margin-left:8px; font-family:'IBM Plex Mono',monospace;" id="output-label">loupe-brief.txt</span>
+          </div>
+          <pre class="output" id="output">Loading...</pre>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="prompt.js"></script>
+</body>
+</html>

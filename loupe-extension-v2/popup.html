@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Loupe Intelligence Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #F8FAFC;
+      --surface: #ffffff;
+      --border: #F1F5F9;
+      --accent: #6366f1;
+      --accent-soft: #eef2ff;
+      --text: #0F172A;
+      --text-dim: #64748B;
+      --success: #10B981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body { 
+      width: 320px; 
+      background: var(--bg); 
+      color: var(--text); 
+      font-family: 'Outfit', sans-serif; 
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* --- Tabs --- */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* --- Header --- */
+    .header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+    }
+
+    /* --- Content --- */
+    .view { display: none; padding: 20px; }
+    .view.active { display: block; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      letter-spacing: 0.05em;
+    }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-ghost { background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .status-item:last-child { border-bottom: none; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
+    .dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+    /* --- Capture View --- */
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .mode-btn {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .mode-btn:hover { border-color: var(--accent); background: white; }
+    .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .mode-btn .label { font-weight: 700; font-size: 13px; }
+    .mode-btn .sub { font-size: 10px; opacity: 0.7; font-weight: 500; }
+
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo-group">
+      <div class="logo-icon">L</div>
+      <div style="font-weight: 800; font-size: 16px;">Loupe</div>
+    </div>
+    <div id="bridge-status-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 100px; background: var(--bg2); color: var(--text-dim);">BRIDGE OFFLINE</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-view="capture">Capture</div>
+    <div class="tab" data-view="settings">Settings</div>
+  </div>
+
+  <div class="view active" id="view-capture">
+    <div class="section-label">Select Mode</div>
+    <div class="mode-grid">
+      <div class="mode-btn" id="btn-click">
+        <span class="label">Smart Click</span>
+        <span class="sub">Pick Elements</span>
+      </div>
+      <div class="mode-btn" id="btn-area">
+        <span class="label">Region</span>
+        <span class="sub">Custom Area</span>
+      </div>
+    </div>
+
+    <div class="section-label">Screen Tools</div>
+    <div class="mode-grid">
+      <div class="mode-btn" id="btn-full-page">
+        <span class="label">Full Page</span>
+        <span class="sub">Auto Scroll</span>
+      </div>
+      <div class="mode-btn" id="btn-screenshot">
+        <span class="label">Screenshot</span>
+        <span class="sub">Clean Shot</span>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 16px; text-align: center;">
+      <div style="font-weight: 700; font-size: 16px;" id="countText">0 Elements</div>
+      <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Ready to push to Figma</div>
+    </div>
+
+    <div class="section-label">Inventory</div>
+    <div id="elements-list" class="card" style="padding: 0; max-height: 140px; overflow-y: auto; margin-bottom: 20px;">
+        <div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">No elements selected</div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-sync">Push to Canvas</button>
+  </div>
+
+  <!-- Settings View -->
+  <div class="view" id="view-settings">
+    <div class="section-label">Connectivity Hub</div>
+    <div class="card">
+      <div class="status-item">
+        <span>MCP Bridge (3333)</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-weight: 700; font-size: 10px; color: var(--text-dim);" id="bridge-status-text">OFFLINE</span>
+          <div class="dot" id="bridge-dot"></div>
+        </div>
+      </div>
+      <div class="status-item">
+        <span>Figma Plugin</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-weight: 700; font-size: 10px; color: var(--text-dim);" id="figma-status-text">WAITING</span>
+          <div class="dot" id="figma-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Advanced</div>
+    <div class="card">
+      <p style="font-size: 11px; color: var(--text-dim);">Loupe is running in Local Bridge mode. Ensure your Node.js server is active on port 3333.</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
