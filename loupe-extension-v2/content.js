@@ -38,12 +38,19 @@
       }
     };
     safeSendMessage(payload);
-    
-    fetch('https://web-production-9cce.up.railway.app/api/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).catch(() => {});
+
+    // Include auth token so Railway can verify tier server-side
+    chrome.storage.local.get('loupe_session', ({ loupe_session }) => {
+      const headers = { 'Content-Type': 'application/json' };
+      if (loupe_session?.accessToken) {
+        headers['Authorization'] = `Bearer ${loupe_session.accessToken}`;
+      }
+      fetch('https://web-production-9cce.up.railway.app/api/update', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    });
   }
 
   // --- Style Extraction ---

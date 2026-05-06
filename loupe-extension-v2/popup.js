@@ -153,22 +153,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderMcpTab(isPro);
   }
 
-  // Read auth state from storage for an immediate render, then ask the background
-  // to do a live tier check. If it updates storage, storage.onChanged re-renders.
   async function loadAuthState() {
     const { loupe_session } = await chrome.storage.local.get('loupe_session');
     renderAuthState(loupe_session || null);
+    if (!loupe_session?.accessToken) return;
 
-    // Ask background for a fresh session (refreshes JWT + re-fetches tier from Supabase).
-    // Background writes the result to storage; storage.onChanged handles the re-render.
-    chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' }, (response) => {
-      void chrome.runtime.lastError; // suppress port-closed warnings
-      if (response?.session) {
-        renderAuthState(response.session);
-        // Ping the bridge so the Figma plugin also gets the current tier
+    // Fetch live tier directly from Supabase so stale cached tier is always corrected
+    try {
+      await LOUPE_CONFIG.refresh();
+      const res = await fetch(
+        `${LOUPE_CONFIG.SUPABASE_URL}/rest/v1/profiles?select=tier&id=eq.${loupe_session.user.id}`,
+        {
+          headers: {
+            'apikey': LOUPE_CONFIG.SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${loupe_session.accessToken}`,
+            'Accept': 'application/json'
+          }
+        }
+      );
+      if (res.ok) {
+        const profiles = await res.json();
+        const liveTier = profiles[0]?.tier || 'free';
+        if (liveTier !== loupe_session.tier) {
+          const updated = { ...loupe_session, tier: liveTier, tierCheckedAt: Date.now() };
+          await chrome.storage.local.set({ loupe_session: updated });
+          renderAuthState(updated);
+        }
+        // Tell the bridge about the current tier so the Figma plugin stays in sync
         chrome.runtime.sendMessage({ type: 'NOTIFY_BRIDGE' }, () => void chrome.runtime.lastError);
       }
-    });
+    } catch (_) { /* fail silently — use cached tier */ }
   }
 
   // React to session changes written by background.js (sign-in / token refresh)
