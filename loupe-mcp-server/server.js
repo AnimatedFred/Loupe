@@ -273,7 +273,7 @@ app.post("/api/auth/sync", async (req, res) => {
 const figmaAuthSessions = new Map();
 
 const BRIDGE_URL = process.env.BRIDGE_URL || 'https://web-production-9cce.up.railway.app';
-const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || '';
+const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
 
 // Step 1 — plugin opens this URL to start OAuth
 app.get('/auth/figma/start', (req, res) => {
