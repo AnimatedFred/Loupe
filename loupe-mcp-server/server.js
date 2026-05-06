@@ -12,7 +12,18 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Loupe MCP Server (HTTP Bridge Version)
  * More robust than WebSockets for browser extension service workers.
+ *
+ * When spawned by Claude Desktop/Cursor via stdio, the --endpoint flag routes
+ * get_selected_elements and push_to_figma through the Railway cloud bridge so
+ * the local process and the Figma plugin share the same state.
  */
+
+// Parse --endpoint <url> from CLI args (e.g. --endpoint https://web-production-9cce.up.railway.app)
+const endpointArgIdx = process.argv.indexOf('--endpoint');
+const RELAY_ENDPOINT = endpointArgIdx >= 0 ? process.argv[endpointArgIdx + 1] : null;
+if (RELAY_ENDPOINT) {
+  console.error(`[Loupe MCP] Relay endpoint: ${RELAY_ENDPOINT}`);
+}
 
 // --- Supabase ---
 // Set SUPABASE_URL and SUPABASE_SERVICE_KEY in Railway environment variables.
@@ -36,16 +47,6 @@ async function verifyToken(req) {
   return { user, tier: profile?.tier || 'free' };
 }
 
-function requirePro(handler) {
-  return async (req, res) => {
-    if (!supabase) return handler(req, res); // Auth not configured — allow all
-    const auth = await verifyToken(req);
-    if (!auth) return res.status(401).json({ error: 'Authentication required' });
-    if (auth.tier !== 'pro') return res.status(403).json({ error: 'Pro plan required', tier: auth.tier });
-    req.auth = auth;
-    return handler(req, res);
-  };
-}
 
 // --- State ---
 let lastElements = [];
@@ -94,8 +95,19 @@ app.post("/api/update", async (req, res) => {
   res.json({ ok: true });
 });
 
-// Endpoint for the AI to push commands (Pro only)
-app.post("/api/ai/push", requirePro(async (req, res) => {
+// New endpoint: Allow Figma to push selection back to the bridge
+app.post("/api/figma/selection", async (req, res) => {
+  const data = req.body;
+  lastElements = data.elements || [];
+  lastContext = data.context || lastContext;
+  lastPrompt = "Figma Selection Analysis";
+  console.error(`[Loupe MCP] Figma pushed ${lastElements.length} selected elements for analysis.`);
+  res.json({ ok: true });
+});
+
+// Endpoint for the AI to push commands — no auth required since this is
+// write-only (no user data exposed) and only executes in the Figma canvas.
+app.post("/api/ai/push", (req, res) => {
   aiMessageCounter++;
   currentAiMessage = {
     id: aiMessageCounter,
@@ -104,7 +116,7 @@ app.post("/api/ai/push", requirePro(async (req, res) => {
   };
   console.error(`[Loupe MCP] AI pushed message #${aiMessageCounter} (${currentAiMessage.type})`);
   res.json({ ok: true, id: aiMessageCounter });
-}));
+});
 
 app.get("/api/auth/me", async (req, res) => {
   const auth = await verifyToken(req);
@@ -182,36 +194,57 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
-  
-  if (name === "get_selected_elements") {
-    const content = [
-      {
-        type: "text",
-        text: JSON.stringify({
-          page: lastContext,
-          count: lastElements.length,
-          elements: lastElements,
-          prompt: lastPrompt
-        }, null, 2),
-      },
-    ];
 
-    if (lastScreenshot) {
-      const base64Data = lastScreenshot.split(',')[1];
-      const mimeType = lastScreenshot.split(',')[0].split(':')[1].split(';')[0];
-      content.push({ type: "image", data: base64Data, mimeType: mimeType });
+  if (name === "get_selected_elements") {
+    // When a relay endpoint is configured, fetch live state from the cloud bridge
+    // so the AI sees whatever the Chrome extension last captured.
+    let state = { page: lastContext, count: lastElements.length, elements: lastElements, prompt: lastPrompt };
+    let screenshot = lastScreenshot;
+
+    if (RELAY_ENDPOINT) {
+      try {
+        const res = await fetch(`${RELAY_ENDPOINT}/api/state`);
+        const data = await res.json();
+        state = { page: data.page, count: data.count || 0, elements: data.elements || [], prompt: data.prompt || "" };
+        screenshot = data.screenshot || null;
+      } catch (e) {
+        console.error(`[Loupe MCP] Failed to fetch from relay: ${e.message}`);
+      }
     }
 
+    const content = [{ type: "text", text: JSON.stringify(state, null, 2) }];
+    if (screenshot) {
+      const base64Data = screenshot.split(',')[1];
+      const mimeType = screenshot.split(',')[0].split(':')[1].split(';')[0];
+      content.push({ type: "image", data: base64Data, mimeType });
+    }
     return { content };
   }
 
   if (name === "push_to_figma") {
+    // When a relay endpoint is configured, POST the command to the cloud bridge
+    // so the Figma plugin (which polls Railway) receives it.
+    if (RELAY_ENDPOINT) {
+      try {
+        const res = await fetch(`${RELAY_ENDPOINT}/api/ai/push`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args)
+        });
+        const data = await res.json();
+        console.error(`[Loupe MCP] Relayed push_to_figma to cloud bridge (#${data.id})`);
+        return {
+          content: [{ type: "text", text: `Successfully pushed ${args.type} instruction to Figma plugin (#${data.id}).` }]
+        };
+      } catch (e) {
+        console.error(`[Loupe MCP] Relay failed: ${e.message}`);
+        return { content: [{ type: "text", text: `Failed to reach Figma bridge: ${e.message}` }] };
+      }
+    }
+
+    // Local fallback (no relay configured)
     aiMessageCounter++;
-    currentAiMessage = {
-      id: aiMessageCounter,
-      timestamp: Date.now(),
-      ...args
-    };
+    currentAiMessage = { id: aiMessageCounter, timestamp: Date.now(), ...args };
     console.error(`[Loupe MCP] AI (Tool) pushed message #${aiMessageCounter} (${currentAiMessage.type})`);
     return {
       content: [{ type: "text", text: `Successfully pushed ${args.type} instruction to Figma plugin (#${aiMessageCounter}).` }]
