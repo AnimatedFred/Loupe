@@ -344,15 +344,57 @@ app.post("/api/auth/sync", async (req, res) => {
   res.json({ ok: true, tier: lastTier });
 });
 
-// Per-user Figma PAT storage (in-memory; lost on restart, but Chrome extension re-syncs on load)
+// Per-user Figma PAT — in-memory cache backed by Supabase profiles.figma_pat
 const userFigmaPats = new Map(); // Map<userId, string>
+
+async function getUserFigmaPat(userId, accessToken) {
+  if (userFigmaPats.has(userId)) return userFigmaPats.get(userId);
+  // Cache miss after Railway restart — load from Supabase
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+    let pat = null;
+    if (supabase) {
+      const { data } = await supabase.from('profiles').select('figma_pat').eq('id', userId).single();
+      pat = data?.figma_pat || null;
+    } else if (accessToken) {
+      const res = await fetch(`${supabaseUrl}/rest/v1/profiles?select=figma_pat&id=eq.${userId}`, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' }
+      });
+      if (res.ok) pat = (await res.json())[0]?.figma_pat || null;
+    }
+    if (pat) userFigmaPats.set(userId, pat);
+    return pat;
+  } catch (_) { return null; }
+}
 
 app.post('/api/user/figma-pat', async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
   const { pat } = req.body || {};
   if (!pat) return res.status(400).json({ error: 'Missing pat' });
+
   userFigmaPats.set(auth.user.id, pat);
+
+  // Persist to Supabase so the value survives Railway restarts
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+    const accessToken = req.headers.authorization?.slice(7);
+    if (supabase) {
+      await supabase.from('profiles').update({ figma_pat: pat }).eq('id', auth.user.id);
+    } else if (accessToken) {
+      await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${auth.user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ figma_pat: pat })
+      });
+    }
+  } catch (e) {
+    console.error(`[Loupe MCP] Failed to persist Figma PAT to Supabase: ${e.message}`);
+  }
+
   console.error(`[Loupe MCP] Stored Figma PAT for ${auth.user.email}`);
   res.json({ ok: true });
 });
@@ -470,12 +512,18 @@ app.get("/api/state", async (req, res) => {
         lastTier = auth.tier;
         lastEmail = auth.user?.email || lastEmail;
       }
-      if (auth?.user?.id && userFigmaPats.has(auth.user.id)) figmaRestAvailable = true;
+      if (auth?.user?.id) {
+        const pat = await getUserFigmaPat(auth.user.id, req.headers.authorization.slice(7));
+        if (pat) figmaRestAvailable = true;
+      }
     }
   } else if (req.headers.authorization) {
     // Chrome extension polls /api/state with its Bearer token — return per-user PAT status
     const auth = await verifyToken(req);
-    if (auth?.user?.id && userFigmaPats.has(auth.user.id)) figmaRestAvailable = true;
+    if (auth?.user?.id) {
+      const pat = await getUserFigmaPat(auth.user.id, req.headers.authorization.slice(7));
+      if (pat) figmaRestAvailable = true;
+    }
   }
 
   res.json({
