@@ -18,7 +18,7 @@ figma.ui.onmessage = async (msg) => {
   // ── EVAL: run arbitrary write code in the Figma sandbox ───────────────────
   if (msg.type === 'EVAL') {
     try {
-      const code = msg.data?.code || msg.code;
+      const code = (msg.data && msg.data.code) || msg.code;
       const fn = new Function('figma', 'return (async () => { ' + code + ' })()');
       await fn(figma);
       figma.notify('AI Design Sync Complete');
