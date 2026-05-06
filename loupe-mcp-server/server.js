@@ -123,19 +123,46 @@ const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
   : null;
 
+// Anon key is the public "publishable" key — safe to embed.
+// Used as fallback when SUPABASE_SERVICE_KEY is not configured in Railway.
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6cnRib3ZzeG5sYWl2a29mdnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTc1MTksImV4cCI6MjA5MzU5MzUxOX0.pvke4PggpSZXIWR1CdJkL7Q-0008k8b03qNYA0L4HDk';
+
 async function verifyToken(req) {
-  if (!supabase) return null; // Auth not configured — open mode
   const auth = req.headers['authorization'];
-  if (!auth?.startsWith('Bearer ')) return null;
+  if (!auth || !auth.startsWith('Bearer ')) return null;
   const token = auth.slice(7);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('tier')
-    .eq('id', user.id)
-    .single();
-  return { user, tier: profile?.tier || 'free' };
+
+  // Service-key path — preferred when SUPABASE_SERVICE_KEY is set in Railway
+  if (supabase) {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tier')
+      .eq('id', user.id)
+      .single();
+    return { user, tier: profile?.tier || 'free' };
+  }
+
+  // Anon-key fallback — uses the user's own token, same as the Chrome extension
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` }
+    });
+    if (!userRes.ok) return null;
+    const user = await userRes.json();
+    if (!user.id) return null;
+    const profRes = await fetch(
+      `${supabaseUrl}/rest/v1/profiles?select=tier&id=eq.${user.id}`,
+      { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
+    );
+    const tier = profRes.ok ? ((await profRes.json())[0]?.tier || 'free') : 'free';
+    return { user, tier };
+  } catch (_) {
+    return null;
+  }
 }
 
 
