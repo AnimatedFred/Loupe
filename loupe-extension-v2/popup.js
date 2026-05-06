@@ -414,23 +414,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.storage.local.set({ [`figma_pat_${userId}`]: token });
     }
 
-    // Store server-side so Railway survives restarts with the correct per-user PAT
+    // Persist directly to Supabase profiles.figma_pat (same pattern as tier lookup)
     let serverSaveOk = false;
-    if (freshSession?.accessToken) {
+    if (freshSession?.accessToken && userId) {
       try {
-        const saveRes = await fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${freshSession.accessToken}` },
-          body: JSON.stringify({ pat: token })
-        });
-        serverSaveOk = saveRes.ok;
-        if (!saveRes.ok) {
-          const err = await saveRes.json().catch(() => ({}));
-          console.error('[Loupe] Failed to save PAT to server:', saveRes.status, err);
+        const patchRes = await fetch(
+          `${LOUPE_CONFIG.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': LOUPE_CONFIG.SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${freshSession.accessToken}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify({ figma_pat: token })
+          }
+        );
+        serverSaveOk = patchRes.ok;
+        if (!patchRes.ok) {
+          console.error('[Loupe] Supabase PATCH failed:', patchRes.status, await patchRes.text().catch(() => ''));
         }
       } catch (e) {
-        console.error('[Loupe] Network error saving PAT to server:', e.message);
+        console.error('[Loupe] Supabase PATCH error:', e.message);
       }
+
+      // Also update Railway in-memory cache (best-effort — ok if it fails)
+      fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${freshSession.accessToken}` },
+        body: JSON.stringify({ pat: token })
+      }).catch(() => {});
     }
 
     const mcpWithFigma = {
