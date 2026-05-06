@@ -198,9 +198,9 @@
 
     // ── UI helpers ────────────────────────────────────────────────────────────
     function showView(name) {
-      document.getElementById('view-loading').style.display = name === 'loading' ? '' : 'none';
-      document.getElementById('view-signin').style.display  = name === 'signin'  ? '' : 'none';
-      document.getElementById('view-main').style.display    = name === 'main'    ? '' : 'none';
+      document.getElementById('view-loading').style.display = name === 'loading' ? 'flex'  : 'none';
+      document.getElementById('view-signin').style.display  = name === 'signin'  ? 'flex'  : 'none';
+      document.getElementById('view-main').style.display    = name === 'main'    ? 'block' : 'none';
     }
 
     function addLog(msg, type) {
