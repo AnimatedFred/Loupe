@@ -32,8 +32,8 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'CREATE_FRAME') {
     const f = figma.createFrame();
     f.name = msg.name || 'Frame';
-    f.x = msg.x ?? figma.viewport.center.x;
-    f.y = msg.y ?? figma.viewport.center.y;
+    f.x = msg.x !== undefined ? msg.x : figma.viewport.center.x;
+    f.y = msg.y !== undefined ? msg.y : figma.viewport.center.y;
     if (msg.width && msg.height) f.resize(msg.width, msg.height);
     figma.currentPage.appendChild(f);
     figma.viewport.scrollAndZoomIntoView([f]);
