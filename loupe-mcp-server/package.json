@@ -1,6 +1,6 @@
 {
   "name": "loupe-intelligence",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Loupe Intelligence — MCP server for AI-powered Figma sync",
   "main": "server.js",
   "type": "module",

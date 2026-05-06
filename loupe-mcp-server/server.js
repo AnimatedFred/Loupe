@@ -425,16 +425,22 @@ app.get("/api/state", async (req, res) => {
 });
 
 const BRIDGE_PORT = process.env.PORT || 3333;
-const serverInstance = app.listen(BRIDGE_PORT, "0.0.0.0", () => {
-  console.error(`[Loupe MCP] Bridge active on port ${BRIDGE_PORT} (Cloud Mode)`);
-});
 
-serverInstance.on('error', (e) => {
-  if (e.code === 'EADDRINUSE') {
-    console.error(`[Loupe MCP] FATAL ERROR: Port ${BRIDGE_PORT} is already in use.`);
-    process.exit(1);
-  }
-});
+// Only start the local HTTP server when there is no relay endpoint.
+// When --endpoint is set, all data comes from Railway — no local port needed.
+if (!RELAY_ENDPOINT) {
+  const serverInstance = app.listen(BRIDGE_PORT, "0.0.0.0", () => {
+    console.error(`[Loupe MCP] Bridge active on port ${BRIDGE_PORT} (Local Mode)`);
+  });
+  serverInstance.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      console.error(`[Loupe MCP] FATAL ERROR: Port ${BRIDGE_PORT} is already in use.`);
+      process.exit(1);
+    }
+  });
+} else {
+  console.error(`[Loupe MCP] Relay mode — no local HTTP server started`);
+}
 
 // --- MCP Server ---
 const server = new Server(
