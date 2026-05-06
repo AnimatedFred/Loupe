@@ -1,4 +1,7 @@
 // Loupe Dashboard Logic v1.2 (Background Injection Protocol)
+const SUPABASE_URL      = 'https://yzrtbovsxnlaivkofvul.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6cnRib3ZzeG5sYWl2a29mdnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMTc1MTksImV4cCI6MjA5MzU5MzUxOX0.pvke4PggpSZXIWR1CdJkL7Q-0008k8b03qNYA0L4HDk';
+
 document.addEventListener('DOMContentLoaded', async () => {
   const tabs = document.querySelectorAll('.tab');
   const views = document.querySelectorAll('.view');
@@ -419,11 +422,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (freshSession?.accessToken && userId) {
       try {
         const patchRes = await fetch(
-          `${LOUPE_CONFIG.SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`,
+          `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`,
           {
             method: 'PATCH',
             headers: {
-              'apikey': LOUPE_CONFIG.SUPABASE_ANON_KEY,
+              'apikey': SUPABASE_ANON_KEY,
               'Authorization': `Bearer ${freshSession.accessToken}`,
               'Content-Type': 'application/json',
               'Prefer': 'return=minimal'
