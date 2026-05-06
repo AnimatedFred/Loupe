@@ -3,6 +3,23 @@ figma.showUI(__html__, { width: 340, height: 500, themeColors: true });
 
 figma.ui.onmessage = async (msg) => {
 
+  // ── Plugin storage (persist auth session across plugin restarts) ──────────
+  if (msg.type === 'GET_STORAGE') {
+    const value = await figma.clientStorage.getAsync(msg.key);
+    figma.ui.postMessage({ type: 'STORAGE_VALUE', key: msg.key, value: value });
+    return;
+  }
+
+  if (msg.type === 'SET_STORAGE') {
+    await figma.clientStorage.setAsync(msg.key, msg.value);
+    return;
+  }
+
+  if (msg.type === 'DEL_STORAGE') {
+    await figma.clientStorage.deleteAsync(msg.key);
+    return;
+  }
+
   // ── Query: run code and return result to the UI for posting back to Railway ──
   if (msg.type === 'FIGMA_QUERY') {
     try {

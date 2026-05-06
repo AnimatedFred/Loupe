@@ -268,10 +268,103 @@ app.post("/api/auth/sync", async (req, res) => {
   res.json({ ok: true, tier: lastTier });
 });
 
-app.get("/api/state", (req, res) => {
-  // If the request comes from Figma (we can check a header or just assume any poll counts)
+// ── Figma Plugin OAuth ────────────────────────────────────────────────────────
+// Pending sessions keyed by state UUID — TTL 10 minutes
+const figmaAuthSessions = new Map();
+
+const BRIDGE_URL = process.env.BRIDGE_URL || 'https://web-production-9cce.up.railway.app';
+const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || '';
+
+// Step 1 — plugin opens this URL to start OAuth
+app.get('/auth/figma/start', (req, res) => {
+  const state = req.query.state || randomUUID().slice(0, 16);
+  const callbackUrl = `${BRIDGE_URL}/auth/figma/callback?state=${state}`;
+  const oauthUrl = `${SUPABASE_URL_PUBLIC}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}`;
+  res.redirect(oauthUrl);
+});
+
+// Step 2 — Supabase redirects here with token in the URL fragment
+app.get('/auth/figma/callback', (req, res) => {
+  const state = (req.query.state || '').replace(/[^a-zA-Z0-9-]/g, '');
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html>
+<head><title>Loupe — Signing in...</title>
+<style>body{font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#f8fafc;flex-direction:column;gap:12px;margin:0}p{font-size:14px;color:#94a3b8}</style>
+</head>
+<body>
+<div id="msg">Completing sign-in...</div>
+<p id="sub"></p>
+<script>
+  var state = ${JSON.stringify(state)};
+  var hash = location.hash.slice(1);
+  var params = new URLSearchParams(hash);
+  var accessToken = params.get('access_token');
+  if (accessToken) {
+    fetch('/auth/figma/store', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: state, accessToken: accessToken })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (d.ok) {
+        document.getElementById('msg').textContent = '✓ Signed in!';
+        document.getElementById('sub').textContent = 'You can close this tab and return to Figma.';
+      } else {
+        document.getElementById('msg').textContent = 'Sign-in failed. Please try again.';
+      }
+    }).catch(function() {
+      document.getElementById('msg').textContent = 'Sign-in failed. Please try again.';
+    });
+  } else {
+    document.getElementById('msg').textContent = 'Sign-in failed — no token received.';
+  }
+</script>
+</body></html>`);
+});
+
+// Step 3 — callback page POSTs token here
+app.post('/auth/figma/store', async (req, res) => {
+  const { state, accessToken } = req.body || {};
+  if (!state || !accessToken) return res.status(400).json({ error: 'Missing state or token' });
+  const auth = await verifyToken({ headers: { authorization: `Bearer ${accessToken}` } });
+  if (!auth) return res.status(401).json({ error: 'Invalid token' });
+  figmaAuthSessions.set(state, {
+    accessToken,
+    tier: auth.tier,
+    email: auth.user.email,
+    expiresAt: Date.now() + 10 * 60 * 1000
+  });
+  res.json({ ok: true });
+});
+
+// Step 4 — plugin polls this until the session appears
+app.get('/api/auth/figma/session', (req, res) => {
+  const state = (req.query.state || '').replace(/[^a-zA-Z0-9-]/g, '');
+  const session = figmaAuthSessions.get(state);
+  if (!session) return res.status(404).json({ error: 'Pending' });
+  if (Date.now() > session.expiresAt) {
+    figmaAuthSessions.delete(state);
+    return res.status(410).json({ error: 'Expired' });
+  }
+  figmaAuthSessions.delete(state);
+  // Also update global tier so all clients see it immediately
+  lastTier = session.tier;
+  lastEmail = session.email;
+  res.json({ ok: true, accessToken: session.accessToken, tier: session.tier, email: session.email });
+});
+
+app.get("/api/state", async (req, res) => {
+  // If the request comes from Figma, update heartbeat and optionally verify its own token
   if (req.query.source === 'figma') {
     lastFigmaHeartbeat = Date.now();
+    // If the plugin sends its own Bearer token, derive tier directly — no extension needed
+    if (req.headers.authorization) {
+      const auth = await verifyToken(req);
+      if (auth?.tier) {
+        lastTier = auth.tier;
+        lastEmail = auth.user?.email || lastEmail;
+      }
+    }
   }
 
   res.json({
