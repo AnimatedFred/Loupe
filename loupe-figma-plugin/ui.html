@@ -123,9 +123,11 @@
   </div>
 
   <script>
+    const BRIDGE = 'https://web-production-9cce.up.railway.app';
     let lastData = null;
     let lastProcessedAiId = 0;
     let lastProcessedSyncId = '';
+    let lastProcessedQueryId = 0;
 
     function addLog(msg, type) {
       const feedList = document.getElementById('feedList');
@@ -139,7 +141,7 @@
 
     async function checkState() {
       try {
-        const res = await fetch('https://web-production-9cce.up.railway.app/api/state?source=figma');
+        const res = await fetch(BRIDGE + '/api/state?source=figma');
         if (!res.ok) throw new Error('offline');
         const data = await res.json();
         lastData = data;
@@ -168,10 +170,7 @@
           syncBtn.style.background = 'var(--accent)';
           syncBtn.style.color = 'white';
           syncBtn.style.cursor = 'pointer';
-          syncBtn.onclick = () => {
-            // Open web dashboard for upgrade
-            window.open('https://web-production-9cce.up.railway.app/#pricing', '_blank');
-          };
+          syncBtn.onclick = () => window.open(BRIDGE + '/#pricing', '_blank');
         } else {
           syncBtn.textContent = 'Sync Selection to Figma';
           syncBtn.style.background = '';
@@ -191,7 +190,6 @@
           document.getElementById('extStatus').textContent = 'Syncing ' + data.elements.length + ' elements';
           document.getElementById('extCard').classList.add('active');
           syncBtn.disabled = false;
-
           const syncId = (data.elements[0].rect?.top || 0) + '-' + data.elements.length;
           if (syncId !== lastProcessedSyncId) {
             lastProcessedSyncId = syncId;
@@ -208,21 +206,29 @@
           syncBtn.disabled = true;
         }
 
-        // AI status
+        // AI commands
         if (data.aiMessage) {
           document.getElementById('aiDot').className = 'dot pulse';
           document.getElementById('aiStatus').textContent = 'Command Ready';
           document.getElementById('aiCard').classList.add('active');
-
           if (data.aiMessage.id > lastProcessedAiId) {
             lastProcessedAiId = data.aiMessage.id;
-            addLog('AI: ' + data.aiMessage.type + ' instruction', 'ai');
-            parent.postMessage({ pluginMessage: { type: data.aiMessage.type, data: data.aiMessage } }, '*');
+            addLog('AI: ' + data.aiMessage.type, 'ai');
+            // Spread aiMessage directly so named ops (CREATE_FRAME, SET_TEXT, etc.)
+            // receive all properties at the top level in code.js
+            parent.postMessage({ pluginMessage: data.aiMessage }, '*');
           }
         } else {
           document.getElementById('aiDot').className = 'dot';
           document.getElementById('aiStatus').textContent = isPro ? 'Idle' : 'Pro plan required';
           document.getElementById('aiCard').classList.remove('active');
+        }
+
+        // Figma queries from AI (bidirectional read)
+        if (data.pendingQuery && data.pendingQuery.id > lastProcessedQueryId) {
+          lastProcessedQueryId = data.pendingQuery.id;
+          addLog('AI query #' + data.pendingQuery.id, 'ai');
+          parent.postMessage({ pluginMessage: { type: 'FIGMA_QUERY', queryId: data.pendingQuery.id, code: data.pendingQuery.code } }, '*');
         }
 
       } catch (e) {
@@ -233,6 +239,35 @@
 
     checkState();
     setInterval(checkState, 2000);
+
+    // Receive results from code.js and relay them to the bridge
+    window.onmessage = async (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'QUERY_RESULT') {
+        try {
+          await fetch(BRIDGE + '/api/figma/result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queryId: msg.queryId, result: msg.result, error: msg.error })
+          });
+          addLog('Query #' + msg.queryId + ' answered', 'ai');
+        } catch (e) { /* bridge offline */ }
+        return;
+      }
+
+      if (msg.type === 'SEND_SELECTION_TO_BRIDGE') {
+        try {
+          await fetch(BRIDGE + '/api/figma/selection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ elements: msg.elements, context: { title: 'Figma Selection' } })
+          });
+          addLog('Pushed selection to AI bridge');
+        } catch (e) { /* bridge offline */ }
+      }
+    };
   </script>
 </body>
 </html>

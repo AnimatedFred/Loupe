@@ -2,15 +2,97 @@
 figma.showUI(__html__, { width: 340, height: 500, themeColors: true });
 
 figma.ui.onmessage = async (msg) => {
+
+  // ── Query: run code and return result to the UI for posting back to Railway ──
+  if (msg.type === 'FIGMA_QUERY') {
+    try {
+      const fn = new Function('figma', 'return (async () => { ' + msg.code + ' })()');
+      const result = await fn(figma);
+      figma.ui.postMessage({ type: 'QUERY_RESULT', queryId: msg.queryId, result });
+    } catch (err) {
+      figma.ui.postMessage({ type: 'QUERY_RESULT', queryId: msg.queryId, error: err.message });
+    }
+    return;
+  }
+
+  // ── EVAL: run arbitrary write code in the Figma sandbox ───────────────────
   if (msg.type === 'EVAL') {
     try {
-      const code = msg.data.code;
+      const code = msg.data?.code || msg.code;
       const fn = new Function('figma', 'return (async () => { ' + code + ' })()');
       await fn(figma);
       figma.notify('AI Design Sync Complete');
     } catch (err) {
       figma.notify('AI Error: ' + err.message);
     }
+    return;
+  }
+
+  // ── Named write operations ─────────────────────────────────────────────────
+  if (msg.type === 'CREATE_FRAME') {
+    const f = figma.createFrame();
+    f.name = msg.name || 'Frame';
+    f.x = msg.x ?? figma.viewport.center.x;
+    f.y = msg.y ?? figma.viewport.center.y;
+    if (msg.width && msg.height) f.resize(msg.width, msg.height);
+    figma.currentPage.appendChild(f);
+    figma.viewport.scrollAndZoomIntoView([f]);
+    figma.notify(`Created frame "${f.name}"`);
+    return;
+  }
+
+  if (msg.type === 'SET_TEXT') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node || node.type !== 'TEXT') { figma.notify('No text node found'); return; }
+    await figma.loadFontAsync(node.fontName);
+    node.characters = msg.text || '';
+    figma.notify('Text updated');
+    return;
+  }
+
+  if (msg.type === 'SET_FILL') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node || !('fills' in node)) { figma.notify('No fillable node found'); return; }
+    const rgb = cssColorToRgb(msg.color || '#000000');
+    node.fills = [{ type: 'SOLID', color: rgb }];
+    figma.notify('Fill updated');
+    return;
+  }
+
+  if (msg.type === 'MOVE') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node) { figma.notify('No node found'); return; }
+    if (msg.x !== undefined) node.x = msg.x;
+    if (msg.y !== undefined) node.y = msg.y;
+    if (msg.width && msg.height) node.resize(msg.width, msg.height);
+    return;
+  }
+
+  if (msg.type === 'DELETE') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node) { figma.notify('No node found'); return; }
+    node.remove();
+    figma.notify('Node deleted');
+    return;
+  }
+
+  if (msg.type === 'CLONE') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node) { figma.notify('No node found'); return; }
+    const clone = node.clone();
+    if (msg.x !== undefined) clone.x = msg.x;
+    if (msg.y !== undefined) clone.y = msg.y;
+    figma.viewport.scrollAndZoomIntoView([clone]);
+    figma.notify('Node cloned');
+    return;
+  }
+
+  if (msg.type === 'SWAP_COMPONENT') {
+    const node = msg.nodeId ? figma.getNodeById(msg.nodeId) : figma.currentPage.selection[0];
+    if (!node || node.type !== 'INSTANCE') { figma.notify('No component instance selected'); return; }
+    const component = await figma.importComponentByKeyAsync(msg.componentKey);
+    node.swapComponent(component);
+    figma.notify('Component swapped');
     return;
   }
 
@@ -330,6 +412,11 @@ function parseFontFamily(cssFamily) {
   return first || "Inter";
 }
 
+
+function cssColorToRgb(color) {
+  const { r, g, b } = parseRgb(color);
+  return { r: r / 255, g: g / 255, b: b / 255 };
+}
 
 function parseRgb(color) {
   if (typeof color !== 'string') return { r: 0, g: 0, b: 0 };

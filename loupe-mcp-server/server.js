@@ -61,6 +61,11 @@ let currentAiMessage = null;
 let aiMessageCounter = 0;
 let lastFigmaHeartbeat = 0;
 
+// Query/response bridge (bidirectional: AI reads Figma state)
+let pendingQuery = null;
+let queryCounter = 0;
+const queryResults = {}; // { [queryId]: { result, error } }
+
 // --- HTTP Bridge (Extension Gateway) ---
 const app = express();
 app.use(cors());
@@ -118,6 +123,39 @@ app.post("/api/ai/push", (req, res) => {
   res.json({ ok: true, id: aiMessageCounter });
 });
 
+// Bidirectional query: AI posts JS code, long-polls until the Figma plugin
+// executes it and posts the result back via /api/figma/result.
+app.post("/api/ai/query", async (req, res) => {
+  queryCounter++;
+  const queryId = queryCounter;
+  pendingQuery = { id: queryId, code: req.body.code, timestamp: Date.now() };
+  console.error(`[Loupe MCP] Query #${queryId} pending`);
+
+  const deadline = Date.now() + 15000; // 15-second timeout
+  while (Date.now() < deadline) {
+    if (queryResults[queryId]) {
+      const r = queryResults[queryId];
+      delete queryResults[queryId];
+      pendingQuery = null;
+      console.error(`[Loupe MCP] Query #${queryId} resolved`);
+      return res.json({ ok: true, queryId, result: r.result, error: r.error });
+    }
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  pendingQuery = null;
+  res.status(408).json({ error: 'Query timed out — is the Figma plugin open and connected?' });
+});
+
+// Figma plugin posts query results here
+app.post("/api/figma/result", (req, res) => {
+  const { queryId, result, error } = req.body;
+  if (queryId) {
+    queryResults[queryId] = { result, error };
+    console.error(`[Loupe MCP] Received result for query #${queryId}`);
+  }
+  res.json({ ok: true });
+});
+
 app.get("/api/auth/me", async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthenticated' });
@@ -137,6 +175,7 @@ app.get("/api/state", (req, res) => {
     prompt: lastPrompt,
     screenshot: lastScreenshot,
     aiMessage: currentAiMessage,
+    pendingQuery: pendingQuery,
     figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
     tier: lastTier,
     email: lastEmail
@@ -171,18 +210,40 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: "get_selected_elements",
-        description: "Retrieves the high-fidelity UI elements currently selected in the browser.",
+        description: "Retrieves the high-fidelity UI elements currently selected in the browser extension.",
         inputSchema: { type: "object", properties: {} },
       },
       {
-        name: "push_to_figma",
-        description: "Sends UI elements or layout instructions directly to the Figma canvas.",
+        name: "query_figma",
+        description: "Runs JavaScript in the Figma Plugin API sandbox and returns the result. Use this to READ from Figma: get selection, traverse the page tree, read styles, find nodes, inspect components, etc. The code runs inside the Figma plugin — return a value to get it back. Examples: 'return figma.currentPage.selection.map(n=>({id:n.id,name:n.name,type:n.type}))' or 'return figma.currentPage.children.map(n=>n.name)'",
         inputSchema: {
           type: "object",
           properties: {
-            type: { type: "string", enum: ["IMPORT_ELEMENTS", "EVAL"], description: "Type of action" },
-            elements: { type: "array", items: { type: "object" }, description: "List of UI elements to import" },
-            code: { type: "string", description: "JavaScript code to execute in Figma sandbox (only for type EVAL)" },
+            code: { type: "string", description: "JavaScript to execute in the Figma plugin sandbox. Must return the data you want." }
+          },
+          required: ["code"]
+        },
+      },
+      {
+        name: "push_to_figma",
+        description: "Sends commands to the Figma canvas. Use IMPORT_ELEMENTS to place captured web UI, EVAL to run any write operation via the Figma Plugin API, CREATE_FRAME to make a new frame, SET_TEXT to update text content, SET_FILL to change colors, MOVE to reposition a node, DELETE to remove nodes, or CLONE to duplicate.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            type: {
+              type: "string",
+              enum: ["IMPORT_ELEMENTS", "EVAL", "CREATE_FRAME", "SET_TEXT", "SET_FILL", "MOVE", "DELETE", "CLONE", "SET_STYLE", "SWAP_COMPONENT"],
+              description: "Operation type"
+            },
+            elements: { type: "array", items: { type: "object" }, description: "UI elements to import (IMPORT_ELEMENTS only)" },
+            code: { type: "string", description: "Figma Plugin API JS to execute (EVAL only)" },
+            nodeId: { type: "string", description: "Target node ID (most operations)" },
+            name: { type: "string", description: "Name for new frame (CREATE_FRAME)" },
+            x: { type: "number" }, y: { type: "number" },
+            width: { type: "number" }, height: { type: "number" },
+            text: { type: "string", description: "Text content (SET_TEXT)" },
+            color: { type: "string", description: "CSS color string (SET_FILL)" },
+            componentKey: { type: "string", description: "Component key to swap to (SWAP_COMPONENT)" },
             context: { type: "object", properties: { title: { type: "string" } } }
           },
           required: ["type"]
@@ -219,6 +280,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content.push({ type: "image", data: base64Data, mimeType });
     }
     return { content };
+  }
+
+  if (name === "query_figma") {
+    const endpoint = RELAY_ENDPOINT || `http://localhost:${BRIDGE_PORT}`;
+    try {
+      const res = await fetch(`${endpoint}/api/ai/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: args.code })
+      });
+      const data = await res.json();
+      if (!res.ok) return { content: [{ type: "text", text: data.error || 'Query failed' }] };
+      if (data.error) return { content: [{ type: "text", text: `Figma error: ${data.error}` }] };
+      return { content: [{ type: "text", text: JSON.stringify(data.result, null, 2) }] };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Failed to reach Figma bridge: ${e.message}` }] };
+    }
   }
 
   if (name === "push_to_figma") {
