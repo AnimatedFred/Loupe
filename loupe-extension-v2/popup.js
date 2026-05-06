@@ -401,20 +401,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = figmaTokenInput.value.trim();
     if (!token) return;
 
-    // Save token keyed by user ID so multiple Loupe accounts don't share a PAT
-    const { loupe_session } = await chrome.storage.local.get('loupe_session');
-    const userId = loupe_session?.user?.id;
+    // Get a fresh session from the background worker (triggers token refresh if expired)
+    const freshSession = await new Promise(resolve => {
+      chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' }, res => {
+        void chrome.runtime.lastError;
+        resolve(res?.session || null);
+      });
+    });
+
+    const userId = freshSession?.user?.id;
     if (userId) {
       await chrome.storage.local.set({ [`figma_pat_${userId}`]: token });
     }
 
     // Store server-side so Railway survives restarts with the correct per-user PAT
     let serverSaveOk = false;
-    if (loupe_session?.accessToken) {
+    if (freshSession?.accessToken) {
       try {
         const saveRes = await fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loupe_session.accessToken}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${freshSession.accessToken}` },
           body: JSON.stringify({ pat: token })
         });
         serverSaveOk = saveRes.ok;
