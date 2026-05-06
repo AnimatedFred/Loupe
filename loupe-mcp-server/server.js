@@ -275,17 +275,39 @@ const figmaAuthSessions = new Map();
 const BRIDGE_URL = process.env.BRIDGE_URL || 'https://web-production-9cce.up.railway.app';
 const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
 
+// Minimal cookie parser — avoids adding cookie-parser dependency
+function getCookies(req) {
+  const cookies = {};
+  (req.headers.cookie || '').split(';').forEach(part => {
+    const [k, ...v] = part.trim().split('=');
+    if (k) cookies[k.trim()] = decodeURIComponent(v.join('='));
+  });
+  return cookies;
+}
+
 // Step 1 — plugin opens this URL to start OAuth
+// State is stored server-side and relayed via cookie so the redirect_to URL
+// exactly matches Supabase's allowlist (no query string appended).
 app.get('/auth/figma/start', (req, res) => {
-  const state = req.query.state || randomUUID().slice(0, 16);
-  const callbackUrl = `${BRIDGE_URL}/auth/figma/callback?state=${state}`;
+  const clientState = req.query.state || randomUUID().slice(0, 16);
+  const cookieId    = randomUUID();
+  figmaAuthSessions.set('cookie:' + cookieId, {
+    clientState,
+    expiresAt: Date.now() + 10 * 60 * 1000
+  });
+  const callbackUrl = `${BRIDGE_URL}/auth/figma/callback`;
   const oauthUrl = `${SUPABASE_URL_PUBLIC}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}`;
+  res.setHeader('Set-Cookie', `loupe_oid=${cookieId}; Path=/auth/figma; HttpOnly; Secure; SameSite=Lax; Max-Age=600`);
   res.redirect(oauthUrl);
 });
 
 // Step 2 — Supabase redirects here with token in the URL fragment
 app.get('/auth/figma/callback', (req, res) => {
-  const state = (req.query.state || '').replace(/[^a-zA-Z0-9-]/g, '');
+  const cookies = getCookies(req);
+  const cookieId = cookies.loupe_oid || '';
+  const pending = cookieId ? figmaAuthSessions.get('cookie:' + cookieId) : null;
+  const state = pending ? pending.clientState : '';
+  if (pending) figmaAuthSessions.delete('cookie:' + cookieId);
   res.setHeader('Content-Type', 'text/html');
   res.send(`<!DOCTYPE html>
 <html>
