@@ -303,40 +303,53 @@ app.get('/auth/figma/callback', (req, res) => {
   var hash = location.hash.slice(1);
   var params = new URLSearchParams(hash);
   var accessToken = params.get('access_token');
-  if (accessToken) {
+  function setMsg(m, s) {
+    document.getElementById('msg').textContent = m;
+    document.getElementById('sub').textContent = s || '';
+  }
+  if (!accessToken) {
+    setMsg('Sign-in failed', 'No token received from Google. Please try again.');
+  } else if (!state) {
+    setMsg('Sign-in failed', 'Session state missing — please retry from the Figma plugin.');
+  } else {
     fetch('/auth/figma/store', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ state: state, accessToken: accessToken })
-    }).then(function(r) { return r.json(); }).then(function(d) {
+    }).then(function(r) {
+      if (!r.ok) return r.text().then(function(t) { throw new Error('Server error ' + r.status + ': ' + t); });
+      return r.json();
+    }).then(function(d) {
       if (d.ok) {
-        document.getElementById('msg').textContent = '✓ Signed in!';
-        document.getElementById('sub').textContent = 'You can close this tab and return to Figma.';
+        setMsg('✓ Signed in!', 'You can close this tab and return to Figma.');
       } else {
-        document.getElementById('msg').textContent = 'Sign-in failed. Please try again.';
+        setMsg('Sign-in failed', d.error || 'Unknown error. Please try again.');
       }
-    }).catch(function() {
-      document.getElementById('msg').textContent = 'Sign-in failed. Please try again.';
+    }).catch(function(err) {
+      setMsg('Sign-in failed', err.message);
     });
-  } else {
-    document.getElementById('msg').textContent = 'Sign-in failed — no token received.';
   }
 </script>
 </body></html>`);
 });
 
 // Step 3 — callback page POSTs token here
+// We store the token immediately and resolve tier lazily when the plugin polls
+// /api/state (which does server-side verification with the Bearer token).
 app.post('/auth/figma/store', async (req, res) => {
   const { state, accessToken } = req.body || {};
   if (!state || !accessToken) return res.status(400).json({ error: 'Missing state or token' });
-  const auth = await verifyToken({ headers: { authorization: `Bearer ${accessToken}` } });
-  if (!auth) return res.status(401).json({ error: 'Invalid token' });
-  figmaAuthSessions.set(state, {
-    accessToken,
-    tier: auth.tier,
-    email: auth.user.email,
-    expiresAt: Date.now() + 10 * 60 * 1000
-  });
+
+  // Best-effort tier lookup — if Supabase isn't reachable, we still store the
+  // session so sign-in succeeds; the tier will update on the first /api/state poll.
+  let tier = 'free';
+  let email = '';
+  try {
+    const auth = await verifyToken({ headers: { authorization: `Bearer ${accessToken}` } });
+    if (auth) { tier = auth.tier; email = auth.user.email; }
+  } catch (_) {}
+
+  figmaAuthSessions.set(state, { accessToken, tier, email, expiresAt: Date.now() + 10 * 60 * 1000 });
   res.json({ ok: true });
 });
 
