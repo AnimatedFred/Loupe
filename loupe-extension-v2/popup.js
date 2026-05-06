@@ -408,13 +408,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       await chrome.storage.local.set({ [`figma_pat_${userId}`]: token });
     }
 
-    // Also store server-side (best-effort) so Railway can report correct status per user
+    // Store server-side so Railway survives restarts with the correct per-user PAT
+    let serverSaveOk = false;
     if (loupe_session?.accessToken) {
-      fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loupe_session.accessToken}` },
-        body: JSON.stringify({ pat: token })
-      }).catch(() => {});
+      try {
+        const saveRes = await fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loupe_session.accessToken}` },
+          body: JSON.stringify({ pat: token })
+        });
+        serverSaveOk = saveRes.ok;
+        if (!saveRes.ok) {
+          const err = await saveRes.json().catch(() => ({}));
+          console.error('[Loupe] Failed to save PAT to server:', saveRes.status, err);
+        }
+      } catch (e) {
+        console.error('[Loupe] Network error saving PAT to server:', e.message);
+      }
     }
 
     const mcpWithFigma = {
@@ -429,6 +439,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Replace the input UI with a copy-able config snippet
     restInputUi.innerHTML = `
+      <div style="font-size:11px; margin-bottom:8px; color:${serverSaveOk ? 'var(--success)' : '#f59e0b'};">
+        ${serverSaveOk ? '✓ Token saved to your account.' : '⚠ Saved locally only — sign in to persist across devices.'}
+      </div>
       <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
         Add this to your MCP client config (Claude Desktop / Cursor):
       </div>
