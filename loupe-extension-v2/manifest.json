@@ -13,7 +13,8 @@
     "sidePanel",
     "downloads",
     "offscreen",
-    "identity"
+    "identity",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
