@@ -465,6 +465,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 
+// ── Tier heartbeat ────────────────────────────────────────────────────────────
+// Pushes the auth token to /api/auth/sync every minute so the Figma plugin
+// always sees the correct tier even after a Railway restart.
+async function syncTierToBridge() {
+  try {
+    const { loupe_session } = await chrome.storage.local.get('loupe_session');
+    if (!loupe_session?.accessToken) return;
+    await fetch('https://web-production-9cce.up.railway.app/api/auth/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${loupe_session.accessToken}`
+      }
+    });
+  } catch (e) { /* fail silently */ }
+}
+
+chrome.alarms.create('bridgeHeartbeat', { periodInMinutes: 1 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'bridgeHeartbeat') syncTierToBridge();
+});
+
+// Sync immediately whenever the service worker activates
+syncTierToBridge();
+
 // Clear badge and stored selection when the user navigates to an external page
 // Exclude chrome-extension:// URLs so opening editor.html doesn't wipe the selection
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

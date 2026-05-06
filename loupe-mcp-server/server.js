@@ -257,6 +257,17 @@ app.get("/api/auth/me", async (req, res) => {
   res.json({ email: auth.user.email, tier: auth.tier });
 });
 
+// Lightweight tier-only sync — called by the extension heartbeat so the
+// Figma plugin always sees the correct tier even after a Railway restart.
+app.post("/api/auth/sync", async (req, res) => {
+  const auth = await verifyToken(req);
+  if (auth?.tier) {
+    lastTier = auth.tier;
+    lastEmail = auth.user?.email || lastEmail;
+  }
+  res.json({ ok: true, tier: lastTier });
+});
+
 app.get("/api/state", (req, res) => {
   // If the request comes from Figma (we can check a header or just assume any poll counts)
   if (req.query.source === 'figma') {
