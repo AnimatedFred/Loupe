@@ -282,6 +282,7 @@
 
     if (msg.type === 'HIDE_UI') {
       if (toolbar) toolbar.style.opacity = '0';
+      if (toast) toast.style.opacity = '0';
       document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
       sendResponse({ ok: true });
       return true;
@@ -289,6 +290,7 @@
 
     if (msg.type === 'SHOW_UI') {
       if (toolbar) toolbar.style.opacity = '';
+      if (toast) toast.style.opacity = '';
       document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
       sendResponse({ ok: true });
       return true;
