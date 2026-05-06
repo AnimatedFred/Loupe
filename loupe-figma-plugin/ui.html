@@ -3,7 +3,7 @@
 <head>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
+
     :root {
       --bg: #0f172a;
       --surface: #1e293b;
@@ -14,20 +14,20 @@
       --success: #10b981;
     }
 
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: 'Inter', sans-serif;
       background: var(--bg);
       color: var(--text);
-      margin: 0;
       padding: 16px;
       overflow: hidden;
       width: 100%;
-      box-sizing: border-box;
     }
 
-    .hub-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+    .title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
 
-    .status-card {
+    .card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -36,47 +36,30 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      transition: all 0.3s;
+      transition: border-color 0.2s;
     }
-    .status-card.active { border-color: var(--accent); background: rgba(99, 102, 241, 0.05); }
+    .card.active { border-color: var(--accent); background: rgba(99,102,241,0.05); }
 
     .icon-box {
-      width: 32px;
-      height: 32px;
+      width: 32px; height: 32px;
       border-radius: 8px;
       background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
+    .card-info { flex: 1; }
+    .card-label { font-size: 10px; font-weight: 600; color: var(--text-dim); margin-bottom: 2px; }
+    .card-value { font-size: 13px; font-weight: 600; }
 
-    .status-info { flex: 1; }
-    .status-label { font-size: 11px; font-weight: 600; color: var(--text-dim); }
-    .status-value { font-size: 13px; font-weight: 600; }
-
-    .indicator { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
-    .indicator.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .indicator.pulse { background: var(--accent); animation: pulse 1.5s infinite; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; }
+    .dot.on  { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .dot.pulse { background: var(--accent); animation: pulse 1.5s infinite; }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+      0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.7); }
+      70%  { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
+      100% { box-shadow: 0 0 0 0   rgba(99,102,241,0); }
     }
-
-    .feed {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      height: 120px;
-      margin-top: 20px;
-      padding: 12px;
-      font-size: 11px;
-      overflow-y: auto;
-    }
-    .feed-title { font-size: 10px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; }
-    .feed-item { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    .feed-time { color: var(--text-dim); }
 
     button {
       width: 100%;
@@ -88,32 +71,51 @@
       font-weight: 600;
       margin-top: 12px;
       cursor: pointer;
+      font-size: 13px;
     }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .feed {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      height: 120px;
+      margin-top: 16px;
+      padding: 10px 12px;
+      font-size: 11px;
+      overflow-y: auto;
+    }
+    .feed-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .feed-row { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .feed-row:last-child { border-bottom: none; }
+    .feed-time { color: var(--text-dim); }
   </style>
 </head>
 <body>
-  <div class="hub-title">Intelligence Hub</div>
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+    <div class="title" style="margin-bottom:0;">Intelligence Hub</div>
+    <span id="tierBadge" style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:100px; background:#1e293b; color:#94a3b8; border:1px solid #334155;">FREE</span>
+  </div>
 
-  <div class="status-card" id="extPill">
+  <div class="card" id="extCard">
     <div class="icon-box">🔍</div>
-    <div class="status-info">
-      <div class="status-label">Extension Connection</div>
-      <div class="status-value" id="extStatus">Waiting...</div>
+    <div class="card-info">
+      <div class="card-label">Extension Connection</div>
+      <div class="card-value" id="extStatus">Waiting...</div>
     </div>
-    <div class="indicator" id="extIndicator"></div>
+    <div class="dot" id="extDot"></div>
   </div>
 
-  <div class="status-card" id="aiPill">
+  <div class="card" id="aiCard">
     <div class="icon-box">🧠</div>
-    <div class="status-info">
-      <div class="status-label">Claude AI Connection</div>
-      <div class="status-value" id="aiStatus">Idle</div>
+    <div class="card-info">
+      <div class="card-label">Claude AI Connection</div>
+      <div class="card-value" id="aiStatus">Idle</div>
     </div>
-    <div class="indicator" id="aiIndicator"></div>
+    <div class="dot" id="aiDot"></div>
   </div>
 
-  <button id="syncBtn" disabled>Sync Selection</button>
+  <button id="syncBtn" disabled>Sync Selection to Figma</button>
 
   <div class="feed">
     <div class="feed-title">Activity Feed</div>
@@ -121,91 +123,115 @@
   </div>
 
   <script>
-    const extStatus = document.getElementById('extStatus');
-    const extIndicator = document.getElementById('extIndicator');
-    const aiStatus = document.getElementById('aiStatus');
-    const aiIndicator = document.getElementById('aiIndicator');
-    const extPill = document.getElementById('extPill');
-    const aiPill = document.getElementById('aiPill');
-    const syncBtn = document.getElementById('syncBtn');
-    const feedList = document.getElementById('feedList');
-
-    let lastProcessedAiId = 0;
     let lastData = null;
-    let lastProcessedSyncId = "";
+    let lastProcessedAiId = 0;
+    let lastProcessedSyncId = '';
 
-    function addLog(msg, type = 'info') {
-      const item = document.createElement('div');
-      item.className = 'feed-item';
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      item.innerHTML = `
-        <div style="color: ${type === 'ai' ? '#818cf8' : '#10b981'}">${msg}</div>
-        <div class="feed-time">${time}</div>
-      `;
+    function addLog(msg, type) {
+      const feedList = document.getElementById('feedList');
       if (feedList.innerText.includes('Waiting')) feedList.innerHTML = '';
-      feedList.prepend(item);
+      const row = document.createElement('div');
+      row.className = 'feed-row';
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      row.innerHTML = `<span style="color:${type === 'ai' ? '#818cf8' : '#10b981'}">${msg}</span><span class="feed-time">${time}</span>`;
+      feedList.prepend(row);
     }
 
     async function checkState() {
       try {
         const res = await fetch('https://web-production-9cce.up.railway.app/api/state?source=figma');
-        if (res.ok) {
-          const data = await res.json();
-          lastData = data;
-          
-          // Extension Status
-          if (data.elements && data.elements.length > 0) {
-            extIndicator.className = 'indicator on';
-            extStatus.innerText = 'Syncing ' + data.elements.length + ' elements';
-            extPill.classList.add('active');
-            syncBtn.disabled = false;
-            
-            const syncId = data.elements[0].rect.top + '-' + data.elements.length;
-            if (syncId !== lastProcessedSyncId) {
-              lastProcessedSyncId = syncId;
-              addLog(`Captured ${data.elements.length} elements`);
-            }
-          } else {
-            extIndicator.className = 'indicator';
-            extStatus.innerText = 'Waiting for selection...';
-            extPill.classList.remove('active');
-            syncBtn.disabled = true;
-          }
+        if (!res.ok) throw new Error('offline');
+        const data = await res.json();
+        lastData = data;
 
-          // AI Status
-          if (data.aiMessage) {
-            aiIndicator.className = 'indicator pulse';
-            aiStatus.innerText = 'Command Ready';
-            aiPill.classList.add('active');
-            
-            if (data.aiMessage.id > lastProcessedAiId) {
-              lastProcessedAiId = data.aiMessage.id;
-              addLog(`AI: ${data.aiMessage.type} Instruction`, 'ai');
-              parent.postMessage({ 
-                pluginMessage: { type: data.aiMessage.type, data: data.aiMessage } 
-              }, '*');
-            }
-          } else {
-            aiIndicator.className = 'indicator';
-            aiStatus.innerText = 'Idle';
-            aiPill.classList.remove('active');
-          }
+        const isPro = data.tier === 'pro';
+
+        // Tier badge
+        const tierBadge = document.getElementById('tierBadge');
+        if (isPro) {
+          tierBadge.textContent = '⚡ PRO';
+          tierBadge.style.background = 'rgba(99,102,241,0.15)';
+          tierBadge.style.color = '#818cf8';
+          tierBadge.style.border = '1px solid rgba(99,102,241,0.3)';
+        } else {
+          tierBadge.textContent = 'FREE';
+          tierBadge.style.background = '#1e293b';
+          tierBadge.style.color = '#94a3b8';
+          tierBadge.style.border = '1px solid #334155';
         }
+
+        // Sync button — locked for free tier
+        const syncBtn = document.getElementById('syncBtn');
+        if (!isPro) {
+          syncBtn.disabled = false;
+          syncBtn.textContent = '⚡ Get Loupe Pro';
+          syncBtn.style.background = 'var(--accent)';
+          syncBtn.style.color = 'white';
+          syncBtn.style.cursor = 'pointer';
+          syncBtn.onclick = () => {
+            // Open web dashboard for upgrade
+            window.open('https://web-production-9cce.up.railway.app/#pricing', '_blank');
+          };
+        } else {
+          syncBtn.textContent = 'Sync Selection to Figma';
+          syncBtn.style.background = '';
+          syncBtn.style.color = '';
+          syncBtn.style.cursor = '';
+          syncBtn.onclick = () => {
+            if (lastData?.elements) {
+              parent.postMessage({ pluginMessage: { type: 'IMPORT_ELEMENTS', elements: lastData.elements } }, '*');
+              addLog('Sent ' + lastData.elements.length + ' elements to canvas');
+            }
+          };
+        }
+
+        // Extension status
+        if (isPro && data.elements && data.elements.length > 0) {
+          document.getElementById('extDot').className = 'dot on';
+          document.getElementById('extStatus').textContent = 'Syncing ' + data.elements.length + ' elements';
+          document.getElementById('extCard').classList.add('active');
+          syncBtn.disabled = false;
+
+          const syncId = (data.elements[0].rect?.top || 0) + '-' + data.elements.length;
+          if (syncId !== lastProcessedSyncId) {
+            lastProcessedSyncId = syncId;
+            addLog('Captured ' + data.elements.length + ' elements');
+          }
+        } else if (!isPro) {
+          document.getElementById('extDot').className = 'dot';
+          document.getElementById('extStatus').textContent = 'Pro plan required';
+          document.getElementById('extCard').classList.remove('active');
+        } else {
+          document.getElementById('extDot').className = 'dot';
+          document.getElementById('extStatus').textContent = 'Waiting for selection...';
+          document.getElementById('extCard').classList.remove('active');
+          syncBtn.disabled = true;
+        }
+
+        // AI status
+        if (data.aiMessage) {
+          document.getElementById('aiDot').className = 'dot pulse';
+          document.getElementById('aiStatus').textContent = 'Command Ready';
+          document.getElementById('aiCard').classList.add('active');
+
+          if (data.aiMessage.id > lastProcessedAiId) {
+            lastProcessedAiId = data.aiMessage.id;
+            addLog('AI: ' + data.aiMessage.type + ' instruction', 'ai');
+            parent.postMessage({ pluginMessage: { type: data.aiMessage.type, data: data.aiMessage } }, '*');
+          }
+        } else {
+          document.getElementById('aiDot').className = 'dot';
+          document.getElementById('aiStatus').textContent = isPro ? 'Idle' : 'Pro plan required';
+          document.getElementById('aiCard').classList.remove('active');
+        }
+
       } catch (e) {
-        extStatus.innerText = 'Bridge Offline';
-        extIndicator.className = 'indicator';
+        document.getElementById('extStatus').textContent = 'Bridge Offline';
+        document.getElementById('extDot').className = 'dot';
       }
     }
 
-    syncBtn.onclick = () => {
-      if (lastData && lastData.elements) {
-        parent.postMessage({ 
-          pluginMessage: { type: 'IMPORT_ELEMENTS', elements: lastData.elements } 
-        }, '*');
-      }
-    };
-
-    checkState(); // Register immediately on load
+    checkState();
     setInterval(checkState, 2000);
   </script>
 </body>

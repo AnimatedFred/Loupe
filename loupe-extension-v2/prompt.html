@@ -64,14 +64,9 @@
     .logo-icon {
       width: 28px;
       height: 28px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
       border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: white;
+      object-fit: cover;
+      display: block;
     }
 
     .hd-sep {
@@ -409,7 +404,7 @@
     <!-- Left: logo + page context -->
     <div class="hd-left">
       <div class="logo">
-        <div class="logo-icon">L</div>
+        <img class="logo-icon" src="icons/icon128.png" alt="Loupe">
         Prompt Studio
       </div>
       <div class="hd-sep"></div>

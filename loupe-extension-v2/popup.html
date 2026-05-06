@@ -16,18 +16,30 @@
       --text: #0F172A;
       --text-dim: #64748B;
       --success: #10B981;
+      --danger: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body { 
-      width: 320px; 
-      background: var(--bg); 
-      color: var(--text); 
-      font-family: 'Outfit', sans-serif; 
+
+    body {
+      width: 320px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
     }
+
+    /* --- Header --- */
+    .header {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-group { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block; }
 
     /* --- Tabs --- */
     .tabs {
@@ -37,110 +49,87 @@
     }
     .tab {
       flex: 1;
-      padding: 12px;
+      padding: 11px 0;
       text-align: center;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--text-dim);
       cursor: pointer;
       transition: all 0.2s;
       border-bottom: 2px solid transparent;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
-    .tab.active {
-      color: var(--accent);
-      border-bottom-color: var(--accent);
-    }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    /* --- Header --- */
-    .header {
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg);
-    }
-    .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .logo-icon {
-      width: 28px;
-      height: 28px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-    }
-
-    /* --- Content --- */
-    .view { display: none; padding: 20px; }
+    /* --- Views --- */
+    .view { display: none; padding: 16px; }
     .view.active { display: block; }
 
+    /* --- Shared components --- */
     .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      margin-bottom: 12px;
-      letter-spacing: 0.05em;
+      font-size: 10px; font-weight: 700; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 10px; margin-top: 4px;
     }
-
     .card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 14px;
     }
-
     .btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.2s;
+      width: 100%; padding: 11px; border-radius: 10px; border: none;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      font-size: 13px; transition: all 0.2s;
     }
     .btn-primary { background: var(--accent); color: white; }
     .btn-primary:hover { background: #4f46e5; }
     .btn-ghost { background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); }
+    .btn-upgrade { background: linear-gradient(135deg, #6366f1, #818cf8); color: white; }
 
-    .status-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .status-item:last-child { border-bottom: none; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
-    .dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
-
-    /* --- Capture View --- */
-    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    /* --- Capture view --- */
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .mode-btn {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
-      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 10px; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 6px; transition: all 0.2s; font-family: inherit;
     }
     .mode-btn:hover { border-color: var(--accent); background: white; }
     .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .mode-btn .label { font-weight: 700; font-size: 13px; }
-    .mode-btn .sub { font-size: 10px; opacity: 0.7; font-weight: 500; }
+    .mode-btn .label { font-weight: 700; font-size: 12px; }
+    .mode-btn .sub { font-size: 10px; opacity: 0.65; font-weight: 500; }
 
+    /* --- Status dots --- */
+    .status-row {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .status-row:last-child { border-bottom: none; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
+    .dot.on { background: var(--success); box-shadow: 0 0 5px var(--success); }
+
+    /* --- MCP lock overlay --- */
+    .lock-wrap { position: relative; }
+    .lock-blur { filter: blur(3px); pointer-events: none; user-select: none; opacity: 0.4; }
+    .lock-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; text-align: center; padding: 12px;
+    }
+
+    /* --- Account --- */
+    .tier-badge {
+      font-size: 10px; font-weight: 800; padding: 3px 8px;
+      border-radius: 100px; white-space: nowrap;
+    }
+    .tier-free { background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); }
+    .tier-pro  { background: var(--accent-soft); color: var(--accent); }
   </style>
 </head>
 <body>
 
   <header class="header">
     <div class="logo-group">
-      <div class="logo-icon">L</div>
+      <img class="logo-icon" src="icons/icon128.png" alt="Loupe">
       <div style="font-weight: 800; font-size: 16px;">Loupe</div>
     </div>
     <div id="bridge-status-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 100px; background: var(--bg2); color: var(--text-dim);">BRIDGE OFFLINE</div>
@@ -148,9 +137,11 @@
 
   <div class="tabs">
     <div class="tab active" data-view="capture">Capture</div>
-    <div class="tab" data-view="settings">Settings</div>
+    <div class="tab" data-view="mcp">MCP</div>
+    <div class="tab" data-view="account">Account</div>
   </div>
 
+  <!-- ── Capture ── -->
   <div class="view active" id="view-capture">
     <div class="section-label">Select Mode</div>
     <div class="mode-grid">
@@ -176,47 +167,98 @@
       </div>
     </div>
 
-    <div class="card" style="padding: 16px; text-align: center;">
+    <div class="card" style="text-align: center; padding: 14px;">
       <div style="font-weight: 700; font-size: 16px;" id="countText">0 Elements</div>
-      <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">Ready to push to Figma</div>
+      <div style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Ready to push to Figma</div>
     </div>
 
     <div class="section-label">Inventory</div>
-    <div id="elements-list" class="card" style="padding: 0; max-height: 140px; overflow-y: auto; margin-bottom: 20px;">
-        <div style="padding: 20px; text-align: center; color: var(--text-dim); font-size: 12px;">No elements selected</div>
+    <div id="elements-list" class="card" style="padding: 0; max-height: 130px; overflow-y: auto; margin-bottom: 16px;">
+      <div style="padding: 18px; text-align: center; color: var(--text-dim); font-size: 12px;">No elements selected</div>
     </div>
 
-    <button class="btn btn-primary" id="btn-sync">Push to Canvas</button>
+    <button class="btn btn-primary" id="btn-sync">Sync with Figma</button>
   </div>
 
-  <!-- Settings View -->
-  <div class="view" id="view-settings">
-    <div class="section-label">Connectivity Hub</div>
-    <div class="card">
-      <div class="status-item">
-        <span>Cloud Bridge (Railway)</span>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-weight: 700; font-size: 10px; color: var(--text-dim);" id="bridge-status-text">OFFLINE</span>
-          <div class="dot" id="bridge-dot"></div>
+  <!-- ── MCP ── -->
+  <div class="view" id="view-mcp">
+
+    <!-- PRO: shown when tier is pro -->
+    <div id="mcp-pro" style="display:none;">
+      <div class="section-label">Cloud Bridge</div>
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="status-row" style="padding: 10px 14px;">
+          <span>Railway Bridge</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="bridge-status-text">OFFLINE</span>
+            <div class="dot" id="bridge-dot"></div>
+          </div>
+        </div>
+        <div class="status-row" style="padding: 10px 14px;">
+          <span>Figma Plugin</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="figma-status-text">WAITING</span>
+            <div class="dot" id="figma-dot"></div>
+          </div>
         </div>
       </div>
-      <div class="status-item">
-        <span>Figma Plugin</span>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-weight: 700; font-size: 10px; color: var(--text-dim);" id="figma-status-text">WAITING</span>
-          <div class="dot" id="figma-dot"></div>
+
+      <div class="section-label">MCP Config</div>
+      <div class="card" style="padding: 12px;">
+        <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5;">Add this to your Claude Desktop or Cursor <code>settings.json</code>:</div>
+        <div style="background: #0f172a; color: #94a3b8; padding: 10px; border-radius: 8px; font-size: 10px; font-family: monospace; line-height: 1.6; overflow-x: auto; white-space: pre;" id="mcp-config-block"></div>
+        <button class="btn btn-ghost" id="btn-copy-mcp" style="margin-top: 10px; font-size: 12px; padding: 8px;">Copy Config</button>
+      </div>
+    </div>
+
+    <!-- FREE: lock overlay -->
+    <div id="mcp-locked" style="display:none;">
+      <div class="lock-wrap">
+        <div class="lock-blur">
+          <div class="section-label">Cloud Bridge</div>
+          <div class="card">
+            <div class="status-row">
+              <span>Railway Bridge</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:10px; font-weight:700; color:var(--text-dim);">ONLINE</span>
+                <div class="dot on"></div>
+              </div>
+            </div>
+            <div class="status-row">
+              <span>Figma Plugin</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:10px; font-weight:700; color:var(--text-dim);">ACTIVE</span>
+                <div class="dot on"></div>
+              </div>
+            </div>
+          </div>
+          <div class="section-label">MCP Config</div>
+          <div class="card">
+            <div style="background: #0f172a; color: #94a3b8; padding: 10px; border-radius: 8px; font-size: 10px; font-family: monospace; line-height: 1.6;">{"mcpServers":{"loupe":{<br>  "command":"npx",<br>  "args":["-y","loupe-intelligence"]<br>}}}</div>
+          </div>
+        </div>
+        <div class="lock-overlay">
+          <div style="font-size: 28px;">🔒</div>
+          <div style="font-weight: 800; font-size: 15px;">Pro Feature</div>
+          <div style="font-size: 11px; color: var(--text-dim); line-height: 1.5; max-width: 220px;">MCP Bridge connects Loupe to Claude and Cursor. Upgrade to unlock it.</div>
+          <button class="btn btn-upgrade" id="btn-upgrade-mcp" style="margin-top: 4px; padding: 10px;">Upgrade to Pro — $19/mo</button>
         </div>
       </div>
     </div>
 
-    <div class="section-label">Account</div>
+    <!-- Loading state (shown before tier is known) -->
+    <div id="mcp-loading" style="padding: 40px 0; text-align:center; color: var(--text-dim); font-size: 12px;">Loading...</div>
+  </div>
+
+  <!-- ── Account ── -->
+  <div class="view" id="view-account">
 
     <!-- Signed-out state -->
-    <div class="card" id="auth-signed-out">
-      <p style="font-size: 11px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.5;">Sign in to unlock Pro features: unlimited elements, MCP sync, and Figma integration.</p>
-      <div id="auth-error" style="display:none; font-size:11px; color:#dc2626; background:#fef2f2; border-radius:6px; padding:8px 10px; margin-bottom:10px; word-break:break-word;"></div>
-      <button class="btn btn-primary" id="btn-sign-in" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-        <svg width="16" height="16" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div id="auth-signed-out">
+      <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6;">Sign in to sync your plan across the extension, Figma plugin, and web dashboard.</p>
+      <div id="auth-error" style="display:none; font-size:11px; color:#dc2626; background:#fef2f2; border-radius:8px; padding:8px 10px; margin-bottom:10px;"></div>
+      <button class="btn btn-primary" id="btn-sign-in" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom: 0;">
+        <svg width="15" height="15" viewBox="0 0 48 48" fill="none">
           <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
           <path d="M6.306 14.691l6.571 4.819C14.655 15.108 19.001 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
           <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
@@ -226,18 +268,37 @@
       </button>
     </div>
 
-    <!-- Signed-in state (hidden until auth loads) -->
-    <div class="card" id="auth-signed-in" style="display: none;">
-      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <img id="auth-avatar" src="" width="36" height="36" style="border-radius: 50%; border: 2px solid var(--border); display: none;" />
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="auth-name">—</div>
-          <div style="font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="auth-email">—</div>
+    <!-- Signed-in state -->
+    <div id="auth-signed-in" style="display:none;">
+      <div class="card" style="display:flex; align-items:center; gap:12px;">
+        <img id="auth-avatar" src="" width="40" height="40" style="border-radius:50%; border:2px solid var(--border); display:none; flex-shrink:0;" />
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="auth-name">—</div>
+          <div style="font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="auth-email">—</div>
         </div>
-        <div id="auth-tier-badge" style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); white-space: nowrap;">FREE</div>
+        <span id="auth-tier-badge" class="tier-badge tier-free">FREE</span>
       </div>
-      <button class="btn btn-ghost" id="btn-sign-out" style="font-size: 12px; padding: 8px;">Sign out</button>
+
+      <div class="card" style="padding: 12px 14px;">
+        <div class="status-row" style="padding: 6px 0;">
+          <span style="font-size:12px;">MCP Bridge</span>
+          <span id="acct-mcp-status" style="font-size:11px; font-weight:700; color: var(--danger);">Locked</span>
+        </div>
+        <div class="status-row" style="padding: 6px 0;">
+          <span style="font-size:12px;">Figma Sync</span>
+          <span style="font-size:11px; font-weight:700; color: var(--success);">Active</span>
+        </div>
+      </div>
+
+      <div id="acct-upgrade-cta" style="display:none; background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius:12px; padding:14px; margin-bottom:14px; text-align:center;">
+        <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Unlock MCP Bridge</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">Connect to Claude Desktop &amp; Cursor. Unlimited elements, priority support.</div>
+        <button class="btn btn-upgrade" id="btn-upgrade-account" style="padding: 9px;">Upgrade to Pro — $19/mo</button>
+      </div>
+
+      <button class="btn btn-ghost" id="btn-sign-out" style="font-size:12px; padding:9px;">Sign out</button>
     </div>
+
   </div>
 
   <script src="popup.js"></script>

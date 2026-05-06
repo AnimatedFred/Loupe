@@ -52,6 +52,8 @@ let lastElements = [];
 let lastContext = null;
 let lastPrompt = "";
 let lastScreenshot = null;
+let lastTier = 'free';
+let lastEmail = '';
 
 // AI Bridge State
 let currentAiMessage = null;
@@ -63,13 +65,31 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-app.post("/api/update", (req, res) => {
+app.post("/api/update", async (req, res) => {
   const data = req.body;
   if (data.type === "ELEMENTS_UPDATE") {
-    lastElements = data.elements || [];
+    // Verify tier server-side — never trust the client-sent value
+    let verifiedTier = 'free';
+    if (!supabase) {
+      // Auth not configured on this server instance — open mode
+      verifiedTier = 'pro';
+    } else {
+      const auth = await verifyToken(req);
+      verifiedTier = auth?.tier || 'free';
+      lastEmail = auth?.user?.email || '';
+    }
+    lastTier = verifiedTier;
+
+    // Only store elements and screenshots for Pro users
+    if (verifiedTier === 'pro') {
+      lastElements   = data.elements || [];
+      lastScreenshot = data.screenshot || null;
+    } else {
+      lastElements   = [];
+      lastScreenshot = null;
+    }
     lastContext = data.context || lastContext;
-    lastPrompt = data.prompt || "";
-    lastScreenshot = data.screenshot || null;
+    lastPrompt  = data.prompt  || "";
   }
   res.json({ ok: true });
 });
@@ -105,7 +125,9 @@ app.get("/api/state", (req, res) => {
     prompt: lastPrompt,
     screenshot: lastScreenshot,
     aiMessage: currentAiMessage,
-    figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000 // Connected if seen in last 30s
+    figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
+    tier: lastTier,
+    email: lastEmail
   });
 });
 

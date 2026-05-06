@@ -42,7 +42,7 @@
     }
 
     .logo { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 28px; height: 28px; background: linear-gradient(135deg, var(--primary), #818cf8); border-radius: 8px; }
+    .logo-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block; }
 
     .toolbar-center {
       display: flex;
@@ -181,7 +181,7 @@
 </head>
 <body>
   <header>
-    <div class="logo"><div class="logo-icon"></div>Loupe Studio</div>
+    <div class="logo"><img class="logo-icon" src="icons/icon128.png" alt="Loupe">Loupe Studio</div>
     <div class="toolbar-center">
       <button class="tool-btn active" id="tool-select"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg></button>
       <button class="tool-btn" id="tool-rect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></button>

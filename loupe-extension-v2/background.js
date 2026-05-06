@@ -67,9 +67,11 @@ async function signIn() {
           tier = profiles[0]?.tier || 'free';
         } catch (_) { /* profile may not exist yet — default to free */ }
 
-        const session = { accessToken, refreshToken, user, tier, signedInAt: Date.now() };
+        const session = { accessToken, refreshToken, user, tier, signedInAt: Date.now(), tierCheckedAt: Date.now() };
         await chrome.storage.local.set({ loupe_session: session });
         console.log(`[Loupe Auth] Signed in as ${user.email} (${tier})`);
+        // Push tier to Railway so the Figma plugin sees it immediately
+        notifyBridge();
         resolve(session);
       } catch (e) {
         reject(e);
@@ -101,6 +103,19 @@ async function refreshSession() {
   }
 }
 
+async function fetchLiveTier(session) {
+  try {
+    const profiles = await supabaseFetch(
+      `/rest/v1/profiles?select=tier&id=eq.${session.user.id}`,
+      { headers: { 'Authorization': `Bearer ${session.accessToken}`, 'Accept': 'application/json' } }
+    );
+    return profiles[0]?.tier || 'free';
+  } catch (e) {
+    console.warn('[Loupe Auth] Tier fetch failed:', e.message);
+    return null;
+  }
+}
+
 async function signOut() {
   const { loupe_session } = await chrome.storage.local.get('loupe_session');
   if (loupe_session?.accessToken) {
@@ -115,14 +130,28 @@ async function signOut() {
 }
 
 async function getAuthState() {
-  const { loupe_session } = await chrome.storage.local.get('loupe_session');
+  let { loupe_session } = await chrome.storage.local.get('loupe_session');
   if (!loupe_session) return null;
 
-  // Refresh if token is older than 50 minutes (Supabase tokens last 60 min)
-  const age = Date.now() - (loupe_session.signedInAt || 0);
-  if (age > 50 * 60 * 1000) {
-    return await refreshSession();
+  // Refresh JWT if token is older than 50 minutes (Supabase tokens last 60 min)
+  const tokenAge = Date.now() - (loupe_session.signedInAt || 0);
+  if (tokenAge > 50 * 60 * 1000) {
+    loupe_session = await refreshSession() || loupe_session;
   }
+
+  // Re-fetch tier from Supabase if last checked more than 2 minutes ago
+  const tierAge = Date.now() - (loupe_session.tierCheckedAt || 0);
+  if (tierAge > 2 * 60 * 1000 && loupe_session.accessToken) {
+    const liveTier = await fetchLiveTier(loupe_session);
+    if (liveTier !== null) {
+      const tierChanged = liveTier !== loupe_session.tier;
+      loupe_session = { ...loupe_session, tier: liveTier, tierCheckedAt: Date.now() };
+      await chrome.storage.local.set({ loupe_session });
+      console.log(`[Loupe Auth] Tier refreshed: ${liveTier}`);
+      if (tierChanged) notifyBridge(); // Keep Railway in sync when tier changes
+    }
+  }
+
   return loupe_session;
 }
 
@@ -272,9 +301,11 @@ async function processQueue() {
 async function notifyBridge() {
   try {
     await LOUPE_CONFIG.refresh();
+    const { loupe_session } = await chrome.storage.local.get('loupe_session');
     const headers = { 'Content-Type': 'application/json' };
-    if (LOUPE_CONFIG.MCP_TOKEN) {
-      headers['Authorization'] = `Bearer ${LOUPE_CONFIG.MCP_TOKEN}`;
+    // Send the real Supabase access token so the server can verify tier server-side
+    if (loupe_session?.accessToken) {
+      headers['Authorization'] = `Bearer ${loupe_session.accessToken}`;
     }
 
     await fetch(LOUPE_CONFIG.MCP_ENDPOINT, {
@@ -323,6 +354,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case 'GET_AUTH_STATE': {
       getAuthState().then(session => safeSend(sendResponse, { ok: true, session }));
       return true;
+    }
+
+    case 'NOTIFY_BRIDGE': {
+      // Fire-and-forget: pushes current session token to bridge so Railway's lastTier updates
+      notifyBridge();
+      break;
     }
     case 'SELECTION_UPDATED': {
       const count = msg.count;

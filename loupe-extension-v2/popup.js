@@ -35,10 +35,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => window.close(), 100);
   });
 
+  let currentTier = 'free';
+
+  function renderSyncButton(isPro) {
+    if (isPro) {
+      btnSync.textContent = 'Sync with Figma';
+      btnSync.className   = 'btn btn-primary';
+      btnSync.style.cssText = '';
+    } else {
+      btnSync.textContent = '🔒 Sync with Figma — Pro';
+      btnSync.className   = 'btn';
+      btnSync.style.cssText = 'background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); cursor: pointer;';
+    }
+  }
+
   btnSync.onclick = async () => {
+    if (currentTier !== 'pro') {
+      // Switch to Account tab so user can upgrade
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelector('[data-view="account"]').classList.add('active');
+      document.getElementById('view-account').classList.add('active');
+      return;
+    }
+
     const stored = await chrome.storage.local.get(['selectedElements']);
     if (!stored.selectedElements || stored.selectedElements.length === 0) return;
-    
+
     btnSync.innerText = 'Syncing...';
     btnSync.disabled = true;
 
@@ -53,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       btnSync.innerText = 'Success!';
       setTimeout(() => {
-        btnSync.innerText = 'Push to Canvas';
+        btnSync.innerText = 'Sync with Figma';
         btnSync.disabled = false;
       }, 2000);
     } catch (e) {
@@ -73,10 +96,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSignIn      = document.getElementById('btn-sign-in');
   const btnSignOut     = document.getElementById('btn-sign-out');
 
+  const mcpConfig = {
+    mcpServers: {
+      loupe: {
+        command: 'npx',
+        args: ['-y', 'loupe-intelligence', '--endpoint', 'https://web-production-9cce.up.railway.app']
+      }
+    }
+  };
+  const mcpConfigBlock = document.getElementById('mcp-config-block');
+  if (mcpConfigBlock) mcpConfigBlock.textContent = JSON.stringify(mcpConfig, null, 2);
+
+  function renderMcpTab(isPro) {
+    document.getElementById('mcp-loading').style.display = 'none';
+    document.getElementById('mcp-pro').style.display    = isPro ? '' : 'none';
+    document.getElementById('mcp-locked').style.display = isPro ? 'none' : '';
+  }
+
   function renderAuthState(session) {
     if (!session) {
       authSignedOut.style.display = '';
       authSignedIn.style.display  = 'none';
+      currentTier = 'free';
+      renderSyncButton(false);
+      renderMcpTab(false);
       return;
     }
     authSignedOut.style.display = 'none';
@@ -92,18 +135,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       authAvatar.style.display = '';
     }
 
-    const tier = (session.tier || 'free').toUpperCase();
-    authTierBadge.textContent = tier;
-    if (tier === 'PRO') {
-      authTierBadge.style.background = '#ecfdf5';
-      authTierBadge.style.color      = '#10b981';
+    const isPro = (session.tier || 'free').toLowerCase() === 'pro';
+    currentTier = isPro ? 'pro' : 'free';
+    authTierBadge.textContent = isPro ? '⚡ PRO' : 'FREE';
+    authTierBadge.className   = 'tier-badge ' + (isPro ? 'tier-pro' : 'tier-free');
+    renderSyncButton(isPro);
+
+    // Account tab feature rows
+    const mcpStatus = document.getElementById('acct-mcp-status');
+    if (mcpStatus) {
+      mcpStatus.textContent   = isPro ? 'Active' : 'Locked';
+      mcpStatus.style.color   = isPro ? 'var(--success)' : 'var(--danger)';
     }
+    const upgradeCta = document.getElementById('acct-upgrade-cta');
+    if (upgradeCta) upgradeCta.style.display = isPro ? 'none' : '';
+
+    renderMcpTab(isPro);
   }
 
-  // Read auth state directly from storage — avoids port-closed errors
+  // Read auth state from storage for an immediate render, then ask the background
+  // to do a live tier check. If it updates storage, storage.onChanged re-renders.
   async function loadAuthState() {
     const { loupe_session } = await chrome.storage.local.get('loupe_session');
     renderAuthState(loupe_session || null);
+
+    // Ask background for a fresh session (refreshes JWT + re-fetches tier from Supabase).
+    // Background writes the result to storage; storage.onChanged handles the re-render.
+    chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' }, (response) => {
+      void chrome.runtime.lastError; // suppress port-closed warnings
+      if (response?.session) {
+        renderAuthState(response.session);
+        // Ping the bridge so the Figma plugin also gets the current tier
+        chrome.runtime.sendMessage({ type: 'NOTIFY_BRIDGE' }, () => void chrome.runtime.lastError);
+      }
+    });
   }
 
   // React to session changes written by background.js (sign-in / token refresh)
@@ -133,6 +198,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadAuthState();
 
+  // MCP copy button
+  document.getElementById('btn-copy-mcp')?.addEventListener('click', () => {
+    const btn = document.getElementById('btn-copy-mcp');
+    navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2)).then(() => {
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = 'Copy Config'; }, 2000);
+    });
+  });
+
+  // Upgrade buttons → open web dashboard
+  ['btn-upgrade-mcp', 'btn-upgrade-account'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://web-production-9cce.up.railway.app/#pricing' });
+    });
+  });
+
   btnSignIn.onclick = () => {
     btnSignIn.textContent = 'Signing in…';
     btnSignIn.disabled = true;
@@ -157,7 +238,9 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   async function ensureAndExecute(callback) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url || tab.url.startsWith('chrome://')) return;
+    if (!tab || !tab.url) return;
+    const restricted = ['chrome://', 'chrome-extension://', 'about:', 'data:', 'file://'];
+    if (restricted.some(p => tab.url.startsWith(p))) return;
 
     try {
       // Ping with a short timeout
@@ -284,9 +367,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   checkBridge();
   setInterval(checkBridge, 3000);
 
-  // Attempt initial injection silently
+  // Attempt initial injection silently — skip restricted/error pages
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab && tab.url && !tab.url.startsWith('chrome://')) {
+  const restricted = ['chrome://', 'chrome-extension://', 'about:', 'data:', 'file://'];
+  if (tab?.url && !restricted.some(p => tab.url.startsWith(p))) {
     chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ['config.js', 'content.js'] }).catch(() => {});
   }
 });
