@@ -209,6 +209,31 @@
         <div style="background: #0f172a; color: #94a3b8; padding: 10px; border-radius: 8px; font-size: 10px; font-family: monospace; line-height: 1.6; overflow-x: auto; white-space: pre;" id="mcp-config-block"></div>
         <button class="btn btn-ghost" id="btn-copy-mcp" style="margin-top: 10px; font-size: 12px; padding: 8px;">Copy Config</button>
       </div>
+
+      <div class="section-label">Figma Integration (REST API)</div>
+      <div class="card" style="padding: 14px;">
+        <div class="status-row" style="padding: 0 0 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px;">
+          <span>REST API Status</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="rest-status-text">NOT CONFIGURED</span>
+            <div class="dot" id="rest-dot"></div>
+          </div>
+        </div>
+        <div id="rest-setup-ui">
+          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5;">Required for high-fidelity image exports and component analysis.</div>
+          <button class="btn btn-ghost" id="btn-show-rest-input" style="font-size: 12px; padding: 8px;">Configure Token</button>
+        </div>
+        <div id="rest-input-ui" style="display:none;">
+          <input type="password" id="figma-token-input" placeholder="figd_..." style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; margin-bottom: 10px; outline: none; font-family: monospace;">
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="btn-save-figma-token" style="flex: 2; padding: 8px; font-size: 12px;">Save Token</button>
+            <button class="btn btn-ghost" id="btn-cancel-figma-token" style="flex: 1; padding: 8px; font-size: 12px;">Cancel</button>
+          </div>
+          <div style="margin-top: 10px; text-align: center;">
+            <a href="https://www.figma.com/settings/account#personal-access-tokens" target="_blank" style="font-size: 10px; color: var(--accent); text-decoration: none; font-weight: 600;">Get your token in Figma Settings ↗</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- FREE: lock overlay -->

@@ -315,6 +315,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bridgeBadge = document.getElementById('bridge-status-badge');
         const figmaStatusText = document.getElementById('figma-status-text');
         const figmaDot = document.getElementById('figma-dot');
+        const restStatusText = document.getElementById('rest-status-text');
+        const restDot = document.getElementById('rest-dot');
 
         if (bridgeStatusText) {
           bridgeStatusText.innerText = 'ONLINE';
@@ -333,6 +335,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             figmaStatusText.style.color = '#64748B';
             figmaDot.classList.remove('on');
           }
+
+          if (data.restApiAvailable) {
+            restStatusText.innerText = 'ACTIVE';
+            restStatusText.style.color = '#10B981';
+            restDot.classList.add('on');
+            document.getElementById('btn-show-rest-input').innerText = 'Update Token';
+          } else {
+            restStatusText.innerText = 'NOT CONFIGURED';
+            restStatusText.style.color = '#64748B';
+            restDot.classList.remove('on');
+            document.getElementById('btn-show-rest-input').innerText = 'Configure Token';
+          }
         }
       }
     } catch (e) {
@@ -343,9 +357,86 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('bridge-dot').classList.remove('on');
         document.getElementById('bridge-status-badge').innerText = 'BRIDGE OFFLINE';
         document.getElementById('bridge-status-badge').style.background = '#f1f5f9';
+        
+        document.getElementById('rest-status-text').innerText = 'OFFLINE';
+        document.getElementById('rest-dot').classList.remove('on');
       }
     }
   }
+
+  // --- REST API UI Setup ---
+  const btnShowRestInput = document.getElementById('btn-show-rest-input');
+  const restSetupUi = document.getElementById('rest-setup-ui');
+  const restInputUi = document.getElementById('rest-input-ui');
+  const btnCancelRest = document.getElementById('btn-cancel-figma-token');
+  const btnSaveRest = document.getElementById('btn-save-figma-token');
+  const figmaTokenInput = document.getElementById('figma-token-input');
+
+  btnShowRestInput.onclick = () => {
+    restSetupUi.style.display = 'none';
+    restInputUi.style.display = 'block';
+    figmaTokenInput.focus();
+  };
+
+  btnCancelRest.onclick = () => {
+    restSetupUi.style.display = 'block';
+    restInputUi.style.display = 'none';
+    figmaTokenInput.value = '';
+  };
+
+  btnSaveRest.onclick = async () => {
+    const token = figmaTokenInput.value.trim();
+    if (!token) return;
+
+    // Save token to local storage for reference, then show the MCP env snippet
+    await chrome.storage.local.set({ figma_pat: token });
+
+    const mcpWithFigma = {
+      mcpServers: {
+        loupe: {
+          command: 'npx',
+          args: ['-y', 'loupe-intelligence', '--endpoint', 'https://web-production-9cce.up.railway.app'],
+          env: { FIGMA_PAT: token }
+        }
+      }
+    };
+
+    // Replace the input UI with a copy-able config snippet
+    restInputUi.innerHTML = `
+      <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
+        Add this to your MCP client config (Claude Desktop / Cursor):
+      </div>
+      <pre id="figma-mcp-snippet" style="font-size:10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:10px; overflow:auto; white-space:pre; cursor:pointer; user-select:all;">${JSON.stringify(mcpWithFigma, null, 2)}</pre>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button id="btn-copy-figma-mcp" class="btn btn-primary" style="flex:1; font-size:11px; padding:6px;">Copy Config</button>
+        <button id="btn-done-figma" class="btn" style="flex:1; font-size:11px; padding:6px;">Done</button>
+      </div>`;
+
+    document.getElementById('btn-copy-figma-mcp').onclick = () => {
+      navigator.clipboard.writeText(JSON.stringify(mcpWithFigma, null, 2)).then(() => {
+        document.getElementById('btn-copy-figma-mcp').textContent = '✓ Copied!';
+        setTimeout(() => { document.getElementById('btn-copy-figma-mcp').textContent = 'Copy Config'; }, 2000);
+      });
+    };
+    document.getElementById('btn-done-figma').onclick = () => {
+      restSetupUi.style.display = 'block';
+      restInputUi.style.display = 'none';
+      figmaTokenInput.value = '';
+      // Restore original input UI for next time
+      restInputUi.innerHTML = `
+        <input id="figma-token-input" type="password" placeholder="figd_xxxx..." style="width:100%; padding:8px; border:1px solid var(--border); border-radius:6px; background:var(--bg2); color:var(--text); font-size:12px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px;">
+          <button id="btn-save-figma-token" class="btn btn-primary" style="flex:1; font-size:11px; padding:6px;">Save Token</button>
+          <button id="btn-cancel-figma-token" class="btn" style="flex:1; font-size:11px; padding:6px;">Cancel</button>
+        </div>`;
+      // Re-bind buttons
+      document.getElementById('btn-cancel-figma-token').onclick = () => {
+        restSetupUi.style.display = 'block';
+        restInputUi.style.display = 'none';
+      };
+      document.getElementById('btn-save-figma-token').onclick = btnSaveRest.onclick;
+    };
+  };
 
   // --- UI Sync ---
   chrome.runtime.onMessage.addListener((msg) => {

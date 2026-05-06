@@ -84,7 +84,12 @@ async function figmaApi(method, path, queryParams = {}) {
   if (!token) throw new Error('Figma REST API not configured. Set FIGMA_PAT env var or authenticate via x-figma-bridge OAuth (stores token in ~/.claude/figma-auth.json).');
   const qs = new URLSearchParams(queryParams).toString();
   const url = `${FIGMA_API_BASE}${path}${qs ? '?' + qs : ''}`;
-  const headers = { 'Authorization': `Bearer ${token}` };
+  const headers = {};
+  if (token.startsWith('figd_')) {
+    headers['X-Figma-Token'] = token;
+  } else {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   let bodyStr = null;
   if (method !== 'GET' && queryParams && Object.keys(queryParams).length > 0) {
     bodyStr = JSON.stringify(queryParams);
@@ -278,6 +283,50 @@ app.post("/api/figma/result", (req, res) => {
   res.json({ ok: true });
 });
 
+// Configure Figma PAT from extension
+app.post("/api/config/figma", async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token is required' });
+
+    // Validate token by calling /v1/me
+    const url = `${FIGMA_API_BASE}/v1/me`;
+    const headers = {};
+    if (token.startsWith('figd_')) {
+      headers['X-Figma-Token'] = token;
+    } else {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const figmaRes = await httpsJson('GET', url, headers);
+    if (figmaRes.status !== 200) {
+      let err = 'Invalid token';
+      if (figmaRes.status === 403 && figmaRes.data?.err?.includes('scope')) {
+        err = 'Missing scope: current_user:read';
+      }
+      return res.status(403).json({ error: err });
+    }
+
+    const userData = figmaRes.data;
+    const config = {
+      access_token: token,
+      email: userData.email,
+      handle: userData.handle,
+      updated_at: Date.now()
+    };
+
+    const configDir = join(homedir(), '.claude');
+    if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+    writeFileSync(FIGMA_AUTH_FILE, JSON.stringify(config, null, 2));
+    figmaAuthConfig = config;
+
+    console.error(`[Loupe MCP] Configured Figma PAT for ${userData.handle}`);
+    res.json({ ok: true, handle: userData.handle, email: userData.email });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get("/api/auth/me", async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthenticated' });
@@ -419,6 +468,7 @@ app.get("/api/state", async (req, res) => {
     aiMessage: currentAiMessage,
     pendingQuery: pendingQuery,
     figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
+    restApiAvailable: isFigmaRestAvailable(),
     tier: lastTier,
     email: lastEmail
   });
@@ -538,6 +588,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             scale: { type: "number", description: "Export scale multiplier (default: 2, max: 4)" }
           },
           required: ["file_key", "node_ids"]
+        },
+      },
+      {
+        name: "configure_figma_auth",
+        description: "Configures the Figma Personal Access Token (PAT) for the REST API. This will validate the token and save it to the local config file (~/.claude/figma-auth.json) for persistence.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            token: { type: "string", description: "Your Figma Personal Access Token (PAT)" }
+          },
+          required: ["token"]
         },
       },
     ],
@@ -662,8 +723,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       } else {
         const token = getFigmaToken();
         if (!token) return { content: [{ type: "text", text: 'Error: Figma REST API not configured. Set FIGMA_PAT env var or authenticate via x-figma-bridge.' }] };
-        const bodyStr = args.params ? JSON.stringify(args.params) : null;
-        const res = await httpsJson(method, `${FIGMA_API_BASE}${path}`, { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, bodyStr);
+        const headers = { 'Content-Type': 'application/json' };
+        if (token.startsWith('figd_')) {
+          headers['X-Figma-Token'] = token;
+        } else {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await httpsJson(method, `${FIGMA_API_BASE}${path}`, headers, bodyStr);
         if (res.status === 429) throw new Error(`Rate limited. Retry after ${res.headers['retry-after'] || '30'}s.`);
         if (res.status >= 400) throw new Error(`Figma API error ${res.status}: ${JSON.stringify(res.data)}`);
         result = res.data;
@@ -733,6 +799,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: "text", text: JSON.stringify({ exports: results, hint: 'Use the Read tool to view exported image files.' }, null, 2) }] };
     } catch (e) {
       return { content: [{ type: "text", text: `Error: ${e.message}` }] };
+    }
+  }
+
+  if (name === "configure_figma_auth") {
+    try {
+      const token = args.token;
+      if (!token) return { content: [{ type: "text", text: 'Error: Token is required.' }] };
+
+      // Validate token by calling /v1/me
+      const url = `${FIGMA_API_BASE}/v1/me`;
+      const headers = {};
+      if (token.startsWith('figd_')) {
+        headers['X-Figma-Token'] = token;
+      } else {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await httpsJson('GET', url, headers);
+
+      if (res.status !== 200) {
+        return { content: [{ type: "text", text: `Error: Invalid token (Status ${res.status}). Please check your Figma PAT.` }] };
+      }
+
+      const userData = res.data;
+
+      // Save to file
+      const configDir = join(homedir(), '.claude');
+      if (!existsSync(configDir)) mkdirSync(configDir, { recursive: true });
+
+      const config = {
+        access_token: token,
+        email: userData.email,
+        handle: userData.handle,
+        updated_at: Date.now()
+      };
+
+      writeFileSync(FIGMA_AUTH_FILE, JSON.stringify(config, null, 2));
+      figmaAuthConfig = config; // Update in-memory cache
+
+      return {
+        content: [{
+          type: "text",
+          text: `Successfully authenticated as ${userData.handle} (${userData.email}). Your Figma token has been saved to ${FIGMA_AUTH_FILE}.`
+        }]
+      };
+    } catch (e) {
+      return { content: [{ type: "text", text: `Error configuring auth: ${e.message}` }] };
     }
   }
 
