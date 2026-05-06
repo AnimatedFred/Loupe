@@ -59,16 +59,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const stored = await chrome.storage.local.get(['selectedElements']);
+    const stored = await chrome.storage.local.get(['selectedElements', 'loupe_session']);
     if (!stored.selectedElements || stored.selectedElements.length === 0) return;
 
     btnSync.innerText = 'Syncing...';
     btnSync.disabled = true;
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (stored.loupe_session?.accessToken) {
+        headers['Authorization'] = `Bearer ${stored.loupe_session.accessToken}`;
+      }
       await fetch('https://web-production-9cce.up.railway.app/api/update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           type: 'ELEMENTS_UPDATE',
           elements: stored.selectedElements
