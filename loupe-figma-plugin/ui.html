@@ -119,11 +119,11 @@
 </head>
 <body>
 
-  <!-- Loading -->
-  <div id="view-loading">Loading...</div>
+  <!-- Loading (fallback only) -->
+  <div id="view-loading" style="display:none">Loading...</div>
 
   <!-- Sign-in -->
-  <div id="view-signin" style="display:none">
+  <div id="view-signin">
     <div class="logo">🔍</div>
     <h2>Loupe Intelligence</h2>
     <p>Sign in to connect the Figma plugin<br>to your Loupe account.</p>
@@ -386,9 +386,16 @@
     document.getElementById('btnSignInCancel').onclick = cancelOAuth;
     document.getElementById('btnSignOut').onclick = signOut;
 
-    // Ask code.js for stored session
-    showView('loading');
+    // Show sign-in immediately so the plugin is never stuck on "Loading..."
+    // If a stored session exists the STORAGE_VALUE handler will promote to main.
+    showView('signin');
     storageGet('loupe_session');
+
+    // Fallback: if code.js never responds within 4 seconds, stay on sign-in
+    setTimeout(function() {
+      var loading = document.getElementById('view-loading');
+      if (loading && loading.style.display !== 'none') showView('signin');
+    }, 4000);
 
     // ── Messages from code.js ─────────────────────────────────────────────────
     window.onmessage = async function(event) {

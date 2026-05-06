@@ -5,18 +5,22 @@ figma.ui.onmessage = async (msg) => {
 
   // ── Plugin storage (persist auth session across plugin restarts) ──────────
   if (msg.type === 'GET_STORAGE') {
-    const value = await figma.clientStorage.getAsync(msg.key);
-    figma.ui.postMessage({ type: 'STORAGE_VALUE', key: msg.key, value: value });
+    try {
+      var value = await figma.clientStorage.getAsync(msg.key);
+      figma.ui.postMessage({ type: 'STORAGE_VALUE', key: msg.key, value: value });
+    } catch (err) {
+      figma.ui.postMessage({ type: 'STORAGE_VALUE', key: msg.key, value: null, error: err.message });
+    }
     return;
   }
 
   if (msg.type === 'SET_STORAGE') {
-    await figma.clientStorage.setAsync(msg.key, msg.value);
+    try { await figma.clientStorage.setAsync(msg.key, msg.value); } catch (err) {}
     return;
   }
 
   if (msg.type === 'DEL_STORAGE') {
-    await figma.clientStorage.deleteAsync(msg.key);
+    try { await figma.clientStorage.deleteAsync(msg.key); } catch (err) {}
     return;
   }
 
