@@ -344,6 +344,19 @@ app.post("/api/auth/sync", async (req, res) => {
   res.json({ ok: true, tier: lastTier });
 });
 
+// Per-user Figma PAT storage (in-memory; lost on restart, but Chrome extension re-syncs on load)
+const userFigmaPats = new Map(); // Map<userId, string>
+
+app.post('/api/user/figma-pat', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+  const { pat } = req.body || {};
+  if (!pat) return res.status(400).json({ error: 'Missing pat' });
+  userFigmaPats.set(auth.user.id, pat);
+  console.error(`[Loupe MCP] Stored Figma PAT for ${auth.user.email}`);
+  res.json({ ok: true });
+});
+
 // ── Figma Plugin OAuth ────────────────────────────────────────────────────────
 // Pending sessions keyed by state UUID — TTL 10 minutes
 const figmaAuthSessions = new Map();
@@ -446,17 +459,23 @@ app.get('/api/auth/figma/session', (req, res) => {
 });
 
 app.get("/api/state", async (req, res) => {
+  let figmaRestAvailable = isFigmaRestAvailable();
+
   // If the request comes from Figma, update heartbeat and optionally verify its own token
   if (req.query.source === 'figma') {
     lastFigmaHeartbeat = Date.now();
-    // If the plugin sends its own Bearer token, derive tier directly — no extension needed
     if (req.headers.authorization) {
       const auth = await verifyToken(req);
       if (auth?.tier) {
         lastTier = auth.tier;
         lastEmail = auth.user?.email || lastEmail;
       }
+      if (auth?.user?.id && userFigmaPats.has(auth.user.id)) figmaRestAvailable = true;
     }
+  } else if (req.headers.authorization) {
+    // Chrome extension polls /api/state with its Bearer token — return per-user PAT status
+    const auth = await verifyToken(req);
+    if (auth?.user?.id && userFigmaPats.has(auth.user.id)) figmaRestAvailable = true;
   }
 
   res.json({
@@ -468,7 +487,7 @@ app.get("/api/state", async (req, res) => {
     aiMessage: currentAiMessage,
     pendingQuery: pendingQuery,
     figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
-    restApiAvailable: isFigmaRestAvailable(),
+    restApiAvailable: figmaRestAvailable,
     tier: lastTier,
     email: lastEmail
   });

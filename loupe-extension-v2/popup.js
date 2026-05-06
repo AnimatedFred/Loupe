@@ -145,6 +145,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     authTierBadge.className   = 'tier-badge ' + (isPro ? 'tier-pro' : 'tier-free');
     renderSyncButton(isPro);
 
+    // Update REST token button label based on whether this user already has a PAT stored
+    chrome.storage.local.get([`figma_pat_${user.id}`], (stored) => {
+      const btnShowRest = document.getElementById('btn-show-rest-input');
+      if (btnShowRest) {
+        btnShowRest.innerText = stored[`figma_pat_${user.id}`] ? 'Update Token' : 'Configure Token';
+      }
+    });
+
     // Account tab feature rows
     const mcpStatus = document.getElementById('acct-mcp-status');
     if (mcpStatus) {
@@ -307,7 +315,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Bridge Status ---
   async function checkBridge() {
     try {
-      const res = await fetch('https://web-production-9cce.up.railway.app/api/state');
+      const { loupe_session } = await chrome.storage.local.get('loupe_session');
+      const headers = {};
+      if (loupe_session?.accessToken) {
+        headers['Authorization'] = `Bearer ${loupe_session.accessToken}`;
+      }
+      const res = await fetch('https://web-production-9cce.up.railway.app/api/state', { headers });
       if (res.ok) {
         const data = await res.json();
         const bridgeStatusText = document.getElementById('bridge-status-text');
@@ -388,8 +401,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = figmaTokenInput.value.trim();
     if (!token) return;
 
-    // Save token to local storage for reference, then show the MCP env snippet
-    await chrome.storage.local.set({ figma_pat: token });
+    // Save token keyed by user ID so multiple Loupe accounts don't share a PAT
+    const { loupe_session } = await chrome.storage.local.get('loupe_session');
+    const userId = loupe_session?.user?.id;
+    if (userId) {
+      await chrome.storage.local.set({ [`figma_pat_${userId}`]: token });
+    }
+
+    // Also store server-side (best-effort) so Railway can report correct status per user
+    if (loupe_session?.accessToken) {
+      fetch('https://web-production-9cce.up.railway.app/api/user/figma-pat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${loupe_session.accessToken}` },
+        body: JSON.stringify({ pat: token })
+      }).catch(() => {});
+    }
 
     const mcpWithFigma = {
       mcpServers: {
