@@ -1,17 +1,14 @@
-// Loupe to Figma Bridge v1.0
+// Loupe to Figma Bridge v2.0
 figma.showUI(__html__, { width: 340, height: 500, themeColors: true });
 
 figma.ui.onmessage = async (msg) => {
-  // AI Eval Mode
   if (msg.type === 'EVAL') {
     try {
-      // Create a safe context for evaluation
       const code = msg.data.code;
       const fn = new Function('figma', 'return (async () => { ' + code + ' })()');
       await fn(figma);
       figma.notify('AI Design Sync Complete');
     } catch (err) {
-      console.error('AI Eval Error:', err);
       figma.notify('AI Error: ' + err.message);
     }
     return;
@@ -20,206 +17,268 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'IMPORT_ELEMENTS') {
     var elements = msg.elements || (msg.data && msg.data.elements) || [];
     var context = msg.context || (msg.data && msg.data.context) || {};
-    
+
     if (!elements || elements.length === 0) {
       figma.notify('No elements found to sync');
       return;
     }
 
-    // Find bounding box
-    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (var i = 0; i < elements.length; i++) {
-      var el = elements[i];
-      var r = el.rect || { left: 0, top: 0, width: 0, height: 0 };
-      if (r.left < minX) minX = r.left;
-      if (r.top < minY) minY = r.top;
-      if (r.left + r.width > maxX) maxX = r.left + r.width;
-      if (r.top + r.height > maxY) maxY = r.top + r.height;
-    }
-
-    var mainFrame = figma.createFrame();
-    mainFrame.name = 'Loupe: ' + (context.title || 'UI Capture') + ' (' + new Date().toLocaleTimeString() + ')';
-    mainFrame.x = figma.viewport.center.x - ((maxX - minX) / 2);
-    mainFrame.y = figma.viewport.center.y - ((maxY - minY) / 2);
-    mainFrame.resize(Math.max(200, maxX - minX), Math.max(200, maxY - minY));
-    
-    // Set background to pure white
-    mainFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    
-    console.log('Syncing ' + elements.length + ' elements with context:', context);
-
-    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
-    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
-
-    // Sort elements by zIndex to preserve stacking order
-    elements.sort(function(a, b) {
-      var zA = parseInt(a.styles && a.styles.zIndex) || 0;
-      var zB = parseInt(b.styles && b.styles.zIndex) || 0;
-      return zA - zB;
+    // Ensure every element has a rect
+    elements.forEach(function(el) {
+      if (!el.rect) el.rect = { left: 0, top: 0, width: 100, height: 40 };
     });
 
-    for (var j = 0; j < elements.length; j++) {
-      try {
-        var elObj = elements[j];
-        var styles = elObj.styles || {};
-        var rect = elObj.rect || { left: 0, top: 0, width: 0, height: 0 };
-        
-        var container = figma.createFrame();
-        container.name = (elObj.tagName || 'DIV') + (elObj.cls ? ' .' + elObj.cls : '');
-        container.x = rect.left - minX;
-        container.y = rect.top - minY;
-        container.resize(Math.max(1, rect.width), Math.max(1, rect.height));
+    // ── Bounding box ────────────────────────────────────────────────────────
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    elements.forEach(function(el) {
+      var r = el.rect;
+      if (r.left < minX) minX = r.left;
+      if (r.top  < minY) minY = r.top;
+      if (r.left + r.width  > maxX) maxX = r.left + r.width;
+      if (r.top  + r.height > maxY) maxY = r.top  + r.height;
+    });
 
-        // Opacity
-        if (styles.opacity !== undefined) {
-          container.opacity = parseFloat(styles.opacity);
+    // ── Sort largest → smallest so parents always come before children ──────
+    var sorted = elements.slice().sort(function(a, b) {
+      return (b.rect.width * b.rect.height) - (a.rect.width * a.rect.height);
+    });
+
+    // ── Build containment tree ───────────────────────────────────────────────
+    // parentIdx[i] = index in sorted[] of the smallest element that fully
+    // contains sorted[i], or -1 if it sits directly in the root frame.
+    var SLACK = 4; // px tolerance for fractional rects
+    var parentIdx = new Array(sorted.length).fill(-1);
+    for (var i = 0; i < sorted.length; i++) {
+      var ri = sorted[i].rect;
+      var riArea = ri.width * ri.height;
+      var bestArea = Infinity;
+      for (var j = 0; j < sorted.length; j++) {
+        if (j === i) continue;
+        var rj = sorted[j].rect;
+        var rjArea = rj.width * rj.height;
+        if (rjArea <= riArea) continue; // parent must be strictly larger
+        if (rj.left - SLACK <= ri.left &&
+            rj.top  - SLACK <= ri.top  &&
+            rj.left + rj.width  + SLACK >= ri.left + ri.width  &&
+            rj.top  + rj.height + SLACK >= ri.top  + ri.height &&
+            rjArea < bestArea) {
+          bestArea = rjArea;
+          parentIdx[i] = j;
         }
+      }
+    }
+
+    // ── Mark containers (elements that have at least one captured child) ────
+    var hasChild = new Array(sorted.length).fill(false);
+    for (var i = 0; i < sorted.length; i++) {
+      if (parentIdx[i] !== -1) hasChild[parentIdx[i]] = true;
+    }
+
+    // ── Fonts ────────────────────────────────────────────────────────────────
+    await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+    await figma.loadFontAsync({ family: "Inter", style: "Medium" });
+    await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
+    await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+
+    // ── Main wrapper frame ───────────────────────────────────────────────────
+    var mainFrame = figma.createFrame();
+    mainFrame.name = 'Loupe: ' + (context.title || 'UI Capture') + ' (' + new Date().toLocaleTimeString() + ')';
+    mainFrame.x = figma.viewport.center.x - (maxX - minX) / 2;
+    mainFrame.y = figma.viewport.center.y - (maxY - minY) / 2;
+    mainFrame.resize(Math.max(200, maxX - minX), Math.max(200, maxY - minY));
+    mainFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
+    mainFrame.clipsContent = false;
+
+    // ── Create element frames ────────────────────────────────────────────────
+    var frames = new Array(sorted.length).fill(null);
+
+    for (var j = 0; j < sorted.length; j++) {
+      try {
+        var elObj = sorted[j];
+        var styles = elObj.styles || {};
+        var rect = elObj.rect;
+
+        var container = figma.createFrame();
+        var safeCls = elObj.cls ? ' .' + elObj.cls.trim().split(/\s+/).slice(0, 2).join('.') : '';
+        container.name = (elObj.tagName || 'DIV') + safeCls;
+        container.resize(Math.max(1, rect.width), Math.max(1, rect.height));
+        container.clipsContent = false;
 
         // Background
-        if (styles.backgroundColor && styles.backgroundColor !== 'transparent' && styles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+        if (styles.backgroundColor &&
+            styles.backgroundColor !== 'transparent' &&
+            styles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
           container.fills = [createSolidFill(styles.backgroundColor)];
         } else {
           container.fills = [];
         }
 
-        // Border Radius
-        if (styles.borderRadius) {
-          var rVal = parseInt(styles.borderRadius);
-          if (!isNaN(rVal)) container.cornerRadius = rVal;
-        }
+        // Opacity
+        var op = parseFloat(styles.opacity);
+        if (!isNaN(op) && op !== 1) container.opacity = op;
 
-        // Clip Content (Overflow)
-        if (styles.overflow === 'hidden') {
-          container.clipsContent = true;
-        }
+        // Border radius
+        var bRad = parseInt(styles.borderRadius);
+        if (!isNaN(bRad) && bRad > 0) container.cornerRadius = bRad;
 
-        // Drop Shadows
+        // Drop shadow
         if (styles.boxShadow && styles.boxShadow !== 'none') {
           var shadow = parseShadow(styles.boxShadow);
           if (shadow) container.effects = [shadow];
         }
 
-        // Borders (Individual side support)
-        if (styles.borderTopWidth && parseInt(styles.borderTopWidth) > 0) {
-          container.strokeTopWeight = parseInt(styles.borderTopWidth);
-          container.strokes = [createSolidFill(styles.borderTopColor || '#000000')];
-        }
-        if (styles.borderRightWidth && parseInt(styles.borderRightWidth) > 0) {
-          container.strokeRightWeight = parseInt(styles.borderRightWidth);
-          container.strokes = [createSolidFill(styles.borderRightColor || '#000000')];
-        }
-        if (styles.borderBottomWidth && parseInt(styles.borderBottomWidth) > 0) {
-          container.strokeBottomWeight = parseInt(styles.borderBottomWidth);
-          container.strokes = [createSolidFill(styles.borderBottomColor || '#000000')];
-        }
-        if (styles.borderLeftWidth && parseInt(styles.borderLeftWidth) > 0) {
-          container.strokeLeftWeight = parseInt(styles.borderLeftWidth);
-          container.strokes = [createSolidFill(styles.borderLeftColor || '#000000')];
+        // Border — only apply if the border is actually visible (style !== 'none')
+        var bw = parseInt(styles.borderTopWidth) || parseInt(styles.borderLeftWidth) ||
+                 parseInt(styles.borderRightWidth) || parseInt(styles.borderBottomWidth) || 0;
+        var bStyle = styles.borderTopStyle || 'none';
+        if (bw > 0 && bStyle !== 'none') {
+          var bColor = styles.borderTopColor || styles.borderLeftColor || '#000000';
+          container.strokeWeight = bw;
+          container.strokes = [createSolidFill(bColor)];
+          container.strokeAlign = 'INSIDE';
         }
 
-        // Image Handling
-        if (elObj.tagName.toLowerCase() === 'img' && elObj.attributes && elObj.attributes.src) {
+        // Image
+        if (elObj.tagName && elObj.tagName.toLowerCase() === 'img' &&
+            elObj.attributes && elObj.attributes.src) {
           try {
-            const image = await figma.createImageAsync(elObj.attributes.src);
+            var image = await figma.createImageAsync(elObj.attributes.src);
             container.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
-          } catch (e) {
-            console.warn('Image load failed', e);
+          } catch (e) { /* image load failed, leave empty */ }
+        }
+
+        // Text — only on true leaf elements to prevent duplication.
+        // A "leaf" passes two checks:
+        //   1. No geometric children detected via bounding box (hasChild)
+        //   2. No smaller sibling/cousin element has text that is a substring
+        //      of this element's text (catches containment the bbox missed)
+        var elText = elObj.text ? elObj.text.trim() : '';
+        var isTextLeaf = !hasChild[j] && elText.length > 0;
+
+        if (isTextLeaf) {
+          var jArea = rect.width * rect.height;
+          for (var k = 0; k < sorted.length; k++) {
+            if (k === j) continue;
+            var kText = (sorted[k].text || '').trim();
+            var kArea = sorted[k].rect.width * sorted[k].rect.height;
+            // If a smaller element has meaningful text that appears inside
+            // our text, we are a container — suppress our text node.
+            if (kText.length > 4 && kArea < jArea && elText.includes(kText)) {
+              isTextLeaf = false;
+              break;
+            }
           }
         }
 
-        // Text Handling
-        if (elObj.text && elObj.text.trim().length > 0) {
+        if (isTextLeaf) {
           var fontFamily = parseFontFamily(styles.fontFamily);
-          var fontWeight = styles.fontWeight || '400';
-          var fontName = await loadFont(fontFamily, fontWeight);
-          
+          var fontName = await loadFont(fontFamily, styles.fontWeight || '400');
+
           var textNode = figma.createText();
           textNode.fontName = fontName;
-          textNode.characters = elObj.text;
-          
-          var fs = parseInt(styles.fontSize) || 14;
-          textNode.fontSize = Math.max(8, fs);
-          
+          textNode.characters = elText;
+          textNode.fontSize = Math.max(8, parseInt(styles.fontSize) || 14);
+
           if (styles.color) textNode.fills = [createSolidFill(styles.color)];
-          
-          // Line Height
+
           if (styles.lineHeight && styles.lineHeight !== 'normal') {
-            var lh = parseInt(styles.lineHeight);
-            if (!isNaN(lh)) textNode.lineHeight = { value: lh, unit: 'PIXELS' };
+            var lh = parseFloat(styles.lineHeight);
+            if (!isNaN(lh) && lh > 0) textNode.lineHeight = { value: lh, unit: 'PIXELS' };
           }
-          
-          // Letter Spacing
+
           if (styles.letterSpacing && styles.letterSpacing !== 'normal') {
             var ls = parseFloat(styles.letterSpacing);
             if (!isNaN(ls)) textNode.letterSpacing = { value: ls, unit: 'PIXELS' };
           }
 
-          // Alignment
           if (styles.textAlign === 'center') textNode.textAlignHorizontal = 'CENTER';
           else if (styles.textAlign === 'right') textNode.textAlignHorizontal = 'RIGHT';
           else textNode.textAlignHorizontal = 'LEFT';
 
-          // Position text inside container
-          if (rect.width < 300 && rect.height < 100) {
-            textNode.x = (container.width - textNode.width) / 2;
-            textNode.y = (container.height - textNode.height) / 2;
-          } else {
-            textNode.x = 0; textNode.y = 0;
-            textNode.resize(container.width, container.height);
-          }
-          
+          textNode.textAutoResize = 'HEIGHT';
+          var pL = parseInt(styles.paddingLeft) || 0;
+          var pT = parseInt(styles.paddingTop) || 0;
+          var pR = parseInt(styles.paddingRight) || 0;
+          var textW = Math.max(20, rect.width - pL - pR);
+          try { textNode.resize(textW, textNode.height); } catch (e) {}
+          textNode.x = pL;
+          textNode.y = pT;
           container.appendChild(textNode);
         }
 
-        // Auto Layout (Flexbox)
-        if (styles.display === 'flex') {
-          container.layoutMode = styles.flexDirection === 'column' ? 'VERTICAL' : 'HORIZONTAL';
-          container.itemSpacing = parseInt(styles.gap) || 0;
-          
-          container.paddingTop = parseInt(styles.paddingTop) || 0;
-          container.paddingRight = parseInt(styles.paddingRight) || 0;
-          container.paddingBottom = parseInt(styles.paddingBottom) || 0;
-          container.paddingLeft = parseInt(styles.paddingLeft) || 0;
-
-          // Alignment
-          if (styles.justifyContent === 'center') container.primaryAxisAlignItems = 'CENTER';
-          else if (styles.justifyContent === 'flex-end') container.primaryAxisAlignItems = 'MAX';
-          else if (styles.justifyContent === 'space-between') container.primaryAxisAlignItems = 'SPACE_BETWEEN';
-          else container.primaryAxisAlignItems = 'MIN';
-
-          if (styles.alignItems === 'center') container.counterAxisAlignItems = 'CENTER';
-          else if (styles.alignItems === 'flex-end') container.counterAxisAlignItems = 'MAX';
-          else container.counterAxisAlignItems = 'MIN';
-        }
-
-        mainFrame.appendChild(container);
+        frames[j] = container;
       } catch (err) {
-        console.warn('Sync Error:', err);
+        console.warn('Frame creation error:', err);
       }
     }
 
+    // ── Build ordered child lists ────────────────────────────────────────────
+    var childrenOf = sorted.map(function() { return []; });
+    var rootList = [];
+    for (var j = 0; j < sorted.length; j++) {
+      if (parentIdx[j] === -1) rootList.push(j);
+      else childrenOf[parentIdx[j]].push(j);
+    }
+
+    // Sort root elements top-to-bottom, left-to-right
+    rootList.sort(function(a, b) {
+      var ra = sorted[a].rect, rb = sorted[b].rect;
+      return ra.top !== rb.top ? ra.top - rb.top : ra.left - rb.left;
+    });
+
+    // ── Recursively append children with absolute positioning ────────────────
+    function buildHierarchy(parentFrame, childList, parentJIdx) {
+      for (var k = 0; k < childList.length; k++) {
+        var c = childList[k];
+        if (!frames[c]) continue;
+
+        parentFrame.appendChild(frames[c]);
+
+        // Position relative to parent's top-left corner
+        var cRect = sorted[c].rect;
+        var origin = parentJIdx === -1
+          ? { left: minX, top: minY }
+          : sorted[parentJIdx].rect;
+        frames[c].x = cRect.left - origin.left;
+        frames[c].y = cRect.top  - origin.top;
+
+        buildHierarchy(frames[c], childrenOf[c], c);
+      }
+    }
+
+    buildHierarchy(mainFrame, rootList, -1);
+
     figma.viewport.scrollAndZoomIntoView([mainFrame]);
-    figma.notify('Sync complete: ' + elements.length + ' UI components reconstructed.');
+    figma.notify('Sync complete — ' + sorted.length + ' elements, nested by hierarchy.');
   }
 };
 
 function parseShadow(cssShadow) {
-  // Simple parser for: "0px 4px 10px rgba(0,0,0,0.1)"
-  var parts = cssShadow.split('px');
-  if (parts.length < 3) return null;
-  
-  var x = parseFloat(parts[0]) || 0;
-  var y = parseFloat(parts[1]) || 0;
-  var blur = parseFloat(parts[2]) || 0;
-  
-  var colorMatch = cssShadow.match(/rgba?\(.*?\)|#[a-fA-F0-0]{3,6}/);
-  var color = colorMatch ? parseRgb(colorMatch[0]) : {r:0, g:0, b:0, a:0.2};
+  // Extract color token first so the numbers-only pass is clean
+  var colorMatch = cssShadow.match(/rgba?\([^)]+\)|#[a-fA-F0-9]{3,8}/);
+  if (!colorMatch) return null;
 
+  var withoutColor = cssShadow.replace(colorMatch[0], '');
+  var nums = withoutColor.match(/-?\d+(\.\d+)?/g);
+  if (!nums || nums.length < 2) return null;
+
+  var x      = parseFloat(nums[0]) || 0;
+  var y      = parseFloat(nums[1]) || 0;
+  var blur   = parseFloat(nums[2]) || 0;
+  var spread = parseFloat(nums[3]) || 0;
+
+  // Skip spread-only "ring" shadows (Tailwind ring, focus outlines).
+  // x=0 y=0 blur=0 spread>0 means a flat halo — no Figma equivalent,
+  // usually a focus/hover UI state we don't want baked in.
+  if (x === 0 && y === 0 && blur === 0) return null;
+
+  var color = parseRgb(colorMatch[0]);
   return {
     type: 'DROP_SHADOW',
-    color: { r: color.r/255, g: color.g/255, b: color.b/255, a: color.a || 1 },
+    color: { r: color.r / 255, g: color.g / 255, b: color.b / 255, a: color.a !== undefined ? color.a : 1 },
     offset: { x: x, y: y },
     radius: blur,
+    spread: spread,
     visible: true,
     blendMode: 'NORMAL'
   };
@@ -237,7 +296,7 @@ function createSolidFill(cssColor) {
 async function loadFont(family, weight) {
   var style = mapWeight(weight);
   var fontName = { family: family, style: style };
-  
+
   try {
     await figma.loadFontAsync(fontName);
     return fontName;
@@ -257,9 +316,9 @@ async function loadFont(family, weight) {
 function mapWeight(weight) {
   var w = parseInt(weight);
   if (w >= 900) return 'Black';
-  if (w >= 800) return 'ExtraBold';
+  if (w >= 800) return 'Extra Bold';
   if (w >= 700) return 'Bold';
-  if (w >= 600) return 'SemiBold';
+  if (w >= 600) return 'Semi Bold';
   if (w >= 500) return 'Medium';
   return 'Regular';
 }

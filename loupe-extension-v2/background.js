@@ -15,6 +15,117 @@ function safeSend(sendResponse, data) {
   }
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+async function supabaseFetch(path, options = {}) {
+  await LOUPE_CONFIG.refresh();
+  const url = `${LOUPE_CONFIG.SUPABASE_URL}${path}`;
+  const headers = {
+    'apikey': LOUPE_CONFIG.SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+  const res = await fetch(url, { ...options, headers });
+  if (!res.ok) throw new Error(`Supabase ${path} → ${res.status}`);
+  return res.json();
+}
+
+async function signIn() {
+  await LOUPE_CONFIG.refresh();
+  const redirectUrl = `https://${chrome.runtime.id}.chromiumapp.org/`;
+  const authUrl =
+    `${LOUPE_CONFIG.SUPABASE_URL}/auth/v1/authorize` +
+    `?provider=google` +
+    `&redirect_to=${encodeURIComponent(redirectUrl)}`;
+
+  console.log('[Loupe Auth] Extension ID:', chrome.runtime.id);
+  console.log('[Loupe Auth] Supabase URL:', LOUPE_CONFIG.SUPABASE_URL);
+  console.log('[Loupe Auth] Full auth URL:', authUrl);
+
+  return new Promise((resolve, reject) => {
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (redirected) => {
+      if (chrome.runtime.lastError || !redirected) {
+        return reject(new Error(chrome.runtime.lastError?.message || 'Auth cancelled'));
+      }
+      try {
+        const params = new URLSearchParams(new URL(redirected).hash.slice(1));
+        const accessToken  = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        if (!accessToken) return reject(new Error('No access token in redirect'));
+
+        const user = await supabaseFetch('/auth/v1/user', {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        // Fetch tier from profiles table
+        let tier = 'free';
+        try {
+          const profiles = await supabaseFetch(
+            `/rest/v1/profiles?select=tier&id=eq.${user.id}`,
+            { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
+          );
+          tier = profiles[0]?.tier || 'free';
+        } catch (_) { /* profile may not exist yet — default to free */ }
+
+        const session = { accessToken, refreshToken, user, tier, signedInAt: Date.now() };
+        await chrome.storage.local.set({ loupe_session: session });
+        console.log(`[Loupe Auth] Signed in as ${user.email} (${tier})`);
+        resolve(session);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+
+async function refreshSession() {
+  const { loupe_session } = await chrome.storage.local.get('loupe_session');
+  if (!loupe_session?.refreshToken) return null;
+
+  try {
+    const data = await supabaseFetch('/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: loupe_session.refreshToken })
+    });
+    const updated = {
+      ...loupe_session,
+      accessToken:  data.access_token,
+      refreshToken: data.refresh_token,
+      signedInAt:   Date.now()
+    };
+    await chrome.storage.local.set({ loupe_session: updated });
+    return updated;
+  } catch (e) {
+    console.warn('[Loupe Auth] Token refresh failed:', e.message);
+    return null;
+  }
+}
+
+async function signOut() {
+  const { loupe_session } = await chrome.storage.local.get('loupe_session');
+  if (loupe_session?.accessToken) {
+    // Best-effort server-side revocation
+    supabaseFetch('/auth/v1/logout', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${loupe_session.accessToken}` }
+    }).catch(() => {});
+  }
+  await chrome.storage.local.remove('loupe_session');
+  console.log('[Loupe Auth] Signed out');
+}
+
+async function getAuthState() {
+  const { loupe_session } = await chrome.storage.local.get('loupe_session');
+  if (!loupe_session) return null;
+
+  // Refresh if token is older than 50 minutes (Supabase tokens last 60 min)
+  const age = Date.now() - (loupe_session.signedInAt || 0);
+  if (age > 50 * 60 * 1000) {
+    return await refreshSession();
+  }
+  return loupe_session;
+}
+
 
 let lastScreenshot = null;
 let lastCaptureTime = 0;
@@ -188,6 +299,31 @@ async function notifyBridge() {
 // --- Message Handlers ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   switch (msg.type) {
+
+    case 'SIGN_IN': {
+      chrome.storage.local.remove('loupe_auth_error');
+      signIn()
+        .then(session => {
+          console.log('[Loupe Auth] Sign-in success:', session?.user?.email);
+          safeSend(sendResponse, { ok: true, session });
+        })
+        .catch(err => {
+          console.error('[Loupe Auth] Sign-in error:', err.message);
+          chrome.storage.local.set({ loupe_auth_error: err.message });
+          safeSend(sendResponse, { ok: false, error: err.message });
+        });
+      return true;
+    }
+
+    case 'SIGN_OUT': {
+      signOut().then(() => safeSend(sendResponse, { ok: true }));
+      return true;
+    }
+
+    case 'GET_AUTH_STATE': {
+      getAuthState().then(session => safeSend(sendResponse, { ok: true, session }));
+      return true;
+    }
     case 'SELECTION_UPDATED': {
       const count = msg.count;
       chrome.action.setBadgeText({

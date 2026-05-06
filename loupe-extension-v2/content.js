@@ -51,12 +51,12 @@
     const s = window.getComputedStyle(el);
     const styles = {};
     const props = [
-      'backgroundColor', 'color', 'fontSize', 'fontFamily', 'fontWeight', 
+      'backgroundColor', 'color', 'fontSize', 'fontFamily', 'fontWeight',
       'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
       'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-      'borderTopWidth', 'borderTopColor', 'borderRadius', 'boxShadow', 
-      'display', 'flexDirection', 'gap', 'justifyContent', 'alignItems', 
-      'opacity', 'zIndex', 'position', 'lineHeight', 'textAlign'
+      'borderTopWidth', 'borderTopColor', 'borderTopStyle', 'borderRadius', 'boxShadow',
+      'display', 'flexDirection', 'gap', 'justifyContent', 'alignItems', 'flexGrow',
+      'opacity', 'zIndex', 'position', 'lineHeight', 'textAlign', 'overflow'
     ];
     props.forEach(p => { styles[p] = s[p]; });
     return styles;

@@ -72,7 +72,7 @@ window.onload = async () => {
 };
 
 function setupEventListeners() {
-  const tools = ['select', 'rect', 'circle', 'star', 'arrow', 'text', 'emoji'];
+  const tools = ['select', 'rect', 'circle', 'star', 'arrow', 'text', 'emoji', 'pen'];
   tools.forEach(t => {
     const btn = document.getElementById(`tool-${t}`);
     if (btn) btn.onclick = () => setTool(t);
@@ -87,6 +87,12 @@ function setupEventListeners() {
 
   document.getElementById('color-picker').oninput = (e) => {
     if (selectedIndex !== -1) { objects[selectedIndex].color = e.target.value; refreshLayers(); }
+  };
+
+  document.getElementById('stroke-size').oninput = (e) => {
+    if (selectedIndex !== -1 && objects[selectedIndex].type === 'pen') {
+      objects[selectedIndex].lineWidth = parseInt(e.target.value) || 4;
+    }
   };
 
   document.getElementById('btn-fill').onclick = () => {
@@ -206,7 +212,7 @@ function handleMouseDown(e) {
   startPos = pos; lastMousePos = pos;
 
   if (currentTool === 'select') {
-    if (selectedIndex !== -1) {
+    if (selectedIndex !== -1 && objects[selectedIndex].type !== 'pen') {
       const action = getHandleAt(pos, objects[selectedIndex]);
       if (action !== 'none') {
         dragAction = action; originalRect = { ...objects[selectedIndex] };
@@ -216,13 +222,30 @@ function handleMouseDown(e) {
     const hitIndex = getObjectAt(pos);
     selectedIndex = hitIndex;
     if (hitIndex !== -1) {
-      dragAction = 'move'; originalRect = { ...objects[selectedIndex] };
+      dragAction = 'move';
+      originalRect = { ...objects[selectedIndex] };
+      if (objects[selectedIndex].type === 'pen') {
+        originalRect.points = objects[selectedIndex].points.map(p => ({ ...p }));
+        document.getElementById('stroke-size').value = objects[selectedIndex].lineWidth || 4;
+      }
       document.getElementById('color-picker').value = objects[selectedIndex].color;
       document.getElementById('btn-fill').classList.toggle('active', objects[selectedIndex].fill);
     }
     refreshLayers();
   } else {
     if (currentTool === 'text') { showTextOverlay(pos); return; }
+    if (currentTool === 'pen') {
+      dragAction = 'create';
+      currentObject = {
+        id: Date.now() + Math.random(),
+        type: 'pen',
+        points: [{ x: pos.x, y: pos.y }],
+        color: document.getElementById('color-picker').value,
+        lineWidth: parseInt(document.getElementById('stroke-size').value) || 4,
+        angle: 0, x: pos.x, y: pos.y, w: 0, h: 0
+      };
+      return;
+    }
     dragAction = 'create';
     currentObject = {
       id: Date.now() + Math.random(),
@@ -249,11 +272,22 @@ function handleMouseMove(e) {
   }
 
   if (dragAction === 'create' && currentObject) {
-    currentObject.w = pos.x - currentObject.x;
-    currentObject.h = pos.y - currentObject.y;
+    if (currentObject.type === 'pen') {
+      currentObject.points.push({ x: pos.x, y: pos.y });
+    } else {
+      currentObject.w = pos.x - currentObject.x;
+      currentObject.h = pos.y - currentObject.y;
+    }
   } else if (dragAction === 'move' && selectedIndex !== -1) {
-    objects[selectedIndex].x = originalRect.x + dx;
-    objects[selectedIndex].y = originalRect.y + dy;
+    const obj = objects[selectedIndex];
+    if (obj.type === 'pen' && originalRect.points) {
+      obj.x = originalRect.x + dx;
+      obj.y = originalRect.y + dy;
+      obj.points = originalRect.points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    } else {
+      obj.x = originalRect.x + dx;
+      obj.y = originalRect.y + dy;
+    }
   } else if (dragAction === 'resize' && selectedIndex !== -1) {
     objects[selectedIndex].w = Math.max(10, originalRect.w + dx);
     objects[selectedIndex].h = Math.max(10, originalRect.h + dy);
@@ -266,11 +300,25 @@ function handleMouseMove(e) {
 
 function handleMouseUp() {
   if (dragAction === 'create' && currentObject) {
-    if (currentObject.w < 0) { currentObject.x += currentObject.w; currentObject.w = Math.abs(currentObject.w); }
-    if (currentObject.h < 0) { currentObject.y += currentObject.h; currentObject.h = Math.abs(currentObject.h); }
-    objects.push(currentObject);
-    selectedIndex = objects.length - 1;
-    setTool('select');
+    if (currentObject.type === 'pen') {
+      if (currentObject.points.length > 1) {
+        const xs = currentObject.points.map(p => p.x);
+        const ys = currentObject.points.map(p => p.y);
+        currentObject.x = Math.min(...xs);
+        currentObject.y = Math.min(...ys);
+        currentObject.w = Math.max(...xs) - currentObject.x;
+        currentObject.h = Math.max(...ys) - currentObject.y;
+        objects.push(currentObject);
+        selectedIndex = objects.length - 1;
+        setTool('select');
+      }
+    } else {
+      if (currentObject.w < 0) { currentObject.x += currentObject.w; currentObject.w = Math.abs(currentObject.w); }
+      if (currentObject.h < 0) { currentObject.y += currentObject.h; currentObject.h = Math.abs(currentObject.h); }
+      objects.push(currentObject);
+      selectedIndex = objects.length - 1;
+      setTool('select');
+    }
   }
   dragAction = 'none'; currentObject = null; originalRect = null;
   refreshLayers();
@@ -303,6 +351,20 @@ function drawObject(ctx, obj, isSelected) {
     ctx.fillText(obj.text, x, y);
   } else if (obj.type === 'cursor') {
     drawCursor(ctx, obj.cursorType, x, y, Math.max(24, Math.abs(obj.w)));
+  } else if (obj.type === 'pen') {
+    if (!obj.points || obj.points.length < 2) { ctx.restore(); return; }
+    ctx.lineWidth = obj.lineWidth || 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(obj.points[0].x, obj.points[0].y);
+    for (let i = 1; i < obj.points.length - 1; i++) {
+      const mx = (obj.points[i].x + obj.points[i + 1].x) / 2;
+      const my = (obj.points[i].y + obj.points[i + 1].y) / 2;
+      ctx.quadraticCurveTo(obj.points[i].x, obj.points[i].y, mx, my);
+    }
+    ctx.lineTo(obj.points[obj.points.length - 1].x, obj.points[obj.points.length - 1].y);
+    ctx.stroke();
   }
 
   if (isSelected) {
@@ -314,21 +376,23 @@ function drawObject(ctx, obj, isSelected) {
     ctx.strokeRect(x - 4, y - 4, w + 8, h + 8);
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
-    
-    // Resize Handle (Bottom Right)
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#6366f1';
-    ctx.lineWidth = 2;
-    ctx.fillRect(x + w, y + h, 14, 14);
-    ctx.strokeRect(x + w, y + h, 14, 14);
-    
-    // Rotate Handle
-    ctx.fillStyle = '#6366f1';
-    ctx.strokeStyle = '#fff';
-    ctx.beginPath(); 
-    ctx.moveTo(x + w/2, y - 4); ctx.lineTo(x + w/2, y - 20); ctx.stroke();
-    ctx.beginPath(); ctx.arc(x + w/2, y - 28, 10, 0, Math.PI*2); ctx.fill();
-    ctx.stroke();
+
+    if (obj.type !== 'pen') {
+      // Resize Handle (Bottom Right)
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.fillRect(x + w, y + h, 14, 14);
+      ctx.strokeRect(x + w, y + h, 14, 14);
+
+      // Rotate Handle
+      ctx.fillStyle = '#6366f1';
+      ctx.strokeStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(x + w/2, y - 4); ctx.lineTo(x + w/2, y - 20); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + w/2, y - 28, 10, 0, Math.PI*2); ctx.fill();
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
@@ -410,8 +474,11 @@ function refreshLayers() {
     
     const info = document.createElement('div');
     info.className = 'layer-info';
+    const thumbContent = obj.type === 'emoji'
+      ? `<div class="layer-thumb" style="background: transparent; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1;">${obj.text}</div>`
+      : `<div class="layer-thumb" style="background: ${obj.color};"></div>`;
     info.innerHTML = `
-      <div class="layer-thumb" style="background: ${obj.color}; border: ${obj.fill ? 'none' : '1px solid #fff'}"></div>
+      ${thumbContent}
       <div class="layer-name">${obj.type.toUpperCase()}</div>
     `;
     

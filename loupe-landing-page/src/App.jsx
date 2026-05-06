@@ -1,8 +1,36 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from './supabase'
 
 function App() {
   const [view, setView] = useState('landing'); // 'landing' or 'dashboard'
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState('vault'); // 'vault', 'settings', 'upgrade'
+  const [session, setSession] = useState(null);
+  const [cloudStatus, setCloudStatus] = useState('offline');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    // In a real app, this would trigger:
+    // await supabase.auth.signInWithOAuth({ provider: 'google' })
+    // For now, let's mock a successful login for the demo
+    setSession({ user: { email: 'fredrik@example.com', user_metadata: { full_name: 'Fredrik Rosengren', avatar_url: '' } } });
+  };
+
+  const handleLogout = async () => {
+    // await supabase.auth.signOut()
+    setSession(null);
+    setView('landing');
+  };
   // Ping live cloud bridge to check status
   useEffect(() => {
     const checkBridge = async () => {
@@ -22,7 +50,7 @@ function App() {
     "mcpServers": {
       "loupe": {
         "command": "npx",
-        "args": ["-y", "loupe-cloud-bridge", "--endpoint", "https://web-production-9cce.up.railway.app", "--key", "LOUPE_PRO_KEY_XXXX"]
+        "args": ["-y", "loupe-intelligence", "--endpoint", "https://web-production-9cce.up.railway.app", "--key", "LOUPE_PRO_KEY_XXXX"]
       }
     }
   };
@@ -40,21 +68,29 @@ function App() {
           <a href="#" onClick={() => setView('dashboard')} style={{ color: view === 'dashboard' ? 'var(--text)' : 'inherit', textDecoration: 'none' }}>Cloud Console</a>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {!isLoggedIn ? (
-            <button className="btn btn-secondary" onClick={() => setIsLoggedIn(true)} style={{ padding: '8px 20px', fontSize: 14 }}>Log In</button>
+          {!session ? (
+            <button className="btn btn-secondary" onClick={handleLogin} style={{ padding: '8px 20px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16" alt="Google" />
+              Sign in with Google
+            </button>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                <span style={{ fontSize: 12, color: '#10b981' }}>● Cloud Active</span>
-               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--surface-light)', border: '1px solid var(--border)' }}></div>
+               <div 
+                 onClick={handleLogout}
+                 title="Log Out"
+                 style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 12 }}>
+                 {session.user.user_metadata.full_name?.[0] || 'U'}
+               </div>
             </div>
           )}
           <button className="btn btn-primary" onClick={() => setView('dashboard')} style={{ padding: '8px 20px', fontSize: 14 }}>
-            Get Pro
+            {session ? 'Dashboard' : 'Get Pro'}
           </button>
         </div>
       </nav>
 
-      {view === 'landing' ? (
+      {view === 'landing' || !session ? (
         <>
           {/* Hero Section */}
           <header className="hero container animate-fade-in">
@@ -166,66 +202,139 @@ function App() {
             <p>Manage your design intelligence assets across all devices.</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 40 }}>
-            <div className="glass" style={{ padding: 32 }}>
-              <h2 style={{ fontSize: 18, marginBottom: 24 }}>System Identity</h2>
-              
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>PERSONAL API KEY</div>
-                <div style={{ background: '#000', padding: 12, borderRadius: 8, fontFamily: 'monospace', fontSize: 12, border: '1px solid var(--border)', position: 'relative', color: 'var(--accent)' }}>
-                  lp_live_49k28sm1z9...
-                  <button style={{ position: 'absolute', right: 8, top: 8, background: 'var(--surface-light)', border: 'none', color: 'var(--text)', padding: '4px 8px', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>Reveal</button>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>Use this key to authorize your Extension and Figma Plugin.</div>
-              </div>
-
-              <div className="glass" style={{ padding: 20, background: 'rgba(255,255,255,0.02)' }}>
-                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Cloud Vault Status</div>
-                 <div style={{ fontSize: 12, color: '#10b981' }}>Active • 1.2GB / 10GB used</div>
-                 <div style={{ width: '100%', height: 4, background: 'var(--surface-light)', borderRadius: 2, marginTop: 12 }}>
-                    <div style={{ width: '12%', height: '100%', background: 'var(--accent)', borderRadius: 2 }}></div>
-                 </div>
-              </div>
+          <div style={{ display: 'flex', gap: 40 }}>
+            {/* Dashboard Sidebar */}
+            <div className="glass" style={{ width: 240, padding: 12, height: 'fit-content', position: 'sticky', top: 100 }}>
+              <button 
+                onClick={() => setDashboardTab('vault')}
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 12, border: 'none', background: dashboardTab === 'vault' ? 'var(--accent)' : 'transparent', color: dashboardTab === 'vault' ? 'white' : 'var(--text-dim)', textAlign: 'left', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: '0.2s' }}>
+                <span>🗄️</span> Design Vault
+              </button>
+              <button 
+                onClick={() => setDashboardTab('settings')}
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 12, border: 'none', background: dashboardTab === 'settings' ? 'var(--accent)' : 'transparent', color: dashboardTab === 'settings' ? 'white' : 'var(--text-dim)', textAlign: 'left', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: '0.2s', marginTop: 4 }}>
+                <span>⚙️</span> Settings
+              </button>
+              <button 
+                onClick={() => setDashboardTab('upgrade')}
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 12, border: 'none', background: dashboardTab === 'upgrade' ? 'var(--accent-soft)' : 'transparent', color: dashboardTab === 'upgrade' ? 'var(--accent)' : 'var(--text-dim)', textAlign: 'left', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: '0.2s', marginTop: 4 }}>
+                <span>💎</span> Upgrade to Pro
+              </button>
             </div>
 
-            <div className="glass" style={{ padding: 32 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18 }}>Recent Syncs</h2>
-                <button style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View All</button>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {[
-                  { n: 'Hero Section Grid', t: '2 mins ago', s: 'Chrome' },
-                  { n: 'Navigation Component', t: '14 mins ago', s: 'Edge' },
-                  { n: 'Feature Bento Cards', t: '1 hour ago', s: 'Chrome' },
-                  { n: 'Footer Metadata', t: '3 hours ago', s: 'Safari' }
-                ].map((item, i) => (
-                  <div key={i} className="glass" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{item.n}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{item.s} • {item.t}</div>
+            {/* Dashboard Content */}
+            <div style={{ flex: 1 }}>
+              {dashboardTab === 'vault' && (
+                <div className="animate-fade-in">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 32, marginBottom: 40 }}>
+                    <div className="glass" style={{ padding: 32 }}>
+                      <h2 style={{ fontSize: 18, marginBottom: 24 }}>System Identity</h2>
+                      <div style={{ marginBottom: 32 }}>
+                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 8 }}>PERSONAL API KEY</div>
+                        <div style={{ background: '#000', padding: 12, borderRadius: 8, fontFamily: 'monospace', fontSize: 12, border: '1px solid var(--border)', position: 'relative', color: 'var(--accent)' }}>
+                          lp_live_49k28sm1z9...
+                          <button style={{ position: 'absolute', right: 8, top: 8, background: 'var(--surface-light)', border: 'none', color: 'var(--text)', padding: '4px 8px', borderRadius: 4, fontSize: 10, cursor: 'pointer' }}>Reveal</button>
+                        </div>
+                      </div>
+                      <div className="glass" style={{ padding: 20, background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Cloud Vault Status</div>
+                        <div style={{ fontSize: 12, color: '#10b981' }}>Active • 1.2GB / 10GB used</div>
+                        <div style={{ width: '100%', height: 4, background: 'var(--surface-light)', borderRadius: 2, marginTop: 12 }}>
+                            <div style={{ width: '12%', height: '100%', background: 'var(--accent)', borderRadius: 2 }}></div>
+                        </div>
+                      </div>
                     </div>
-                    <button className="btn btn-secondary" style={{ padding: '4px 12px', fontSize: 11 }}>View Brief</button>
+                    <div className="glass" style={{ padding: 32 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                        <h2 style={{ fontSize: 18 }}>Recent Syncs</h2>
+                        <button style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View All</button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {[{ n: 'Hero Section Grid', t: '2 mins ago', s: 'Chrome' }, { n: 'Navigation Component', t: '14 mins ago', s: 'Edge' }, { n: 'Feature Bento Cards', t: '1 hour ago', s: 'Chrome' }].map((item, i) => (
+                          <div key={i} className="glass" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)' }}>
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 600 }}>{item.n}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{item.s} • {item.t}</div>
+                            </div>
+                            <button className="btn btn-secondary" style={{ padding: '4px 12px', fontSize: 11 }}>View Brief</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          <div className="glass" style={{ marginTop: 40, padding: 40 }}>
-             <h2 style={{ fontSize: 24, marginBottom: 32 }}>AI Integration (MCP)</h2>
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60 }}>
-                <div>
-                   <p style={{ fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>To enable Loupe design intelligence in Claude or GPT, use our global MCP proxy. This allows the AI to fetch your cloud captures instantly.</p>
-                   <button className="btn btn-primary" style={{ width: '100%' }}>Copy MCP Configuration</button>
+                  <div className="glass" style={{ padding: 40 }}>
+                    <h2 style={{ fontSize: 24, marginBottom: 32 }}>AI Integration (MCP)</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60 }}>
+                        <div>
+                          <p style={{ fontSize: 14, color: 'var(--text-dim)', marginBottom: 24 }}>To enable Loupe design intelligence in Claude or GPT, use our global MCP proxy. This allows the AI to fetch your cloud captures instantly.</p>
+                          <button className="btn btn-primary" style={{ width: '100%' }}>Copy MCP Configuration</button>
+                        </div>
+                        <div style={{ background: '#000', padding: 20, borderRadius: 12, fontFamily: 'monospace', fontSize: 12, border: '1px solid var(--border)', overflowX: 'auto' }}>
+                          <pre style={{ margin: 0, color: '#94a3b8' }}>
+                            {JSON.stringify(mcpConfig, null, 2)}
+                          </pre>
+                        </div>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ background: '#000', padding: 20, borderRadius: 12, fontFamily: 'monospace', fontSize: 12, border: '1px solid var(--border)', overflowX: 'auto' }}>
-                  <pre style={{ margin: 0, color: '#94a3b8' }}>
-                    {JSON.stringify(mcpConfig, null, 2)}
-                  </pre>
+              )}
+
+              {dashboardTab === 'settings' && (
+                <div className="animate-fade-in glass" style={{ padding: 40 }}>
+                  <h2 style={{ fontSize: 24, marginBottom: 32 }}>System Settings</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+                    <div>
+                      <h3 style={{ fontSize: 16, marginBottom: 12 }}>Cloud Connectivity</h3>
+                      <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <div>
+                            <div style={{ fontWeight: 600 }}>Primary Railway Bridge</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>https://web-production-9cce.up.railway.app</div>
+                         </div>
+                         <div style={{ padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>● ONLINE</div>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: 16, marginBottom: 12 }}>Account Security</h3>
+                      <p style={{ fontSize: 14, color: 'var(--text-dim)', marginBottom: 16 }}>Rotating your API key will disconnect all current active extensions and plugins until they are updated with the new key.</p>
+                      <button className="btn btn-secondary" style={{ color: '#ef4444' }}>Rotate API Key</button>
+                    </div>
+                  </div>
                 </div>
-             </div>
+              )}
+
+              {dashboardTab === 'upgrade' && (
+                <div className="animate-fade-in">
+                  <div className="glass" style={{ padding: 60, textAlign: 'center', background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.1) 0%, transparent 70%)' }}>
+                    <h2 style={{ fontSize: 40, marginBottom: 16 }}>Unlock Loupe Pro</h2>
+                    <p style={{ color: 'var(--text-dim)', marginBottom: 40 }}>Scale your design intelligence workflow without limits.</p>
+                    
+                    <div style={{ maxWidth: 400, margin: '0 auto' }} className="glass">
+                      <div style={{ padding: 40, borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 12 }}>PRO PLAN</div>
+                        <div style={{ fontSize: 48, fontWeight: 800 }}>$19<span style={{ fontSize: 18, color: 'var(--text-dim)' }}>/mo</span></div>
+                      </div>
+                      <div style={{ padding: 40, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+                          {[
+                            'Unlimited Cloud Syncs',
+                            'High-Resolution Full Page Captures',
+                            'Priority MCP Proxy Access',
+                            'Team Workspace (Coming Soon)',
+                            'Advanced Image Reconstruction'
+                          ].map((f, i) => (
+                            <div key={i} style={{ display: 'flex', gap: 12, fontSize: 14 }}>
+                              <span style={{ color: '#10b981' }}>✓</span> {f}
+                            </div>
+                          ))}
+                        </div>
+                        <button className="btn btn-primary" style={{ width: '100%' }}>Upgrade Now</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -1,15 +1,19 @@
 {
   "name": "loupe-mcp-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Loupe MCP Server — HTTP Bridge Version",
   "main": "server.js",
   "type": "module",
+  "bin": {
+    "loupe-bridge": "./server.js"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
+    "@supabase/supabase-js": "^2.45.0",
     "express": "^4.19.2",
     "cors": "^2.8.5"
   }

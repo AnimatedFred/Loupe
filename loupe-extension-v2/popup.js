@@ -62,6 +62,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
+  const authSignedOut  = document.getElementById('auth-signed-out');
+  const authSignedIn   = document.getElementById('auth-signed-in');
+  const authName       = document.getElementById('auth-name');
+  const authEmail      = document.getElementById('auth-email');
+  const authAvatar     = document.getElementById('auth-avatar');
+  const authTierBadge  = document.getElementById('auth-tier-badge');
+  const btnSignIn      = document.getElementById('btn-sign-in');
+  const btnSignOut     = document.getElementById('btn-sign-out');
+
+  function renderAuthState(session) {
+    if (!session) {
+      authSignedOut.style.display = '';
+      authSignedIn.style.display  = 'none';
+      return;
+    }
+    authSignedOut.style.display = 'none';
+    authSignedIn.style.display  = '';
+
+    const user = session.user || {};
+    const meta = user.user_metadata || {};
+    authName.textContent  = meta.full_name || meta.name || user.email || '—';
+    authEmail.textContent = user.email || '—';
+
+    if (meta.avatar_url || meta.picture) {
+      authAvatar.src = meta.avatar_url || meta.picture;
+      authAvatar.style.display = '';
+    }
+
+    const tier = (session.tier || 'free').toUpperCase();
+    authTierBadge.textContent = tier;
+    if (tier === 'PRO') {
+      authTierBadge.style.background = '#ecfdf5';
+      authTierBadge.style.color      = '#10b981';
+    }
+  }
+
+  // Read auth state directly from storage — avoids port-closed errors
+  async function loadAuthState() {
+    const { loupe_session } = await chrome.storage.local.get('loupe_session');
+    renderAuthState(loupe_session || null);
+  }
+
+  // React to session changes written by background.js (sign-in / token refresh)
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+
+    if ('loupe_session' in changes) {
+      const session = changes.loupe_session.newValue || null;
+      renderAuthState(session);
+      if (!session) {
+        btnSignIn.textContent = 'Sign in with Google';
+        btnSignIn.disabled = false;
+      }
+    }
+
+    if ('loupe_auth_error' in changes) {
+      const msg = changes.loupe_auth_error.newValue;
+      if (msg) {
+        btnSignIn.textContent = 'Sign in with Google';
+        btnSignIn.disabled = false;
+        const errEl = document.getElementById('auth-error');
+        if (errEl) { errEl.textContent = msg; errEl.style.display = ''; }
+        console.error('[Loupe Auth]', msg);
+      }
+    }
+  });
+
+  loadAuthState();
+
+  btnSignIn.onclick = () => {
+    btnSignIn.textContent = 'Signing in…';
+    btnSignIn.disabled = true;
+    // Fire-and-forget — result arrives via storage.onChanged above
+    chrome.runtime.sendMessage({ type: 'SIGN_IN' }, () => {
+      void chrome.runtime.lastError; // suppress unchecked-error warning
+    });
+  };
+
+  btnSignOut.onclick = async () => {
+    // Clear locally first so UI is instant
+    await chrome.storage.local.remove('loupe_session');
+    renderAuthState(null);
+    chrome.runtime.sendMessage({ type: 'SIGN_OUT' }, () => {
+      void chrome.runtime.lastError;
+    });
+  };
+
   /**
    * Robust Connection Logic
    * Ensures the content script is alive before sending messages.

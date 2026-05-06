@@ -12,7 +12,8 @@
     "unlimitedStorage",
     "sidePanel",
     "downloads",
-    "offscreen"
+    "offscreen",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"

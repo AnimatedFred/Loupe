@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -6,11 +7,45 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Loupe MCP Server (HTTP Bridge Version)
  * More robust than WebSockets for browser extension service workers.
  */
+
+// --- Supabase ---
+// Set SUPABASE_URL and SUPABASE_SERVICE_KEY in Railway environment variables.
+// The service key (not anon key) lets the server verify JWTs and bypass RLS.
+const supabase = (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
+
+async function verifyToken(req) {
+  if (!supabase) return null; // Auth not configured — open mode
+  const auth = req.headers['authorization'];
+  if (!auth?.startsWith('Bearer ')) return null;
+  const token = auth.slice(7);
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return null;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tier')
+    .eq('id', user.id)
+    .single();
+  return { user, tier: profile?.tier || 'free' };
+}
+
+function requirePro(handler) {
+  return async (req, res) => {
+    if (!supabase) return handler(req, res); // Auth not configured — allow all
+    const auth = await verifyToken(req);
+    if (!auth) return res.status(401).json({ error: 'Authentication required' });
+    if (auth.tier !== 'pro') return res.status(403).json({ error: 'Pro plan required', tier: auth.tier });
+    req.auth = auth;
+    return handler(req, res);
+  };
+}
 
 // --- State ---
 let lastElements = [];
@@ -39,8 +74,8 @@ app.post("/api/update", (req, res) => {
   res.json({ ok: true });
 });
 
-// Endpoint for the AI to push commands
-app.post("/api/ai/push", (req, res) => {
+// Endpoint for the AI to push commands (Pro only)
+app.post("/api/ai/push", requirePro(async (req, res) => {
   aiMessageCounter++;
   currentAiMessage = {
     id: aiMessageCounter,
@@ -49,6 +84,12 @@ app.post("/api/ai/push", (req, res) => {
   };
   console.error(`[Loupe MCP] AI pushed message #${aiMessageCounter} (${currentAiMessage.type})`);
   res.json({ ok: true, id: aiMessageCounter });
+}));
+
+app.get("/api/auth/me", async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthenticated' });
+  res.json({ email: auth.user.email, tier: auth.tier });
 });
 
 app.get("/api/state", (req, res) => {
