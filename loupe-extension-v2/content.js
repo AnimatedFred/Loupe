@@ -42,23 +42,8 @@
         viewport: { w: window.innerWidth, h: window.innerHeight }
       }
     };
+    // Background worker handles the Railway POST with a fresh token via getAuthState()
     safeSendMessage(payload);
-
-    // Include auth token so Railway can verify tier server-side
-    if (!isExtensionAlive()) return;
-    try {
-      chrome.storage.local.get('loupe_session', ({ loupe_session }) => {
-        const headers = { 'Content-Type': 'application/json' };
-        if (loupe_session?.accessToken) {
-          headers['Authorization'] = `Bearer ${loupe_session.accessToken}`;
-        }
-        fetch('https://web-production-9cce.up.railway.app/api/update', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      });
-    } catch (e) {}
   }
 
   // --- Style Extraction ---

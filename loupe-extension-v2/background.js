@@ -301,9 +301,10 @@ async function processQueue() {
 async function notifyBridge() {
   try {
     await LOUPE_CONFIG.refresh();
-    const { loupe_session } = await chrome.storage.local.get('loupe_session');
+    // getAuthState() refreshes the JWT if it's near expiry — stale tokens cause
+    // verifyToken on Railway to return null, which wipes elements and resets tier to 'free'
+    const loupe_session = await getAuthState();
     const headers = { 'Content-Type': 'application/json' };
-    // Send the real Supabase access token so the server can verify tier server-side
     if (loupe_session?.accessToken) {
       headers['Authorization'] = `Bearer ${loupe_session.accessToken}`;
     }
@@ -470,7 +471,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 // always sees the correct tier even after a Railway restart.
 async function syncTierToBridge() {
   try {
-    const { loupe_session } = await chrome.storage.local.get('loupe_session');
+    const loupe_session = await getAuthState();
     if (!loupe_session?.accessToken) return;
     await fetch('https://web-production-9cce.up.railway.app/api/auth/sync', {
       method: 'POST',

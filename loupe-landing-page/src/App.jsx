@@ -184,6 +184,11 @@ function LandingPage({ onLogin, loading }) {
 function Dashboard({ session, tier, onLogout }) {
   const [tab, setTab] = useState('mcp')
   const [copied, setCopied] = useState(false)
+  const [figmaPat, setFigmaPat] = useState('')
+  const [patInput, setPatInput] = useState('')
+  const [showPatInput, setShowPatInput] = useState(false)
+  const [patSaving, setPatSaving] = useState(false)
+  const [patStatus, setPatStatus] = useState(null) // 'saved' | 'error' | null
 
   const isPro = tier === 'pro'
   const user = session.user
@@ -191,19 +196,45 @@ function Dashboard({ session, tier, onLogout }) {
   const avatar = user.user_metadata?.avatar_url
   const initial = displayName?.[0]?.toUpperCase() || '?'
 
-  const mcpConfig = {
-    mcpServers: {
-      loupe: {
-        command: 'npx',
-        args: ['-y', 'loupe-intelligence', '--endpoint', 'https://web-production-9cce.up.railway.app']
-      }
-    }
-  }
+  // Load existing Figma PAT from Supabase on mount
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('figma_pat')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => { if (data?.figma_pat) setFigmaPat(data.figma_pat) })
+  }, [user.id])
+
+  const mcpConfig = figmaPat
+    ? { mcpServers: { loupe: { command: 'npx', args: ['-y', 'loupe-intelligence', '--endpoint', 'https://web-production-9cce.up.railway.app'], env: { FIGMA_PAT: figmaPat } } } }
+    : { mcpServers: { loupe: { command: 'npx', args: ['-y', 'loupe-intelligence', '--endpoint', 'https://web-production-9cce.up.railway.app'] } } }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const savePat = async () => {
+    const token = patInput.trim()
+    if (!token) return
+    setPatSaving(true)
+    setPatStatus(null)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ figma_pat: token })
+      .eq('id', user.id)
+    setPatSaving(false)
+    if (error) {
+      setPatStatus('error')
+    } else {
+      setFigmaPat(token)
+      setPatInput('')
+      setShowPatInput(false)
+      setPatStatus('saved')
+      setTimeout(() => setPatStatus(null), 4000)
+    }
   }
 
   const navItems = [
@@ -317,12 +348,92 @@ function Dashboard({ session, tier, onLogout }) {
                   </div>
 
                   {/* Endpoint status */}
-                  <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
                       <div style={{ fontSize: 13, color: 'var(--text-dim)', fontFamily: 'monospace' }}>https://web-production-9cce.up.railway.app</div>
                     </div>
                     <div style={{ padding: '6px 14px', background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>● ONLINE</div>
+                  </div>
+
+                  {/* Figma REST API Token */}
+                  <div className="glass" style={{ padding: 32 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                      <div>
+                        <div style={{ fontWeight: 700, marginBottom: 4 }}>Figma REST API Token</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Required for high-fidelity image exports and component analysis.</div>
+                      </div>
+                      <div style={{
+                        padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                        background: figmaPat ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.06)',
+                        color: figmaPat ? '#10b981' : 'var(--text-dim)'
+                      }}>
+                        {figmaPat ? '● ACTIVE' : '● NOT CONFIGURED'}
+                      </div>
+                    </div>
+
+                    {patStatus === 'saved' && (
+                      <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 8, fontSize: 13, color: '#10b981' }}>
+                        Token saved successfully. The MCP config above has been updated.
+                      </div>
+                    )}
+                    {patStatus === 'error' && (
+                      <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, fontSize: 13, color: '#ef4444' }}>
+                        Failed to save token. Please try again.
+                      </div>
+                    )}
+
+                    {!showPatInput ? (
+                      <button
+                        onClick={() => { setShowPatInput(true); setPatInput('') }}
+                        className="btn btn-secondary"
+                        style={{ padding: '9px 20px', fontSize: 13 }}
+                      >
+                        {figmaPat ? 'Update Token' : 'Configure Token'}
+                      </button>
+                    ) : (
+                      <div>
+                        <input
+                          type="password"
+                          value={patInput}
+                          onChange={e => setPatInput(e.target.value)}
+                          placeholder="figd_..."
+                          onKeyDown={e => e.key === 'Enter' && savePat()}
+                          style={{
+                            width: '100%', padding: '10px 14px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid var(--border)', borderRadius: 8,
+                            color: 'var(--text)', fontSize: 13, fontFamily: 'monospace',
+                            marginBottom: 12, outline: 'none'
+                          }}
+                        />
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                          <button
+                            onClick={savePat}
+                            disabled={patSaving || !patInput.trim()}
+                            className="btn btn-primary"
+                            style={{ padding: '9px 20px', fontSize: 13 }}
+                          >
+                            {patSaving ? 'Saving...' : 'Save Token'}
+                          </button>
+                          <button
+                            onClick={() => { setShowPatInput(false); setPatInput('') }}
+                            className="btn btn-secondary"
+                            style={{ padding: '9px 16px', fontSize: 13 }}
+                          >
+                            Cancel
+                          </button>
+                          <a
+                            href="https://www.figma.com/settings/account#personal-access-tokens"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ marginLeft: 8, fontSize: 12, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}
+                          >
+                            Get token in Figma Settings ↗
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -398,6 +509,12 @@ function Dashboard({ session, tier, onLogout }) {
                     <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>MCP Access</div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: isPro ? '#10b981' : '#ef4444' }}>
                       {isPro ? '● Active' : '● Locked'}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--surface)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Figma REST API</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: figmaPat ? '#10b981' : 'var(--text-dim)' }}>
+                      {figmaPat ? '● Active' : '● Not set'}
                     </div>
                   </div>
                 </div>

@@ -299,8 +299,8 @@
             parent.postMessage({ pluginMessage: data.aiMessage }, '*');
           }
         } else {
-          document.getElementById('aiDot').className = 'dot';
-          document.getElementById('aiStatus').textContent = isPro ? 'Idle' : 'Pro plan required';
+          document.getElementById('aiDot').className = 'dot on';
+          document.getElementById('aiStatus').textContent = isPro ? 'Connected' : 'Pro plan required';
           document.getElementById('aiCard').classList.remove('active');
         }
 
@@ -314,6 +314,36 @@
       } catch (e) {
         document.getElementById('extStatus').textContent = 'Bridge Offline';
         document.getElementById('extDot').className = 'dot';
+      }
+    }
+
+    // Exchanges the stored refresh token for a new access token via Railway.
+    // Updates session in-place and persists to figma.clientStorage.
+    // Returns true on success, false if the refresh token is gone/invalid (forces sign-out).
+    async function refreshSession() {
+      if (!session || !session.refreshToken) return false;
+      try {
+        var res = await fetch(BRIDGE + '/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: session.refreshToken })
+        });
+        if (!res.ok) {
+          session = null;
+          storageDel('loupe_session');
+          showView('signin');
+          return false;
+        }
+        var data = await res.json();
+        session.accessToken = data.accessToken;
+        if (data.refreshToken) session.refreshToken = data.refreshToken;
+        session.expiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
+        if (data.tier) session.tier = data.tier;
+        if (data.email) session.email = data.email;
+        storageSet('loupe_session', session);
+        return true;
+      } catch (e) {
+        return false;
       }
     }
 
@@ -357,7 +387,13 @@
           }
           var data = await res.json();
           clearInterval(oauthPollInterval);
-          session = { accessToken: data.accessToken, tier: data.tier, email: data.email };
+          session = {
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken || null,
+            expiresAt: data.expiresAt || (Date.now() + 3600 * 1000),
+            tier: data.tier,
+            email: data.email
+          };
           storageSet('loupe_session', session);
           showView('main');
           applyTierBadge(session.tier);
@@ -411,9 +447,22 @@
         if (msg.key === 'loupe_session') {
           if (msg.value && msg.value.accessToken) {
             session = msg.value;
-            showView('main');
-            applyTierBadge(session.tier || 'free');
-            startPolling();
+            var now = Date.now();
+            var expiresAt = session.expiresAt || 0;
+            // If token is expired or expiring within 5 min, refresh before starting
+            if (expiresAt > 0 && now > expiresAt - 5 * 60 * 1000) {
+              refreshSession().then(function(ok) {
+                if (session) {
+                  showView('main');
+                  applyTierBadge(session.tier || 'free');
+                  startPolling();
+                }
+              });
+            } else {
+              showView('main');
+              applyTierBadge(session.tier || 'free');
+              startPolling();
+            }
           } else {
             showView('signin');
           }

@@ -201,28 +201,25 @@ app.use(express.json({ limit: '50mb' }));
 app.post("/api/update", async (req, res) => {
   const data = req.body;
   if (data.type === "ELEMENTS_UPDATE") {
-    // Verify tier server-side — never trust the client-sent value
-    let verifiedTier = 'free';
-    if (!supabase) {
-      // Auth not configured on this server instance — open mode
-      verifiedTier = 'pro';
-    } else {
-      const auth = await verifyToken(req);
-      verifiedTier = auth?.tier || 'free';
-      lastEmail = auth?.user?.email || '';
-    }
-    lastTier = verifiedTier;
+    // Always store elements — tier gate is enforced on the READ side (/api/state).
+    // Requiring auth here caused elements to silently disappear whenever the
+    // extension's token was momentarily expired, breaking the Figma connection.
+    lastElements   = data.elements || [];
+    lastScreenshot = data.screenshot || null;
+    lastContext    = data.context || lastContext;
+    lastPrompt     = data.prompt  || "";
 
-    // Only store elements and screenshots for Pro users
-    if (verifiedTier === 'pro') {
-      lastElements   = data.elements || [];
-      lastScreenshot = data.screenshot || null;
-    } else {
-      lastElements   = [];
-      lastScreenshot = null;
+    // Best-effort tier update from the bearer token — keeps lastTier accurate
+    // but never blocks storage or clears elements on auth failure.
+    if (req.headers.authorization) {
+      const auth = await verifyToken(req);
+      if (auth) {
+        lastTier  = auth.tier;
+        lastEmail = auth.user.email || '';
+      }
+    } else if (!supabase) {
+      lastTier = 'pro';
     }
-    lastContext = data.context || lastContext;
-    lastPrompt  = data.prompt  || "";
   }
   res.json({ ok: true });
 });
@@ -438,6 +435,8 @@ app.get('/auth/figma/callback', (req, res) => {
     document.getElementById('msg').textContent = m;
     document.getElementById('sub').textContent = s || '';
   }
+  var refreshToken = params.get('refresh_token') || '';
+  var expiresIn = parseInt(params.get('expires_in') || '3600');
   if (!accessToken) {
     setMsg('Sign-in failed', 'No token received from Google. Please try again.');
   } else if (!state) {
@@ -446,7 +445,7 @@ app.get('/auth/figma/callback', (req, res) => {
     fetch('/auth/figma/store', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state: state, accessToken: accessToken })
+      body: JSON.stringify({ state: state, accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn })
     }).then(function(r) {
       if (!r.ok) return r.text().then(function(t) { throw new Error('Server error ' + r.status + ': ' + t); });
       return r.json();
@@ -468,7 +467,7 @@ app.get('/auth/figma/callback', (req, res) => {
 // We store the token immediately and resolve tier lazily when the plugin polls
 // /api/state (which does server-side verification with the Bearer token).
 app.post('/auth/figma/store', async (req, res) => {
-  const { state, accessToken } = req.body || {};
+  const { state, accessToken, refreshToken, expiresIn } = req.body || {};
   if (!state || !accessToken) return res.status(400).json({ error: 'Missing state or token' });
 
   // Best-effort tier lookup — if Supabase isn't reachable, we still store the
@@ -480,7 +479,8 @@ app.post('/auth/figma/store', async (req, res) => {
     if (auth) { tier = auth.tier; email = auth.user.email; }
   } catch (_) {}
 
-  figmaAuthSessions.set(state, { accessToken, tier, email, expiresAt: Date.now() + 10 * 60 * 1000 });
+  const tokenExpiresAt = Date.now() + (expiresIn || 3600) * 1000;
+  figmaAuthSessions.set(state, { accessToken, refreshToken, tokenExpiresAt, tier, email, expiresAt: Date.now() + 10 * 60 * 1000 });
   res.json({ ok: true });
 });
 
@@ -497,7 +497,50 @@ app.get('/api/auth/figma/session', (req, res) => {
   // Also update global tier so all clients see it immediately
   lastTier = session.tier;
   lastEmail = session.email;
-  res.json({ ok: true, accessToken: session.accessToken, tier: session.tier, email: session.email });
+  res.json({ ok: true, accessToken: session.accessToken, refreshToken: session.refreshToken || null, expiresAt: session.tokenExpiresAt || null, tier: session.tier, email: session.email });
+});
+
+// Figma plugin uses this to exchange an expired access token for a fresh one
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body || {};
+  if (!refreshToken) return res.status(400).json({ error: 'Missing refreshToken' });
+
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+    const refreshRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+
+    if (!refreshRes.ok) {
+      const err = await refreshRes.text().catch(() => '');
+      console.error(`[Loupe] Token refresh failed ${refreshRes.status}: ${err}`);
+      return res.status(401).json({ error: 'Token refresh failed' });
+    }
+
+    const data = await refreshRes.json();
+    if (!data.access_token) return res.status(401).json({ error: 'No access token in refresh response' });
+
+    // Look up tier with the new token
+    let tier = 'free';
+    let email = '';
+    try {
+      const auth = await verifyToken({ headers: { authorization: `Bearer ${data.access_token}` } });
+      if (auth) { tier = auth.tier; email = auth.user.email; }
+    } catch (_) {}
+
+    res.json({
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token || refreshToken,
+      expiresIn: data.expires_in || 3600,
+      tier,
+      email
+    });
+  } catch (e) {
+    console.error(`[Loupe] Refresh error: ${e.message}`);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get("/api/state", async (req, res) => {
@@ -526,12 +569,14 @@ app.get("/api/state", async (req, res) => {
     }
   }
 
+  // Only expose elements to pro users — free users can't use Figma sync
+  const elementsVisible = lastTier === 'pro' ? lastElements : [];
   res.json({
     page: lastContext,
-    count: lastElements.length,
-    elements: lastElements,
+    count: elementsVisible.length,
+    elements: elementsVisible,
     prompt: lastPrompt,
-    screenshot: lastScreenshot,
+    screenshot: lastTier === 'pro' ? lastScreenshot : null,
     aiMessage: currentAiMessage,
     pendingQuery: pendingQuery,
     figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
