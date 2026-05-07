@@ -150,7 +150,7 @@
       <button class="uipb-toolbar-btn ${currentMode === 'region' ? 'primary' : ''}" id="uipb-btn-area">Region Tool</button>
       <button class="uipb-toolbar-btn ${currentMode === 'screenshot' ? 'primary' : ''}" id="uipb-btn-screenshot">Screenshot</button>
       <div class="uipb-toolbar-divider"></div>
-      <button class="uipb-toolbar-btn" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>Show AI Prompt</button>
+      <button class="uipb-toolbar-btn secondary" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled' : ''}>Show AI Prompt</button>
       <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
     `;
 
