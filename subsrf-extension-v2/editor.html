@@ -6,22 +6,22 @@
   <title>Subsrf Studio — Design Your Brief</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
+      --primary: #00FF87;
+      --primary-hover: #00e87a;
+      --bg: #050508;
+      --panel: #111118;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #F2F2F4;
+      --text-muted: rgba(242, 242, 244, 0.55);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -41,13 +41,12 @@
       z-index: 100;
     }
 
-    .logo { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block; }
+    .logo { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
 
     .toolbar-center {
       display: flex;
       gap: 4px;
-      background: #0f172a80;
+      background: rgba(5, 5, 8, 0.5);
       padding: 4px;
       border-radius: 12px;
       border: 1px solid var(--border);
@@ -56,8 +55,8 @@
     .tool-btn {
       background: transparent; border: none; color: var(--text-muted); padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; transition: all 0.2s;
     }
-    .tool-btn:hover { background: #ffffff10; color: var(--text); }
-    .tool-btn.active { background: var(--primary); color: white; }
+    .tool-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+    .tool-btn.active { background: var(--primary); color: #050508; }
 
     .prop-controls {
       display: flex;
@@ -73,22 +72,22 @@
     }
 
     .icon-btn {
-      background: #ffffff10; border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    .icon-btn:hover { background: #ffffff20; }
-    .icon-btn.active { background: var(--primary); }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); }
+    .icon-btn.active { background: var(--primary); color: #050508; }
 
     .zoom-controls {
       display: flex; align-items: center; gap: 12px; margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--border);
     }
     .zoom-btn {
-      background: #ffffff10; border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.06); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
 
     .actions { display: flex; gap: 12px; }
-    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
-    .btn-secondary { background: #ffffff10; color: var(--text); }
-    .btn-primary { background: var(--primary); color: white; }
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: 'Manrope', sans-serif; }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); }
+    .btn-primary { background: var(--primary); color: #050508; }
 
     .editor-layout { flex: 1; display: flex; overflow: hidden; }
 
@@ -101,10 +100,10 @@
 
     #layer-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
     .layer-item {
-      display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #0f172a40; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(5,5,8,0.4); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
     }
-    .layer-item:hover { border-color: var(--primary); }
-    .layer-item.active { background: #6366f115; border-color: var(--primary); }
+    .layer-item:hover { border-color: rgba(0, 255, 135, 0.4); }
+    .layer-item.active { background: rgba(0, 255, 135, 0.06); border-color: var(--primary); }
 
     .layer-info { display: flex; align-items: center; gap: 10px; pointer-events: none; }
     .layer-thumb { width: 12px; height: 12px; border-radius: 2px; }
@@ -127,7 +126,7 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 1000; align-items: center; justify-content: center;
     }
     .text-box { background: var(--panel); padding: 24px; border-radius: 16px; border: 1px solid var(--border); width: 400px; }
-    .text-box input { width: 100%; background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
+    .text-box input { width: 100%; background: #050508; border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 16px; font-family: 'Manrope', sans-serif; }
 
     .emoji-grid {
       display: grid;
@@ -136,7 +135,7 @@
       margin-bottom: 24px;
     }
     .emoji-item {
-      background: #0f172a40;
+      background: rgba(5,5,8,0.4);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px;
@@ -148,7 +147,7 @@
       justify-content: center;
     }
     .emoji-item:hover {
-      background: #6366f115;
+      background: rgba(0, 255, 135, 0.06);
       border-color: var(--primary);
       transform: scale(1.1);
     }
@@ -181,7 +180,14 @@
 </head>
 <body>
   <header>
-    <div class="logo"><img class="logo-icon" src="icons/icon128.png" alt="Subsrf">Subsrf Studio</div>
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+        <rect x="2" y="2" width="24" height="10" rx="2.5" fill="#00FF87"/>
+        <rect x="2" y="16" width="24" height="10" rx="2.5" fill="#00FF87" opacity="0.4"/>
+        <path d="M14 12v4M11 14l3 3 3-3" stroke="#050508" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Subsrf Studio
+    </div>
     <div class="toolbar-center">
       <button class="tool-btn active" id="tool-select"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg></button>
       <button class="tool-btn" id="tool-rect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></button>
@@ -193,14 +199,14 @@
       <button class="tool-btn" id="tool-pen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
 
       <div class="prop-controls">
-        <input type="color" id="color-picker" value="#6366f1">
+        <input type="color" id="color-picker" value="#00FF87">
         <button class="icon-btn" id="btn-fill" title="Toggle Fill">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>
         </button>
         <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
         <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="4"/></svg>
-        <input type="range" id="stroke-size" min="1" max="24" value="4" title="Stroke Size" style="width: 56px; accent-color: var(--primary); cursor: pointer; vertical-align: middle;">
+        <input type="range" id="stroke-size" min="1" max="24" value="4" title="Stroke Size" style="width: 56px; accent-color: #00FF87; cursor: pointer; vertical-align: middle;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="8"/></svg>
         <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
         <button class="icon-btn" id="btn-bring-front" title="Bring to Front">

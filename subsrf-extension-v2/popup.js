@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     list.innerHTML = elements.map((el, i) => `
       <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 10px;">
-           <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; background: #eef2ff; color: #6366f1; padding: 2px 6px; border-radius: 4px;">${i + 1}</span>
+           <span style="font-family: 'Azeret Mono', monospace; font-size: 10px; background: rgba(0,255,135,0.1); color: #00FF87; border: 1px solid rgba(0,255,135,0.3); padding: 2px 6px; border-radius: 4px; font-weight: 500;">${i + 1}</span>
            <span style="font-weight: 700; font-size: 12px;">${el.tagName}</span>
         </div>
         <span style="font-size: 10px; color: var(--text-dim); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${el.cls || 'No Class'}</span>

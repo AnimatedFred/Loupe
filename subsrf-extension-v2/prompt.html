@@ -5,23 +5,23 @@
   <title>Subsrf — Prompt Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:      #0f172a;
-      --panel:   #1e293b;
-      --border:  #334155;
-      --accent:  #6366f1;
-      --accent2: #818cf8;
-      --text:    #f8fafc;
-      --muted:   #94a3b8;
-      --success: #10b981;
+      --bg:      #050508;
+      --panel:   #111118;
+      --border:  rgba(255, 255, 255, 0.08);
+      --accent:  #00FF87;
+      --accent2: #00e87a;
+      --text:    #F2F2F4;
+      --muted:   rgba(242, 242, 244, 0.55);
+      --success: #39D98A;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Manrope', sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -91,7 +91,7 @@
 
     .toggle-group {
       display: flex;
-      background: #0f172a80;
+      background: rgba(5, 5, 8, 0.5);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 3px;
@@ -105,7 +105,7 @@
       background: transparent;
       font-size: 13px;
       font-weight: 600;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Manrope', sans-serif;
       color: var(--muted);
       cursor: pointer;
       transition: all 0.15s;
@@ -113,7 +113,7 @@
 
     .tog.active {
       background: var(--accent);
-      color: white;
+      color: #050508;
     }
 
     /* Right third */
@@ -143,8 +143,8 @@
     }
 
     .status-chip.online {
-      background: #10b98115;
-      border-color: #10b98140;
+      background: rgba(57, 217, 138, 0.1);
+      border-color: rgba(57, 217, 138, 0.3);
       color: var(--success);
     }
 
@@ -168,24 +168,24 @@
       border: none;
       font-size: 13px;
       font-weight: 600;
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Manrope', sans-serif;
       cursor: pointer;
       transition: all 0.15s;
     }
 
     .btn-ghost {
-      background: #ffffff10;
+      background: rgba(255,255,255,0.08);
       color: var(--text);
     }
 
-    .btn-ghost:hover { background: #ffffff1c; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.12); }
 
     .btn-accent {
       background: var(--accent);
-      color: white;
+      color: #050508;
     }
 
-    .btn-accent:hover { background: #4f46e5; }
+    .btn-accent:hover { background: var(--accent2); }
     .btn-accent:disabled { opacity: 0.38; cursor: not-allowed; }
     .btn-accent:disabled:hover { background: var(--accent); }
 
@@ -200,8 +200,8 @@
     .sidebar {
       width: 256px;
       flex-shrink: 0;
-      background: #ffffff;
-      border-right: 1px solid #e2e8f0;
+      background: #111118;
+      border-right: 1px solid rgba(255,255,255,0.06);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -209,7 +209,7 @@
 
     .sidebar-hd {
       padding: 16px 16px 12px;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .label {
@@ -217,7 +217,7 @@
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #94a3b8;
+      color: rgba(242, 242, 244, 0.4);
     }
 
     .big-count {
@@ -235,18 +235,18 @@
     }
 
     .el-list::-webkit-scrollbar { width: 3px; }
-    .el-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+    .el-list::-webkit-scrollbar-thumb { background: rgba(242,242,244,0.12); border-radius: 2px; }
 
     .el-card {
       padding: 10px 14px;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
       cursor: pointer;
       transition: background 0.12s;
       border-left: 2px solid transparent;
     }
 
-    .el-card:hover { background: #f8fafc; }
-    .el-card.active { background: #eef2ff; border-left-color: var(--accent); }
+    .el-card:hover { background: rgba(255,255,255,0.03); }
+    .el-card.active { background: rgba(0, 255, 135, 0.06); border-left-color: var(--accent); }
 
     .el-top {
       display: flex;
@@ -256,21 +256,22 @@
     }
 
     .el-num {
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'Azeret Mono', monospace;
       font-size: 9px;
-      background: #eef2ff;
-      color: var(--accent);
+      background: rgba(0, 255, 135, 0.1);
+      color: #00FF87;
+      border: 1px solid rgba(0, 255, 135, 0.25);
       padding: 2px 5px;
       border-radius: 3px;
       flex-shrink: 0;
     }
 
-    .el-tag { font-weight: 700; font-size: 12px; color: #1e293b; }
+    .el-tag { font-weight: 700; font-size: 12px; color: #F2F2F4; }
 
     .el-cls {
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'Azeret Mono', monospace;
       font-size: 10px;
-      color: #64748b;
+      color: rgba(242, 242, 244, 0.55);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -279,7 +280,7 @@
 
     .el-txt {
       font-size: 11px;
-      color: #64748b;
+      color: rgba(242, 242, 244, 0.55);
       font-style: italic;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -297,14 +298,14 @@
       width: 13px;
       height: 13px;
       border-radius: 3px;
-      border: 1px solid rgba(0,0,0,0.10);
+      border: 1px solid rgba(255,255,255,0.1);
       flex-shrink: 0;
     }
 
     .swatch-dim {
       font-size: 9px;
-      color: #94a3b8;
-      font-family: 'IBM Plex Mono', monospace;
+      color: rgba(242, 242, 244, 0.4);
+      font-family: 'Azeret Mono', monospace;
     }
 
     /* ── Main ── */
@@ -313,10 +314,10 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #e2e8f0;
+      background: #0C0C12;
     }
 
-    /* ── Output (white) ── */
+    /* ── Output ── */
     .output-wrap {
       flex: 1;
       overflow-y: auto;
@@ -325,23 +326,23 @@
 
     .output-wrap::-webkit-scrollbar { width: 6px; }
     .output-wrap::-webkit-scrollbar-track { background: transparent; }
-    .output-wrap::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    .output-wrap::-webkit-scrollbar-thumb { background: rgba(242,242,244,0.12); border-radius: 3px; }
 
     .output-box {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
+      background: #0C0C12;
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
 
     .output-box-hd {
       padding: 9px 16px;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #f8fafc;
+      background: #111118;
     }
 
     .mac-dot {
@@ -351,15 +352,15 @@
     }
 
     pre.output {
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'Azeret Mono', monospace;
       font-size: 12px;
-      line-height: 1.75;
-      color: #1e293b;
+      line-height: 1.8;
+      color: rgba(242, 242, 244, 0.6);
       padding: 20px 22px;
       white-space: pre-wrap;
       word-break: break-word;
       margin: 0;
-      background: #ffffff;
+      background: #0C0C12;
     }
 
     /* Element section highlighting */
@@ -370,8 +371,8 @@
     }
 
     .el-section.hl {
-      background: #fffbeb;
-      outline: 2px solid #fde68a;
+      background: rgba(0, 255, 135, 0.05);
+      outline: 1px solid rgba(0, 255, 135, 0.3);
       outline-offset: 1px;
       border-radius: 4px;
     }
@@ -381,9 +382,9 @@
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
+      background: #111118;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #F2F2F4;
       padding: 9px 15px;
       border-radius: 8px;
       font-size: 12px;
@@ -404,7 +405,11 @@
     <!-- Left: logo + page context -->
     <div class="hd-left">
       <div class="logo">
-        <img class="logo-icon" src="icons/icon128.png" alt="Subsrf">
+        <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+          <rect x="2" y="2" width="24" height="10" rx="2.5" fill="#00FF87"/>
+          <rect x="2" y="16" width="24" height="10" rx="2.5" fill="#00FF87" opacity="0.4"/>
+          <path d="M14 12v4M11 14l3 3 3-3" stroke="#050508" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         Prompt Studio
       </div>
       <div class="hd-sep"></div>
@@ -456,7 +461,7 @@
             <div class="mac-dot" style="background:#ef4444;"></div>
             <div class="mac-dot" style="background:#f59e0b;"></div>
             <div class="mac-dot" style="background:#10b981;"></div>
-            <span style="font-size:11px; color:#94a3b8; margin-left:8px; font-family:'IBM Plex Mono',monospace;" id="output-label">subsrf-brief.txt</span>
+            <span style="font-size:11px; color:rgba(242,242,244,0.4); margin-left:8px; font-family:'Azeret Mono',monospace;" id="output-label">subsrf-brief.txt</span>
           </div>
           <pre class="output" id="output">Loading...</pre>
         </div>

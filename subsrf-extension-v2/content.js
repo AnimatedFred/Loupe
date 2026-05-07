@@ -143,7 +143,7 @@
     if (!toolbar) return;
     toolbar.innerHTML = `
       <div class="uipb-toolbar-info">
-        <span style="color: #6366f1; font-weight: 800;">${highlightedElements.length}</span> ELEMENTS
+        <span style="color: #00FF87; font-weight: 600;">${highlightedElements.length}</span> ELEMENTS
       </div>
       <div class="uipb-toolbar-divider"></div>
       <button class="uipb-toolbar-btn ${currentMode === 'click' ? 'primary' : ''}" id="uipb-btn-click">Smart Select</button>
@@ -151,7 +151,7 @@
       <button class="uipb-toolbar-btn ${currentMode === 'screenshot' ? 'primary' : ''}" id="uipb-btn-screenshot">Screenshot</button>
       <div class="uipb-toolbar-divider"></div>
       <button class="uipb-toolbar-btn" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>Show AI Prompt</button>
-      <button class="uipb-toolbar-btn" id="uipb-exit" style="color: #64748b;">Exit</button>
+      <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
     `;
 
     document.getElementById('uipb-btn-click').onclick = (e) => { e.stopPropagation(); currentMode = 'click'; updateToolbar(); };
