@@ -13,7 +13,6 @@ const elListEl    = document.getElementById('el-list');
 const elCountEl   = document.getElementById('el-count');
 const pageCtxEl   = document.getElementById('page-context');
 const btnCopy     = document.getElementById('btn-copy');
-const btnPush     = document.getElementById('btn-push');
 const togPrompt   = document.getElementById('tog-prompt');
 const togCss      = document.getElementById('tog-css');
 const toastEl     = document.getElementById('toast');
@@ -411,12 +410,10 @@ async function checkBridge() {
       dotFigma.classList.add('on');
       lblFigma.textContent = 'FIGMA CONNECTED';
       chipFigma.classList.add('online');
-      if (elements.length > 0) btnPush.disabled = false;
     } else {
       dotFigma.classList.remove('on');
       lblFigma.textContent = 'FIGMA WAITING';
       chipFigma.classList.remove('online');
-      btnPush.disabled = true;
     }
   } catch {
     bridgeOnline   = false;
@@ -427,7 +424,6 @@ async function checkBridge() {
     dotFigma.classList.remove('on');
     lblFigma.textContent = 'FIGMA WAITING';
     chipFigma.classList.remove('online');
-    btnPush.disabled = true;
   }
 }
 
@@ -460,41 +456,6 @@ btnCopy.addEventListener('click', async () => {
   }
 });
 
-btnPush.addEventListener('click', async () => {
-  if (!bridgeOnline || elements.length === 0) return;
-
-  const orig = btnPush.textContent;
-  btnPush.textContent = 'Pushing…';
-  btnPush.disabled = true;
-
-  try {
-    // Delegate to background so it uses the correct endpoint + fresh auth token
-    const pushResp = await chrome.runtime.sendMessage({
-      type: 'PUSH_TO_FIGMA',
-      elements,
-      context
-    });
-
-    if (!pushResp?.ok) throw new Error(pushResp?.error || 'Push failed');
-
-    btnPush.textContent = 'Done!';
-    btnPush.style.background = '#39D98A';
-    showToast(`${elements.length} element${elements.length !== 1 ? 's' : ''} pushed to Figma canvas`);
-    setTimeout(() => {
-      btnPush.textContent = orig;
-      btnPush.style.background = '';
-      btnPush.disabled = !figmaConnected;
-    }, 2500);
-  } catch (e) {
-    console.error('[Subsrf] Push failed:', e.message);
-    btnPush.textContent = 'Error';
-    showToast('Push failed — check that the MCP bridge is running');
-    setTimeout(() => {
-      btnPush.textContent = orig;
-      btnPush.disabled = !figmaConnected;
-    }, 2000);
-  }
-});
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 init();
