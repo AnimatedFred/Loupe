@@ -207,8 +207,8 @@ function Dashboard({ session, tier, onLogout }) {
   }, [user.id])
 
   const mcpConfig = figmaPat
-    ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
-    : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.dev'] } } }
+    ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
+    : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev'] } } }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2))
@@ -351,7 +351,7 @@ function Dashboard({ session, tier, onLogout }) {
                   <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-dim)', fontFamily: 'monospace' }}>https://subsrf.dev</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-dim)', fontFamily: 'monospace' }}>https://www.subsrf.dev</div>
                     </div>
                     <div style={{ padding: '6px 14px', background: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>● ONLINE</div>
                   </div>
@@ -457,7 +457,7 @@ function Dashboard({ session, tier, onLogout }) {
                     </div>
                     <div className="glass" style={{ padding: 24 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--text-dim)', fontFamily: 'monospace' }}>https://subsrf.dev</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-dim)', fontFamily: 'monospace' }}>https://www.subsrf.dev</div>
                     </div>
                   </div>
                   {/* Lock overlay */}
