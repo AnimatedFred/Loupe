@@ -3,100 +3,145 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Subsrf Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
     :root {
-      --bg: #ffffff;
-      --bg2: #F8FAFC;
-      --surface: #ffffff;
-      --border: #F1F5F9;
-      --accent: #6366f1;
-      --accent-soft: #eef2ff;
-      --text: #0F172A;
-      --text-dim: #64748B;
-      --success: #10B981;
-      --danger: #ef4444;
+      --void:      #050508;
+      --deep:      #0C0C12;
+      --layer:     #111118;
+      --surface:   #18181F;
+      --lift:      #202028;
+      --border:    rgba(255,255,255,0.06);
+      --border-md: rgba(255,255,255,0.10);
+      --acid:      #00FF87;
+      --acid-dim:  rgba(0,255,135,0.12);
+      --t1: #F2F2F4;
+      --t2: rgba(242,242,244,0.55);
+      --t3: rgba(242,242,244,0.28);
+      --t4: rgba(242,242,244,0.12);
+      --ok:   #39D98A;
+      --warn: #FFAB00;
+      --err:  #FF4D4D;
+      /* aliases for inline styles */
+      --bg: var(--void);
+      --bg2: var(--layer);
+      --text: var(--t1);
+      --text-dim: var(--t3);
+      --accent: var(--acid);
+      --accent-soft: var(--acid-dim);
+      --success: var(--ok);
+      --danger: var(--err);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       width: 320px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Outfit', sans-serif;
+      background: var(--void);
+      color: var(--t1);
+      font-family: 'Manrope', sans-serif;
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
     }
 
     /* --- Header --- */
     .header {
-      padding: 14px 16px;
+      padding: 12px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
     }
     .logo-group { display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block; }
+    .logo-icon { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; display: block; }
+    .logo-wordmark {
+      font-family: 'Azeret Mono', monospace;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.5px;
+      color: var(--acid);
+    }
 
     /* --- Tabs --- */
     .tabs {
       display: flex;
       border-bottom: 1px solid var(--border);
-      background: var(--bg);
+      background: var(--void);
     }
     .tab {
       flex: 1;
-      padding: 11px 0;
+      padding: 10px 0;
       text-align: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-dim);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      font-weight: 400;
+      color: var(--t3);
       cursor: pointer;
-      transition: all 0.2s;
-      border-bottom: 2px solid transparent;
-      letter-spacing: 0.04em;
+      transition: color 0.15s, border-color 0.15s;
+      border-bottom: 1px solid transparent;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
     }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab:hover:not(.active) { color: var(--t1); }
+    .tab.active { color: var(--acid); border-bottom-color: var(--acid); }
 
     /* --- Views --- */
-    .view { display: none; padding: 16px; }
+    .view { display: none; padding: 14px; }
     .view.active { display: block; }
 
     /* --- Shared components --- */
     .section-label {
-      font-size: 10px; font-weight: 700; color: var(--text-dim);
-      text-transform: uppercase; letter-spacing: 0.06em;
-      margin-bottom: 10px; margin-top: 4px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      color: var(--acid);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before {
+      content: '';
+      width: 10px; height: 1px;
+      background: var(--acid);
+      flex-shrink: 0;
     }
     .card {
-      background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 12px; padding: 14px; margin-bottom: 14px;
+      background: var(--layer);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
     }
     .btn {
-      width: 100%; padding: 11px; border-radius: 10px; border: none;
-      font-weight: 700; cursor: pointer; font-family: inherit;
-      font-size: 13px; transition: all 0.2s;
+      width: 100%; padding: 10px; border-radius: 6px; border: none;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700; cursor: pointer;
+      font-size: 13px; transition: all 0.15s;
     }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-primary:hover { background: #4f46e5; }
-    .btn-ghost { background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); }
-    .btn-upgrade { background: linear-gradient(135deg, #6366f1, #818cf8); color: white; }
+    .btn-primary { background: var(--acid); color: var(--void); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost { background: rgba(255,255,255,0.05); color: var(--t2); border: 1px solid var(--border-md); }
+    .btn-ghost:hover { color: var(--t1); }
+    .btn-upgrade { background: var(--acid); color: var(--void); font-weight: 700; }
 
     /* --- Capture view --- */
-    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
     .mode-btn {
-      background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
-      padding: 14px 10px; cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; gap: 6px; transition: all 0.2s; font-family: inherit;
+      background: var(--layer); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 10px; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 5px; transition: all 0.15s; font-family: 'Manrope', sans-serif;
     }
-    .mode-btn:hover { border-color: var(--accent); background: white; }
-    .mode-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-    .mode-btn .label { font-weight: 700; font-size: 12px; }
-    .mode-btn .sub { font-size: 10px; opacity: 0.65; font-weight: 500; }
+    .mode-btn:hover { border-color: var(--border-md); background: var(--surface); }
+    .mode-btn.active { background: var(--acid-dim); border-color: var(--acid); }
+    .mode-btn .label { font-weight: 700; font-size: 12px; color: var(--t1); }
+    .mode-btn .sub { font-family: 'Azeret Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 0.5px; }
+    .mode-btn.active .label { color: var(--acid); }
+    .mode-btn.active .sub { color: rgba(0,255,135,0.55); }
 
     /* --- Status dots --- */
     .status-row {
@@ -104,12 +149,12 @@
       font-size: 12px; padding: 8px 0; border-bottom: 1px solid var(--border);
     }
     .status-row:last-child { border-bottom: none; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
-    .dot.on { background: var(--success); box-shadow: 0 0 5px var(--success); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lift); }
+    .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 
     /* --- MCP lock overlay --- */
     .lock-wrap { position: relative; }
-    .lock-blur { filter: blur(3px); pointer-events: none; user-select: none; opacity: 0.4; }
+    .lock-blur { filter: blur(3px); pointer-events: none; user-select: none; opacity: 0.25; }
     .lock-overlay {
       position: absolute; inset: 0;
       display: flex; flex-direction: column; align-items: center;
@@ -118,21 +163,27 @@
 
     /* --- Account --- */
     .tier-badge {
-      font-size: 10px; font-weight: 800; padding: 3px 8px;
-      border-radius: 100px; white-space: nowrap;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px; letter-spacing: 1.5px;
+      padding: 3px 8px; border-radius: 4px; white-space: nowrap; text-transform: uppercase;
     }
-    .tier-free { background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); }
-    .tier-pro  { background: var(--accent-soft); color: var(--accent); }
+    .tier-free { background: var(--layer); color: var(--t3); border: 1px solid var(--border); }
+    .tier-pro  { background: var(--acid-dim); color: var(--acid); border: 1px solid rgba(0,255,135,0.2); }
   </style>
 </head>
 <body>
 
   <header class="header">
     <div class="logo-group">
-      <img class="logo-icon" src="icons/icon128.png" alt="Subsrf">
-      <div style="font-weight: 800; font-size: 16px;">Subsrf</div>
+      <svg width="26" height="26" viewBox="0 0 36 36" fill="none" style="flex-shrink:0">
+        <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+        <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+        <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5"/>
+        <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <div class="logo-wordmark">subsrf</div>
     </div>
-    <div id="bridge-status-badge" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 100px; background: var(--bg2); color: var(--text-dim);">BRIDGE OFFLINE</div>
+    <div id="bridge-status-badge" style="font-family:'Azeret Mono',monospace; font-size: 9px; letter-spacing:1.5px; padding: 3px 8px; border-radius: 4px; background: var(--layer); color: var(--t3); border:1px solid var(--border); text-transform:uppercase;">OFFLINE</div>
   </header>
 
   <div class="tabs">
@@ -168,13 +219,13 @@
     </div>
 
     <div class="card" style="text-align: center; padding: 14px;">
-      <div style="font-weight: 700; font-size: 16px;" id="countText">0 Elements</div>
-      <div style="font-size: 11px; color: var(--text-dim); margin-top: 3px;">Ready to push to Figma</div>
+      <div style="font-family:'Azeret Mono',monospace; font-size: 28px; font-weight:400; color: var(--acid); line-height:1; text-shadow: 0 0 24px rgba(0,255,135,0.25);" id="countText">0</div>
+      <div style="font-family:'Azeret Mono',monospace; font-size: 9px; letter-spacing:1.5px; color: var(--t3); margin-top: 4px; text-transform:uppercase;">Elements captured</div>
     </div>
 
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; margin-top: 4px;">
       <div class="section-label" style="margin: 0;">Inventory</div>
-      <button id="btn-clear-all" style="background: none; border: none; font-size: 11px; font-weight: 700; color: var(--text-dim); cursor: pointer; padding: 2px 6px; border-radius: 6px; font-family: inherit; letter-spacing: 0.04em; text-transform: uppercase;">Clear</button>
+      <button id="btn-clear-all" style="background: none; border: none; font-family:'Azeret Mono',monospace; font-size: 9px; color: var(--t3); cursor: pointer; padding: 2px 6px; border-radius: 4px; letter-spacing:1.5px; text-transform: uppercase;">Clear</button>
     </div>
     <div id="elements-list" class="card" style="padding: 0; max-height: 130px; overflow-y: auto; margin-bottom: 16px;">
       <div style="padding: 18px; text-align: center; color: var(--text-dim); font-size: 12px;">No elements selected</div>
@@ -209,7 +260,7 @@
       <div class="section-label">MCP Config</div>
       <div class="card" style="padding: 12px;">
         <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5;">Add this to your Claude Desktop or Cursor <code>settings.json</code>:</div>
-        <div style="background: #0f172a; color: #94a3b8; padding: 10px; border-radius: 8px; font-size: 10px; font-family: monospace; line-height: 1.6; overflow-x: auto; white-space: pre;" id="mcp-config-block"></div>
+        <div style="background: var(--deep); color: var(--t2); padding: 10px 12px; border-radius: 6px; font-size: 10px; font-family: 'Azeret Mono',monospace; line-height: 1.8; overflow-x: auto; white-space: pre; border: 1px solid var(--border);" id="mcp-config-block"></div>
         <button class="btn btn-ghost" id="btn-copy-mcp" style="margin-top: 10px; font-size: 12px; padding: 8px;">Copy Config</button>
       </div>
 
@@ -262,7 +313,7 @@
           </div>
           <div class="section-label">MCP Config</div>
           <div class="card">
-            <div style="background: #0f172a; color: #94a3b8; padding: 10px; border-radius: 8px; font-size: 10px; font-family: monospace; line-height: 1.6;">{"mcpServers":{"subsrf":{<br>  "command":"npx",<br>  "args":["-y","subsrf-intelligence"]<br>}}}</div>
+            <div style="background: var(--deep); color: var(--t2); padding: 10px 12px; border-radius: 6px; font-size: 10px; font-family: 'Azeret Mono',monospace; line-height: 1.8; border: 1px solid var(--border);">{"mcpServers":{"subsrf":{<br>  "command":"npx",<br>  "args":["-y","subsrf-intelligence"]<br>}}}</div>
           </div>
         </div>
         <div class="lock-overlay">
@@ -284,7 +335,7 @@
     <!-- Signed-out state -->
     <div id="auth-signed-out">
       <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6;">Sign in to sync your plan across the extension, Figma plugin, and web dashboard.</p>
-      <div id="auth-error" style="display:none; font-size:11px; color:#dc2626; background:#fef2f2; border-radius:8px; padding:8px 10px; margin-bottom:10px;"></div>
+      <div id="auth-error" style="display:none; font-family:'Azeret Mono',monospace; font-size:10px; color:var(--err); background:rgba(255,77,77,0.08); border:1px solid rgba(255,77,77,0.2); border-radius:6px; padding:8px 10px; margin-bottom:10px; line-height:1.6;"></div>
       <button class="btn btn-primary" id="btn-sign-in" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom: 0;">
         <svg width="15" height="15" viewBox="0 0 48 48" fill="none">
           <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
@@ -318,9 +369,9 @@
         </div>
       </div>
 
-      <div id="acct-upgrade-cta" style="display:none; background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius:12px; padding:14px; margin-bottom:14px; text-align:center;">
-        <div style="font-weight:700; font-size:13px; margin-bottom:6px;">Unlock MCP Bridge</div>
-        <div style="font-size:11px; color:var(--text-dim); margin-bottom:10px; line-height:1.5;">Connect to Claude Desktop &amp; Cursor. Unlimited elements, priority support.</div>
+      <div id="acct-upgrade-cta" style="display:none; background: var(--acid-dim); border: 1px solid rgba(0,255,135,0.2); border-radius:8px; padding:14px; margin-bottom:12px; text-align:center;">
+        <div style="font-weight:700; font-size:13px; margin-bottom:6px; color:var(--t1);">Unlock MCP Bridge</div>
+        <div style="font-size:11px; color:var(--t3); margin-bottom:10px; line-height:1.5;">Connect to Claude Desktop &amp; Cursor. Unlimited elements, priority support.</div>
         <button class="btn btn-upgrade" id="btn-upgrade-account" style="padding: 9px;">Upgrade to Pro — $19/mo</button>
       </div>
 

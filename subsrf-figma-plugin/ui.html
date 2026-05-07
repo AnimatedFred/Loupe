@@ -1,98 +1,141 @@
 <!DOCTYPE html>
-<html>
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --text-dim: #94a3b8;
-      --accent: #6366f1;
-      --success: #10b981;
+      --void:      #050508;
+      --deep:      #0C0C12;
+      --layer:     #111118;
+      --surface:   #18181F;
+      --lift:      #202028;
+      --border:    rgba(255,255,255,0.06);
+      --border-md: rgba(255,255,255,0.10);
+      --acid:      #00FF87;
+      --acid-dim:  rgba(0,255,135,0.12);
+      --t1: #F2F2F4;
+      --t2: rgba(242,242,244,0.55);
+      --t3: rgba(242,242,244,0.28);
+      --t4: rgba(242,242,244,0.12);
+      --ok:   #39D98A;
+      --warn: #FFAB00;
+      --err:  #FF4D4D;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      padding: 16px;
+      font-family: 'Manrope', sans-serif;
+      background: var(--void);
+      color: var(--t1);
+      padding: 14px;
       overflow: hidden;
       width: 100%;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+    .title {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      font-weight: 400;
+      margin-bottom: 16px;
+      color: var(--acid);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .title::before { content: ''; width: 10px; height: 1px; background: var(--acid); flex-shrink: 0; }
 
     .card {
-      background: var(--surface);
+      background: var(--layer);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 12px;
-      transition: border-color 0.2s;
+      transition: border-color 0.15s;
     }
-    .card.active { border-color: var(--accent); background: rgba(99,102,241,0.05); }
+    .card.active { border-color: var(--acid); background: var(--acid-dim); }
 
     .icon-box {
-      width: 32px; height: 32px;
-      border-radius: 8px;
-      background: var(--bg);
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      background: var(--deep);
+      border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
     .card-info { flex: 1; }
-    .card-label { font-size: 10px; font-weight: 600; color: var(--text-dim); margin-bottom: 2px; }
-    .card-value { font-size: 13px; font-weight: 600; }
+    .card-label {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: var(--t3);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+    .card-value { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .card.active .card-value { color: var(--acid); }
 
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #475569; flex-shrink: 0; }
-    .dot.on  { background: var(--success); box-shadow: 0 0 6px var(--success); }
-    .dot.pulse { background: var(--accent); animation: pulse 1.5s infinite; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lift); flex-shrink: 0; }
+    .dot.on    { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .dot.pulse { background: var(--acid); animation: pulse 1.5s infinite; }
 
     @keyframes pulse {
-      0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.7); }
-      70%  { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
-      100% { box-shadow: 0 0 0 0   rgba(99,102,241,0); }
+      0%   { box-shadow: 0 0 0 0   rgba(0,255,135,0.6); }
+      70%  { box-shadow: 0 0 0 8px rgba(0,255,135,0); }
+      100% { box-shadow: 0 0 0 0   rgba(0,255,135,0); }
     }
 
     button {
       width: 100%;
-      background: var(--accent);
-      color: white;
+      background: var(--acid);
+      color: var(--void);
       border: none;
       padding: 10px;
-      border-radius: 8px;
-      font-weight: 600;
-      margin-top: 12px;
+      border-radius: 6px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      margin-top: 10px;
       cursor: pointer;
       font-size: 13px;
+      transition: opacity 0.15s;
     }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
     button.secondary {
-      background: var(--surface);
-      color: var(--text-dim);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--t2);
+      border: 1px solid var(--border-md);
       margin-top: 8px;
     }
 
     .feed {
-      background: var(--bg);
+      background: var(--deep);
       border: 1px solid var(--border);
       border-radius: 8px;
-      height: 100px;
-      margin-top: 16px;
+      height: 96px;
+      margin-top: 12px;
       padding: 10px 12px;
       font-size: 11px;
       overflow-y: auto;
     }
-    .feed-title { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-    .feed-row { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .feed-title {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .feed-row { display: flex; justify-content: space-between; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
     .feed-row:last-child { border-bottom: none; }
-    .feed-time { color: var(--text-dim); }
+    .feed-time { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3); }
 
     /* Sign-in screen */
     #view-signin {
@@ -104,32 +147,36 @@
       text-align: center;
       gap: 8px;
     }
-    #view-signin .logo { font-size: 28px; margin-bottom: 4px; }
-    #view-signin h2 { font-size: 16px; font-weight: 700; }
-    #view-signin p { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+    #view-signin .logo { margin-bottom: 8px; }
+    #view-signin h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    #view-signin p { font-size: 12px; color: var(--t3); line-height: 1.6; font-weight: 300; }
     #view-signin button { margin-top: 16px; }
-    #signin-status { font-size: 11px; color: var(--text-dim); margin-top: 8px; min-height: 16px; }
+    #signin-status {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+      margin-top: 8px;
+      min-height: 16px;
+      letter-spacing: 0.5px;
+    }
 
     #view-main { display: none; }
 
     .minimize-btn {
       background: none;
       border: none;
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      margin: 0;
+      width: 22px; height: 22px;
+      padding: 0; margin: 0;
       cursor: pointer;
-      color: var(--text-dim);
-      font-size: 16px;
+      color: var(--t3);
+      font-size: 14px;
       line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       border-radius: 4px;
       flex-shrink: 0;
+      transition: color 0.15s, background 0.15s;
     }
-    .minimize-btn:hover { background: var(--surface); color: var(--text); }
+    .minimize-btn:hover { background: var(--surface); color: var(--t1); }
 
     /* Compact toolbar */
     body.compact { padding: 0; }
@@ -140,36 +187,43 @@
       align-items: center;
       gap: 10px;
       cursor: pointer;
+      background: var(--void);
+      border-bottom: 1px solid var(--border);
     }
-    #toolbar:hover { background: rgba(255,255,255,0.03); }
+    #toolbar:hover { background: var(--layer); }
     .toolbar-logo {
+      font-family: 'Azeret Mono', monospace;
       font-size: 11px;
-      font-weight: 700;
-      color: var(--text-dim);
+      font-weight: 600;
+      color: var(--acid);
       white-space: nowrap;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      letter-spacing: -0.5px;
     }
     .toolbar-chips { display: flex; gap: 6px; flex: 1; }
     .toolbar-chip {
       display: flex;
       align-items: center;
       gap: 5px;
-      background: var(--surface);
+      background: var(--layer);
       border: 1px solid var(--border);
-      border-radius: 100px;
+      border-radius: 4px;
       padding: 3px 8px;
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-dim);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      color: var(--t3);
       white-space: nowrap;
-      transition: border-color 0.2s, color 0.2s;
+      transition: border-color 0.15s, color 0.15s;
     }
-    .toolbar-chip.active { border-color: var(--accent); color: var(--text); }
+    .toolbar-chip.active { border-color: var(--acid); color: var(--acid); }
 
     #view-loading {
       display: flex; align-items: center; justify-content: center;
-      min-height: 280px; color: var(--text-dim); font-size: 12px;
+      min-height: 280px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--t3);
     }
   </style>
 </head>
@@ -180,8 +234,15 @@
 
   <!-- Sign-in -->
   <div id="view-signin">
-    <div class="logo">🔍</div>
-    <h2>Subsrf Intelligence</h2>
+    <div class="logo">
+      <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
+        <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+        <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+        <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5"/>
+        <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <h2>subsrf</h2>
     <p>Sign in to connect the Figma plugin<br>to your Subsrf account.</p>
     <button id="btnSignIn">Sign in with Google</button>
     <div id="signin-status"></div>
@@ -209,28 +270,32 @@
 
     <!-- Full view -->
     <div id="main-content">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
         <div class="title" style="margin-bottom:0;">Intelligence Hub</div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span id="tierBadge" style="font-size:10px; font-weight:700; padding:3px 8px; border-radius:100px; background:#1e293b; color:#94a3b8; border:1px solid #334155;">FREE</span>
+          <span id="tierBadge" style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1.5px; padding:3px 8px; border-radius:4px; background:rgba(255,255,255,0.05); color:rgba(242,242,244,0.28); border:1px solid rgba(255,255,255,0.06); text-transform:uppercase;">FREE</span>
           <button class="secondary" id="btnSignOut" style="width:auto; padding:3px 8px; font-size:10px; margin-top:0;">Sign out</button>
           <button class="minimize-btn" id="btnMinimize" title="Compact view">&#8211;</button>
         </div>
       </div>
 
       <div class="card" id="extCard">
-        <div class="icon-box">🔍</div>
+        <div class="icon-box">
+          <svg width="16" height="16" viewBox="0 0 36 36" fill="none"><rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="2" fill="none"/><rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.35)" stroke-width="2" fill="none"/><path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        </div>
         <div class="card-info">
-          <div class="card-label">Extension Connection</div>
+          <div class="card-label">Extension</div>
           <div class="card-value" id="extStatus">Waiting...</div>
         </div>
         <div class="dot" id="extDot"></div>
       </div>
 
       <div class="card" id="aiCard">
-        <div class="icon-box">🧠</div>
+        <div class="icon-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="#00FF87" stroke-width="1.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="rgba(0,255,135,0.4)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
         <div class="card-info">
-          <div class="card-label">Claude AI Connection</div>
+          <div class="card-label">Claude AI</div>
           <div class="card-value" id="aiStatus">Idle</div>
         </div>
         <div class="dot" id="aiDot"></div>
@@ -287,7 +352,7 @@
       const row = document.createElement('div');
       row.className = 'feed-row';
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      row.innerHTML = '<span style="color:' + (type === 'ai' ? '#818cf8' : '#10b981') + '">' + msg + '</span><span class="feed-time">' + time + '</span>';
+      row.innerHTML = '<span style="color:' + (type === 'ai' ? '#00FF87' : '#39D98A') + '">' + msg + '</span><span class="feed-time">' + time + '</span>';
       feedList.prepend(row);
     }
 
@@ -295,15 +360,15 @@
       const isPro = tier === 'pro';
       const badge = document.getElementById('tierBadge');
       if (isPro) {
-        badge.textContent = '⚡ PRO';
-        badge.style.background = 'rgba(99,102,241,0.15)';
-        badge.style.color = '#818cf8';
-        badge.style.border = '1px solid rgba(99,102,241,0.3)';
+        badge.textContent = 'PRO';
+        badge.style.background = 'rgba(0,255,135,0.12)';
+        badge.style.color = '#00FF87';
+        badge.style.border = '1px solid rgba(0,255,135,0.2)';
       } else {
         badge.textContent = 'FREE';
-        badge.style.background = '#1e293b';
-        badge.style.color = '#94a3b8';
-        badge.style.border = '1px solid #334155';
+        badge.style.background = 'rgba(255,255,255,0.05)';
+        badge.style.color = 'rgba(242,242,244,0.28)';
+        badge.style.border = '1px solid rgba(255,255,255,0.06)';
       }
     }
 

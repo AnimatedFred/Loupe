@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     chrome.storage.local.remove('selectedElements');
     chrome.runtime.sendMessage({ type: 'ELEMENTS_UPDATE', elements: [] }, () => void chrome.runtime.lastError);
     updateInventory([]);
-    if (countText) countText.innerText = '0 Elements';
+    if (countText) countText.innerText = '0';
   };
 
   // --- UI Sync ---
@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function updateInventory(elements) {
-    if (countText) countText.innerText = `${elements.length} Elements`;
+    if (countText) countText.innerText = `${elements.length}`;
     const list = document.getElementById('elements-list');
     if (!list) return;
     
