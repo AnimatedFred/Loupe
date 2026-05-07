@@ -375,6 +375,35 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       notifyBridge();
       break;
     }
+
+    case 'PUSH_TO_FIGMA': {
+      // Explicit push from Prompt Studio — reads elements from message, uses correct endpoint + auth
+      (async () => {
+        try {
+          await SUBSRF_CONFIG.refresh();
+          const subsrf_session = await getAuthState();
+          const headers = { 'Content-Type': 'application/json' };
+          if (subsrf_session?.accessToken) headers['Authorization'] = `Bearer ${subsrf_session.accessToken}`;
+
+          const res = await fetch(SUBSRF_CONFIG.MCP_ENDPOINT, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              type: 'ELEMENTS_UPDATE',
+              elements: msg.elements || [],
+              context: msg.context || {},
+              version: SUBSRF_CONFIG.VERSION
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          safeSend(sendResponse, { ok: true });
+        } catch (e) {
+          console.error('[Subsrf] PUSH_TO_FIGMA failed:', e.message);
+          safeSend(sendResponse, { ok: false, error: e.message });
+        }
+      })();
+      return true;
+    }
     case 'SELECTION_UPDATED': {
       const count = msg.count;
       chrome.action.setBadgeText({

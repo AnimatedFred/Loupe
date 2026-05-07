@@ -17,6 +17,54 @@
 
   console.log('[Subsrf] Capture Engine v2.8 Online.');
 
+  // --- Inject toolbar styles directly so they're immune to CSS caching ---
+  (function injectStyles() {
+    if (document.getElementById('uipb-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'uipb-styles';
+    s.textContent = `
+      .uipb-toolbar {
+        position: fixed !important;
+        bottom: 32px; left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: #0C0C12 !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        display: flex !important; align-items: center !important; gap: 8px !important;
+        z-index: 2147483647 !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,255,135,0.08) !important;
+        opacity: 0; pointer-events: none;
+        transition: all 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+      }
+      .uipb-toolbar.show { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; pointer-events: auto !important; }
+      .uipb-toolbar-btn {
+        background: transparent !important; color: rgba(242,242,244,0.55) !important;
+        border: none !important; padding: 10px 16px !important; border-radius: 10px !important;
+        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 13px !important;
+        font-weight: 600 !important; cursor: pointer !important;
+        display: flex !important; align-items: center !important; gap: 8px !important;
+        transition: all 0.2s ease !important; white-space: nowrap !important;
+      }
+      .uipb-toolbar-btn:hover { background: rgba(242,242,244,0.06) !important; color: #F2F2F4 !important; }
+      .uipb-toolbar-btn.primary { background: #00FF87 !important; color: #050508 !important; }
+      .uipb-toolbar-btn.primary:hover { background: #00e87a !important; box-shadow: 0 4px 12px rgba(0,255,135,0.25) !important; }
+      .uipb-toolbar-btn.secondary { background: transparent !important; color: #00FF87 !important; border: 1px solid rgba(0,255,135,0.35) !important; }
+      .uipb-toolbar-btn.secondary:hover { background: rgba(0,255,135,0.08) !important; border-color: rgba(0,255,135,0.6) !important; }
+      .uipb-toolbar-btn.secondary:disabled { color: rgba(0,255,135,0.3) !important; border-color: rgba(0,255,135,0.12) !important; }
+      .uipb-toolbar-divider { width: 1px !important; height: 20px !important; background: rgba(242,242,244,0.08) !important; margin: 0 4px !important; }
+      .uipb-toolbar-info { color: rgba(242,242,244,0.55) !important; font-family: 'Azeret Mono', monospace !important; font-size: 12px !important; margin-left: 8px !important; margin-right: 12px !important; }
+      .uipb-highlight-box { position: absolute !important; border: 2px solid #00FF87 !important; background: rgba(0,255,135,0.06) !important; pointer-events: none !important; z-index: 2147483646 !important; box-sizing: border-box !important; border-radius: 4px !important; }
+      .uipb-badge { position: absolute !important; background: #0C0C12 !important; color: #00FF87 !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; font-weight: 700 !important; padding: 2px 6px !important; border-radius: 4px !important; z-index: 2147483647 !important; pointer-events: none !important; border: 1px solid rgba(0,255,135,0.35) !important; box-shadow: 0 4px 12px rgba(0,255,135,0.15) !important; transform: translate(-50%,-50%) !important; }
+      .uipb-region-overlay { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.06) !important; pointer-events: none !important; z-index: 2147483645 !important; box-sizing: border-box !important; }
+      #uipb-toast { position: fixed; bottom: 24px; right: 24px; background: #0C0C12; color: #F2F2F4; font-family: 'Manrope', -apple-system, sans-serif; font-size: 13px; font-weight: 700; padding: 12px 20px; border-radius: 12px; z-index: 2147483647; opacity: 0; transform: translateY(8px); transition: all 0.3s cubic-bezier(0.16,1,0.3,1); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; }
+      #uipb-toast.show { opacity: 1; transform: translateY(0); }
+    `;
+    document.head.appendChild(s);
+  })();
+
   // --- Communication ---
   function isExtensionAlive() {
     try { return !!chrome.runtime?.id; } catch (e) { return false; }

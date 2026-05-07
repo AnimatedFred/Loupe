@@ -468,24 +468,14 @@ btnPush.addEventListener('click', async () => {
   btnPush.disabled = true;
 
   try {
-    // Get a fresh auth token from the background service worker
-    const authResp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
-    const token = authResp?.session?.accessToken;
-
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch('https://www.subsrf.dev/api/ai/push', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        type: 'IMPORT_ELEMENTS',
-        elements: elements,
-        context: context
-      })
+    // Delegate to background so it uses the correct endpoint + fresh auth token
+    const pushResp = await chrome.runtime.sendMessage({
+      type: 'PUSH_TO_FIGMA',
+      elements,
+      context
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!pushResp?.ok) throw new Error(pushResp?.error || 'Push failed');
 
     btnPush.textContent = 'Done!';
     btnPush.style.background = '#39D98A';
