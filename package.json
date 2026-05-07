@@ -1,8 +1,8 @@
 {
-  "name": "loupe-monorepo",
+  "name": "subsrf-monorepo",
   "version": "1.0.0",
   "scripts": {
-    "start": "cd loupe-mcp-server && npm install && node server.js",
+    "start": "cd subsrf-mcp-server && npm install && node server.js",
     "build": "echo 'No root build required'"
   }
 }

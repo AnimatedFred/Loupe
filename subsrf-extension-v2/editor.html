@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subsrf Studio — Design Your Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      height: 64px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .logo { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; display: block; }
+
+    .toolbar-center {
+      display: flex;
+      gap: 4px;
+      background: #0f172a80;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .tool-btn {
+      background: transparent; border: none; color: var(--text-muted); padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; transition: all 0.2s;
+    }
+    .tool-btn:hover { background: #ffffff10; color: var(--text); }
+    .tool-btn.active { background: var(--primary); color: white; }
+
+    .prop-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 12px;
+      padding-left: 12px;
+      border-left: 1px solid var(--border);
+    }
+
+    #color-picker {
+      width: 28px; height: 28px; padding: 0; border: none; background: none; cursor: pointer; border-radius: 6px; overflow: hidden;
+    }
+
+    .icon-btn {
+      background: #ffffff10; border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .icon-btn:hover { background: #ffffff20; }
+    .icon-btn.active { background: var(--primary); }
+
+    .zoom-controls {
+      display: flex; align-items: center; gap: 12px; margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--border);
+    }
+    .zoom-btn {
+      background: #ffffff10; border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    .actions { display: flex; gap: 12px; }
+    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-secondary { background: #ffffff10; color: var(--text); }
+    .btn-primary { background: var(--primary); color: white; }
+
+    .editor-layout { flex: 1; display: flex; overflow: hidden; }
+
+    main {
+      flex: 1; background: #000; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 80px 40px; position: relative;
+    }
+
+    aside { width: 260px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
+    .panel-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
+
+    #layer-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+    .layer-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #0f172a40; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
+    }
+    .layer-item:hover { border-color: var(--primary); }
+    .layer-item.active { background: #6366f115; border-color: var(--primary); }
+
+    .layer-info { display: flex; align-items: center; gap: 10px; pointer-events: none; }
+    .layer-thumb { width: 12px; height: 12px; border-radius: 2px; }
+    .layer-name { font-weight: 500; }
+
+    .layer-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 4px; z-index: 100; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .layer-btn:hover { color: #ff4444; background: #ff444420; }
+
+    #canvas-container { position: relative; box-shadow: 0 30px 100px rgba(0,0,0,0.8); transform-origin: top center; }
+    canvas { display: block; }
+    #draw-layer { position: absolute; top: 0; left: 0; cursor: crosshair; }
+    #draw-layer.mode-select { cursor: default; }
+
+    #toast-notification {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--panel); border: 1px solid var(--primary); padding: 12px 24px; border-radius: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
+    }
+    #toast-notification.show { transform: translateX(-50%) translateY(0); }
+
+    #text-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 1000; align-items: center; justify-content: center;
+    }
+    .text-box { background: var(--panel); padding: 24px; border-radius: 16px; border: 1px solid var(--border); width: 400px; }
+    .text-box input { width: 100%; background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
+
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .emoji-item {
+      background: #0f172a40;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .emoji-item:hover {
+      background: #6366f115;
+      border-color: var(--primary);
+      transform: scale(1.1);
+    }
+
+    .emoji-tray {
+      height: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 90;
+    }
+    .emoji-tray.open { height: 280px; }
+    
+    .emoji-tray-content {
+      padding: 20px 24px;
+      display: flex;
+      gap: 32px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    .emoji-cat { display: flex; flex-direction: column; gap: 8px; }
+    .emoji-cat span { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+    .emoji-list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+    .tray-emoji {
+      background: transparent; border: 1px solid transparent; font-size: 20px; padding: 4px; cursor: pointer; border-radius: 6px; transition: all 0.2s;
+    }
+    .tray-emoji:hover { background: #ffffff10; border-color: var(--border); transform: scale(1.15); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo"><img class="logo-icon" src="icons/icon128.png" alt="Subsrf">Subsrf Studio</div>
+    <div class="toolbar-center">
+      <button class="tool-btn active" id="tool-select"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg></button>
+      <button class="tool-btn" id="tool-rect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></button>
+      <button class="tool-btn" id="tool-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></button>
+      <button class="tool-btn" id="tool-star"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
+      <button class="tool-btn" id="tool-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+      <button class="tool-btn" id="tool-text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
+      <button class="tool-btn" id="tool-emoji"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+      <button class="tool-btn" id="tool-pen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+
+      <div class="prop-controls">
+        <input type="color" id="color-picker" value="#6366f1">
+        <button class="icon-btn" id="btn-fill" title="Toggle Fill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>
+        </button>
+        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
+        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="4"/></svg>
+        <input type="range" id="stroke-size" min="1" max="24" value="4" title="Stroke Size" style="width: 56px; accent-color: var(--primary); cursor: pointer; vertical-align: middle;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="8"/></svg>
+        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
+        <button class="icon-btn" id="btn-bring-front" title="Bring to Front">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-send-back" title="Send to Back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        </button>
+      </div>
+
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-out">−</button>
+        <span id="zoom-level" style="font-size: 11px; min-width: 34px; text-align: center;">100%</span>
+        <button class="zoom-btn" id="zoom-in">+</button>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-secondary" id="btn-copy">Copy</button>
+      <button class="btn btn-primary" id="btn-download">Download</button>
+    </div>
+  </header>
+
+  <div id="emoji-tray" class="emoji-tray">
+    <div class="emoji-tray-content">
+      <div class="emoji-cat">
+        <span>Design & Art</span>
+        <div class="emoji-list">
+          <button class="tray-emoji">🔥</button><button class="tray-emoji">🚀</button><button class="tray-emoji">✨</button><button class="tray-emoji">🎨</button><button class="tray-emoji">💡</button><button class="tray-emoji">🖌️</button>
+          <button class="tray-emoji">🎯</button><button class="tray-emoji">🌈</button><button class="tray-emoji">💎</button><button class="tray-emoji">🪄</button><button class="tray-emoji">👑</button><button class="tray-emoji">🎭</button>
+          <button class="tray-emoji">✅</button><button class="tray-emoji">❌</button><button class="tray-emoji">💯</button><button class="tray-emoji">🔔</button><button class="tray-emoji">📍</button><button class="tray-emoji">🧶</button>
+        </div>
+      </div>
+      <div class="emoji-cat">
+        <span>Reactions</span>
+        <div class="emoji-list">
+          <button class="tray-emoji">😀</button><button class="tray-emoji">😍</button><button class="tray-emoji">🤔</button><button class="tray-emoji">😎</button><button class="tray-emoji">😱</button><button class="tray-emoji">😂</button>
+          <button class="tray-emoji">🤩</button><button class="tray-emoji">🤯</button><button class="tray-emoji">🥳</button><button class="tray-emoji">🙌</button><button class="tray-emoji">🎉</button><button class="tray-emoji">🔥</button>
+          <button class="tray-emoji">👍</button><button class="tray-emoji">👎</button><button class="tray-emoji">👏</button><button class="tray-emoji">🤝</button><button class="tray-emoji">❤️</button><button class="tray-emoji">🔥</button>
+        </div>
+      </div>
+      <div class="emoji-cat">
+        <span>Business & Tech</span>
+        <div class="emoji-list">
+          <button class="tray-emoji">💻</button><button class="tray-emoji">📱</button><button class="tray-emoji">🛠️</button><button class="tray-emoji">📊</button><button class="tray-emoji">⚡</button><button class="tray-emoji">💰</button>
+          <button class="tray-emoji">🔒</button><button class="tray-emoji">🔑</button><button class="tray-emoji">📅</button><button class="tray-emoji">📋</button><button class="tray-emoji">🔍</button><button class="tray-emoji">📈</button>
+          <button class="tray-emoji">🏗️</button><button class="tray-emoji">🔧</button><button class="tray-emoji">⚙️</button><button class="tray-emoji">🔗</button><button class="tray-emoji">📡</button><button class="tray-emoji">🚀</button>
+        </div>
+      </div>
+      <div class="emoji-cat">
+        <span>Fun & Misc</span>
+        <div class="emoji-list">
+          <button class="tray-emoji">💩</button><button class="tray-emoji">👻</button><button class="tray-emoji">👽</button><button class="tray-emoji">🤖</button><button class="tray-emoji">🎃</button><button class="tray-emoji">👾</button>
+          <button class="tray-emoji">🍕</button><button class="tray-emoji">☕</button><button class="tray-emoji">🍦</button><button class="tray-emoji">🍿</button><button class="tray-emoji">🍩</button><button class="tray-emoji">🍺</button>
+          <button class="tray-emoji">⭐</button><button class="tray-emoji">🌟</button><button class="tray-emoji">🌀</button><button class="tray-emoji">💤</button><button class="tray-emoji">💨</button><button class="tray-emoji">💥</button>
+        </div>
+      </div>
+      <div class="emoji-cat">
+        <span>Cursors</span>
+        <div class="emoji-list">
+          <button class="tray-cursor" data-cursor="default">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+          </button>
+          <button class="tray-cursor" data-cursor="pointer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black"><path d="M10 11V6a2 2 0 0 1 4 0v7a1 1 0 0 0 2 0V8a2 2 0 0 1 4 0v9a7 7 0 0 1-7 7H9a7 7 0 0 1-7-7v-2a5 5 0 0 1 5-5h3z"/></svg>
+          </button>
+          <button class="tray-cursor" data-cursor="text">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M7 5h10M12 5v14M7 19h10"/></svg>
+          </button>
+          <button class="tray-cursor" data-cursor="move">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="m5 9-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-layout">
+    <main id="editor-viewport">
+      <div id="canvas-container">
+        <canvas id="main-canvas"></canvas>
+        <canvas id="draw-layer"></canvas>
+      </div>
+    </main>
+    <aside>
+      <div class="panel-title">Layers</div>
+      <div id="layer-list"></div>
+    </aside>
+  </div>
+
+  <div id="toast-notification">
+    <div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%;"></div>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <div id="text-overlay">
+    <div class="text-box">
+      <input type="text" id="text-input" placeholder="Type your note...">
+      <button class="btn btn-primary" id="btn-text-save" style="width: 100%">Add Note</button>
+    </div>
+  </div>
+
+  <script src="editor.js"></script>
+</body>
+</html>

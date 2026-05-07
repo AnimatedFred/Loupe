@@ -1,1 +1,1 @@
-web: cd loupe-mcp-server && npm install && node server.js
+web: cd subsrf-mcp-server && npm install && node server.js
