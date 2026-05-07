@@ -468,27 +468,35 @@ btnPush.addEventListener('click', async () => {
   btnPush.disabled = true;
 
   try {
-    // Push via /api/ai/push so the Figma plugin auto-imports without user needing to click
-    await fetch('https://www.subsrf.dev/api/ai/push', {
+    // Get a fresh auth token from the background service worker
+    const authResp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
+    const token = authResp?.session?.accessToken;
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch('https://www.subsrf.dev/api/ai/push', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
         type: 'IMPORT_ELEMENTS',
         elements: elements,
         context: context
       })
     });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     btnPush.textContent = 'Done!';
-    btnPush.style.background = '#10b981';
-    btnPush.style.borderColor = '#10b981';
+    btnPush.style.background = '#39D98A';
     showToast(`${elements.length} element${elements.length !== 1 ? 's' : ''} pushed to Figma canvas`);
     setTimeout(() => {
       btnPush.textContent = orig;
       btnPush.style.background = '';
-      btnPush.style.borderColor = '';
       btnPush.disabled = !figmaConnected;
     }, 2500);
-  } catch {
+  } catch (e) {
+    console.error('[Subsrf] Push failed:', e.message);
     btnPush.textContent = 'Error';
     showToast('Push failed — check that the MCP bridge is running');
     setTimeout(() => {
