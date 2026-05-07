@@ -6,7 +6,7 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": [
-      "https://subsrf.up.railway.app"
+      "https://subsrf.dev"
     ],
     "reasoning": "Syncing captured UI elements from the local Subsrf bridge."
   }

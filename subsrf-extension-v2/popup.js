@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (stored.subsrf_session?.accessToken) {
         headers['Authorization'] = `Bearer ${stored.subsrf_session.accessToken}`;
       }
-      await fetch('https://subsrf.up.railway.app/api/update', {
+      await fetch('https://subsrf.dev/api/update', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     mcpServers: {
       subsrf: {
         command: 'npx',
-        args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.up.railway.app']
+        args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.dev']
       }
     }
   };
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Upgrade buttons → open web dashboard
   ['btn-upgrade-mcp', 'btn-upgrade-account'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://subsrf.up.railway.app/#pricing' });
+      chrome.tabs.create({ url: 'https://subsrf.dev/#pricing' });
     });
   });
 
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (subsrf_session?.accessToken) {
         headers['Authorization'] = `Bearer ${subsrf_session.accessToken}`;
       }
-      const res = await fetch('https://subsrf.up.railway.app/api/state', { headers });
+      const res = await fetch('https://subsrf.dev/api/state', { headers });
       if (res.ok) {
         const data = await res.json();
         const bridgeStatusText = document.getElementById('bridge-status-text');
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Also update Railway in-memory cache (best-effort — ok if it fails)
-      fetch('https://subsrf.up.railway.app/api/user/figma-pat', {
+      fetch('https://subsrf.dev/api/user/figma-pat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${freshSession.accessToken}` },
         body: JSON.stringify({ pat: token })
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       mcpServers: {
         subsrf: {
           command: 'npx',
-          args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.up.railway.app'],
+          args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://subsrf.dev'],
           env: { FIGMA_PAT: token }
         }
       }

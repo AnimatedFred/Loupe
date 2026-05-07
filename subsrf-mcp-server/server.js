@@ -23,7 +23,7 @@ import { randomUUID } from "node:crypto";
  * the local process and the Figma plugin share the same state.
  */
 
-// Parse --endpoint <url> from CLI args (e.g. --endpoint https://subsrf.up.railway.app)
+// Parse --endpoint <url> from CLI args (e.g. --endpoint https://subsrf.dev)
 const endpointArgIdx = process.argv.indexOf('--endpoint');
 const RELAY_ENDPOINT = endpointArgIdx >= 0 ? process.argv[endpointArgIdx + 1] : null;
 if (RELAY_ENDPOINT) {
@@ -400,12 +400,12 @@ app.post('/api/user/figma-pat', async (req, res) => {
 // Pending sessions keyed by state UUID — TTL 10 minutes
 const figmaAuthSessions = new Map();
 
-const BRIDGE_URL = process.env.BRIDGE_URL || 'https://subsrf.up.railway.app';
+const BRIDGE_URL = process.env.BRIDGE_URL || 'https://subsrf.dev';
 const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
 
 // Step 1 — plugin opens this URL to start OAuth
 // redirect_to includes the state as a query param — add the wildcard entry
-// https://subsrf.up.railway.app/auth/figma/callback* to Supabase's
+// https://subsrf.dev/auth/figma/callback* to Supabase's
 // allowed redirect URLs so the query string doesn't break the allowlist match.
 app.get('/auth/figma/start', (req, res) => {
   const state = req.query.state || randomUUID().slice(0, 16);
