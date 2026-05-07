@@ -335,30 +335,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (bridgeStatusText) {
           bridgeStatusText.innerText = 'ONLINE';
-          bridgeStatusText.style.color = '#10B981';
+          bridgeStatusText.style.color = '#39D98A';
           bridgeDot.classList.add('on');
-          bridgeBadge.innerText = 'BRIDGE ONLINE';
-          bridgeBadge.style.background = '#eef2ff';
-          bridgeBadge.style.color = '#6366f1';
+          bridgeBadge.style.background = 'rgba(57,217,138,0.08)';
+          bridgeBadge.style.borderColor = 'rgba(57,217,138,0.25)';
+          bridgeBadge.style.color = '#39D98A';
+          document.getElementById('bridge-badge-dot').style.background = '#39D98A';
+          document.getElementById('bridge-badge-label').textContent = 'MCP Connected';
           
           if (data.figmaConnected) {
             figmaStatusText.innerText = 'CONNECTED';
-            figmaStatusText.style.color = '#10B981';
+            figmaStatusText.style.color = '#39D98A';
             figmaDot.classList.add('on');
           } else {
             figmaStatusText.innerText = 'WAITING';
-            figmaStatusText.style.color = '#64748B';
+            figmaStatusText.style.color = 'rgba(242,242,244,0.28)';
             figmaDot.classList.remove('on');
           }
 
           if (data.restApiAvailable) {
             restStatusText.innerText = 'ACTIVE';
-            restStatusText.style.color = '#10B981';
+            restStatusText.style.color = '#39D98A';
             restDot.classList.add('on');
             document.getElementById('btn-show-rest-input').innerText = 'Update Token';
           } else {
             restStatusText.innerText = 'NOT CONFIGURED';
-            restStatusText.style.color = '#64748B';
+            restStatusText.style.color = 'rgba(242,242,244,0.28)';
             restDot.classList.remove('on');
             document.getElementById('btn-show-rest-input').innerText = 'Configure Token';
           }
@@ -368,10 +370,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const bridgeStatusText = document.getElementById('bridge-status-text');
       if (bridgeStatusText) {
         bridgeStatusText.innerText = 'OFFLINE';
-        bridgeStatusText.style.color = '#64748B';
+        bridgeStatusText.style.color = 'rgba(242,242,244,0.28)';
         document.getElementById('bridge-dot').classList.remove('on');
-        document.getElementById('bridge-status-badge').innerText = 'BRIDGE OFFLINE';
-        document.getElementById('bridge-status-badge').style.background = '#f1f5f9';
+        const badge = document.getElementById('bridge-status-badge');
+        badge.style.background = 'rgba(242,242,244,0.04)';
+        badge.style.borderColor = 'rgba(255,255,255,0.08)';
+        badge.style.color = 'rgba(242,242,244,0.28)';
+        document.getElementById('bridge-badge-dot').style.background = 'rgba(242,242,244,0.28)';
+        document.getElementById('bridge-badge-label').textContent = 'Offline';
         
         document.getElementById('rest-status-text').innerText = 'OFFLINE';
         document.getElementById('rest-dot').classList.remove('on');
