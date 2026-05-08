@@ -12,7 +12,7 @@ import { request as httpsRequest } from "node:https";
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHmac } from "node:crypto";
 
 /**
  * Subsrf MCP Server (HTTP Bridge Version)
@@ -274,6 +274,66 @@ app.use(cors({
   origin: (origin, callback) => callback(null, origin === 'null' ? 'null' : (origin || '*')),
   credentials: false,
 }));
+
+// Stripe webhook — registered BEFORE express.json() so we receive the raw Buffer
+// that Stripe requires for signature verification.
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) return res.status(500).json({ error: 'STRIPE_WEBHOOK_SECRET not set' });
+
+  let event;
+  try {
+    const rawBody = req.body.toString('utf8');
+    const parts = sig.split(',');
+    const tPart = parts.find(p => p.startsWith('t='));
+    const v1Parts = parts.filter(p => p.startsWith('v1='));
+    if (!tPart || !v1Parts.length) throw new Error('Invalid stripe-signature header');
+    const timestamp = tPart.slice(2);
+    const expected = createHmac('sha256', webhookSecret)
+      .update(`${timestamp}.${rawBody}`, 'utf8').digest('hex');
+    if (!v1Parts.some(v => v.slice(3) === expected)) throw new Error('Signature mismatch');
+    if (Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) > 300) throw new Error('Timestamp too old');
+    event = JSON.parse(rawBody);
+  } catch (e) {
+    console.error('[Subsrf Stripe] Webhook verification failed:', e.message);
+    return res.status(400).json({ error: e.message });
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const userId = session.metadata?.supabase_user_id;
+    const tier = session.metadata?.tier || 'pro';
+    const tierCredits = { pro: 300, starter: 75 }[tier] ?? 300;
+    if (userId && supabase) {
+      const now = new Date();
+      const update = {
+        tier,
+        credits: tierCredits,
+        credits_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+      };
+      if (session.customer) update.stripe_customer_id = session.customer;
+      if (session.subscription) update.stripe_subscription_id = session.subscription;
+      const { error } = await supabase.from('profiles').update(update).eq('id', userId);
+      if (error) console.error('[Subsrf Stripe] Profile update failed:', error.message);
+      else console.error(`[Subsrf Stripe] Upgraded ${userId} to ${tier} (credits=${tierCredits})`);
+    }
+  }
+
+  if (event.type === 'customer.subscription.deleted') {
+    const sub = event.data.object;
+    if (sub.customer && supabase) {
+      const { error } = await supabase.from('profiles')
+        .update({ tier: 'free', credits: 0 })
+        .eq('stripe_customer_id', sub.customer);
+      if (error) console.error('[Subsrf Stripe] Downgrade failed:', error.message);
+      else console.error(`[Subsrf Stripe] Downgraded customer ${sub.customer} to free`);
+    }
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '50mb' }));
 
 app.post("/api/update", async (req, res) => {
@@ -529,6 +589,58 @@ app.post('/api/credits/refund', async (req, res) => {
     res.json({ ok: true, balance: newBalance });
   } catch (e) {
     console.error('[Subsrf Credits] Refund failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Creates a Stripe Checkout session and returns the redirect URL.
+// Body: { tier: 'starter' | 'pro' }
+// The user's Supabase ID and chosen tier are stored in session metadata for the webhook.
+app.post('/api/stripe/create-checkout-session', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const requestedTier = req.body?.tier;
+  if (!['starter', 'pro'].includes(requestedTier)) {
+    return res.status(400).json({ error: 'tier must be starter or pro' });
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const priceId = requestedTier === 'pro'
+    ? process.env.STRIPE_PRICE_ID_PRO
+    : process.env.STRIPE_PRICE_ID_STARTER;
+  if (!stripeKey || !priceId) {
+    return res.status(500).json({ error: `Stripe not configured (set STRIPE_SECRET_KEY and STRIPE_PRICE_ID_${requestedTier.toUpperCase()})` });
+  }
+
+  const appUrl = process.env.APP_URL || 'https://subsrf.dev';
+  try {
+    const params = new URLSearchParams({
+      mode: 'subscription',
+      'line_items[0][price]': priceId,
+      'line_items[0][quantity]': '1',
+      'metadata[supabase_user_id]': auth.user.id,
+      'metadata[tier]': requestedTier,
+      customer_email: auth.user.email,
+      success_url: `${appUrl}/?payment=success`,
+      cancel_url: `${appUrl}/?payment=cancelled`,
+    });
+
+    const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    const data = await stripeRes.json();
+    if (!stripeRes.ok) throw new Error(data.error?.message || `Stripe error ${stripeRes.status}`);
+
+    console.error(`[Subsrf Stripe] Checkout session for ${auth.user.email}`);
+    res.json({ url: data.url });
+  } catch (e) {
+    console.error('[Subsrf Stripe] Create session failed:', e.message);
     res.status(500).json({ error: e.message });
   }
 });

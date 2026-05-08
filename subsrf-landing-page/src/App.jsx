@@ -221,7 +221,7 @@ function LandingPage({ onLogin, loading }) {
   )
 }
 
-function Dashboard({ session, tier, onLogout }) {
+function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   const [tab, setTab] = useState('mcp')
   const [copied, setCopied] = useState(false)
   const [figmaPat, setFigmaPat] = useState('')
@@ -229,6 +229,8 @@ function Dashboard({ session, tier, onLogout }) {
   const [showPatInput, setShowPatInput] = useState(false)
   const [patSaving, setPatSaving] = useState(false)
   const [patStatus, setPatStatus] = useState(null) // 'saved' | 'error' | null
+  const [upgrading, setUpgrading] = useState(null) // null | 'starter' | 'pro'
+  const [upgradeError, setUpgradeError] = useState(null)
 
   const isPro = tier === 'pro'
   const user = session.user
@@ -244,6 +246,31 @@ function Dashboard({ session, tier, onLogout }) {
       .single()
       .then(({ data }) => { if (data?.figma_pat) setFigmaPat(data.figma_pat) })
   }, [user.id])
+
+  useEffect(() => {
+    if (paymentStatus === 'success') {
+      const t = setTimeout(() => onTierRefresh?.(), 1500)
+      return () => clearTimeout(t)
+    }
+  }, [paymentStatus])
+
+  const handleUpgrade = async (planTier) => {
+    setUpgrading(planTier)
+    setUpgradeError(null)
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: planTier }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to start checkout')
+      window.location.href = data.url
+    } catch (e) {
+      setUpgradeError(e.message)
+      setUpgrading(null)
+    }
+  }
 
   const mcpConfig = figmaPat
     ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
@@ -588,28 +615,60 @@ function Dashboard({ session, tier, onLogout }) {
               <h1 style={{ fontSize: 28, marginBottom: 8 }}>Upgrade to Pro</h1>
               <p style={{ color: 'var(--t2)', marginBottom: 40 }}>Unlock the full Subsrf intelligence suite.</p>
 
-              <div className="glass" style={{ padding: 48, maxWidth: 480, background: 'radial-gradient(circle at top right, rgba(0,255,135,0.05) 0%, transparent 60%)', border: '1px solid rgba(0,255,135,0.15)' }}>
-                <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", color: 'var(--acid)', marginBottom: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>PRO PLAN</div>
-                <div style={{ fontSize: 52, fontWeight: 800, marginBottom: 32 }}>$19<span style={{ fontSize: 20, color: 'var(--t2)', fontWeight: 400 }}>/mo</span></div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
-                  {[
-                    'Unlimited elements per capture',
-                    'MCP Bridge — connect to Claude & Cursor',
-                    'Full-page scroll capture',
-                    'Advanced Figma reconstruction',
-                    'Priority support',
-                  ].map((f, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, fontSize: 15 }}>
-                      <span style={{ color: 'var(--ok)', flexShrink: 0 }}>✓</span> {f}
-                    </div>
-                  ))}
+              {paymentStatus === 'success' && (
+                <div style={{ marginBottom: 24, padding: '14px 20px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 10, fontSize: 14, color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span>✓</span> Payment successful — your account has been upgraded to Pro!
                 </div>
-                <button className="btn btn-primary" style={{ width: '100%', fontSize: 16 }}>
-                  Upgrade Now
-                </button>
-                <div style={{ fontSize: 12, color: 'var(--t3)', textAlign: 'center', marginTop: 16 }}>
-                  Cancel anytime · Billed monthly
+              )}
+
+              <div style={{ display: 'flex', gap: 24, maxWidth: 760 }}>
+                {/* Starter */}
+                <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>STARTER</div>
+                  <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$9<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+                    {['75 AI credits/month', 'MCP Bridge access', 'Full-page capture', 'Advanced Figma sync'].map((f, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
+                    ))}
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    style={{ width: '100%' }}
+                    onClick={() => handleUpgrade('starter')}
+                    disabled={!!upgrading || tier === 'starter' || tier === 'pro'}
+                  >
+                    {upgrading === 'starter' ? 'Redirecting...' : tier === 'starter' ? 'Current plan' : tier === 'pro' ? 'Downgrade' : 'Get Starter'}
+                  </button>
                 </div>
+
+                {/* Pro */}
+                <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left', border: '1px solid rgba(0,255,135,0.25)', background: 'rgba(0,255,135,0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--acid)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>PRO</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", background: 'var(--acid)', color: 'var(--void)', padding: '3px 8px', borderRadius: 100, letterSpacing: '0.06em' }}>POPULAR</div>
+                  </div>
+                  <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$19<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
+                    {['300 AI credits/month', 'MCP Bridge access', 'Full-page capture', 'Advanced Figma sync', 'Priority support'].map((f, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
+                    ))}
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%' }}
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={!!upgrading || tier === 'pro'}
+                  >
+                    {upgrading === 'pro' ? 'Redirecting...' : tier === 'pro' ? 'Current plan' : 'Upgrade to Pro'}
+                  </button>
+                </div>
+              </div>
+
+              {upgradeError && (
+                <div style={{ marginTop: 16, fontSize: 13, color: 'var(--err)' }}>{upgradeError}</div>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 16 }}>
+                Cancel anytime · Billed monthly
               </div>
             </div>
           )}
@@ -627,6 +686,16 @@ function App() {
   const [tier, setTier] = useState('free')
   const [authLoading, setAuthLoading] = useState(false)
   const [appReady, setAppReady] = useState(false)
+  const [paymentStatus, setPaymentStatus] = useState(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const ps = params.get('payment')
+    if (ps) {
+      setPaymentStatus(ps)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -678,7 +747,7 @@ function App() {
   }
 
   if (session) {
-    return <Dashboard session={session} tier={tier} onLogout={handleLogout} />
+    return <Dashboard session={session} tier={tier} onLogout={handleLogout} paymentStatus={paymentStatus} onTierRefresh={() => fetchTier(session.user.id).then(setTier)} />
   }
 
   return <LandingPage onLogin={handleLogin} loading={authLoading} />
