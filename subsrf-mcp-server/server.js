@@ -645,6 +645,43 @@ app.post('/api/stripe/create-checkout-session', async (req, res) => {
   }
 });
 
+// Opens the Stripe Customer Portal so users can cancel, switch plans, or update billing.
+// Requires the user to have completed a Stripe Checkout (stripe_customer_id must be set).
+app.post('/api/stripe/create-portal-session', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  // Load stripe_customer_id from Supabase
+  let customerId = null;
+  if (supabase) {
+    const { data } = await supabase.from('profiles').select('stripe_customer_id').eq('id', auth.user.id).single();
+    customerId = data?.stripe_customer_id;
+  }
+  if (!customerId) {
+    return res.status(400).json({ error: 'No Stripe customer found — complete a checkout first' });
+  }
+
+  const appUrl = process.env.APP_URL || 'https://subsrf.dev';
+  try {
+    const params = new URLSearchParams({ customer: customerId, return_url: appUrl });
+    const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const data = await portalRes.json();
+    if (!portalRes.ok) throw new Error(data.error?.message || `Stripe error ${portalRes.status}`);
+    console.error(`[Subsrf Stripe] Portal session for ${auth.user.email}`);
+    res.json({ url: data.url });
+  } catch (e) {
+    console.error('[Subsrf Stripe] Portal session failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Per-user Figma PAT — in-memory cache backed by Supabase profiles.figma_pat
 const userFigmaPats = new Map(); // Map<userId, string>
 

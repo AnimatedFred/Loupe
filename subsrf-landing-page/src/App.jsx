@@ -231,6 +231,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   const [patStatus, setPatStatus] = useState(null) // 'saved' | 'error' | null
   const [upgrading, setUpgrading] = useState(null) // null | 'starter' | 'pro'
   const [upgradeError, setUpgradeError] = useState(null)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   const isPro = tier === 'pro'
   const user = session.user
@@ -253,6 +254,22 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
       return () => clearTimeout(t)
     }
   }, [paymentStatus])
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true)
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to open billing portal')
+      window.location.href = data.url
+    } catch (e) {
+      setUpgradeError(e.message)
+      setPortalLoading(false)
+    }
+  }
 
   const handleUpgrade = async (planTier) => {
     setUpgrading(planTier)
@@ -670,6 +687,23 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 16 }}>
                 Cancel anytime · Billed monthly
               </div>
+
+              {(tier === 'starter' || tier === 'pro') && (
+                <div style={{ marginTop: 32, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Manage subscription</div>
+                  <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 16 }}>
+                    Cancel, switch plans, or update your payment method via the Stripe billing portal.
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleManageBilling}
+                    disabled={portalLoading}
+                    style={{ padding: '9px 20px', fontSize: 13 }}
+                  >
+                    {portalLoading ? 'Opening portal...' : 'Manage billing →'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
