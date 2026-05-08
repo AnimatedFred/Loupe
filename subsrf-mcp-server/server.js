@@ -405,7 +405,40 @@ app.post("/api/config/figma", async (req, res) => {
 app.get("/api/auth/me", async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthenticated' });
-  res.json({ email: auth.user.email, tier: auth.tier });
+  res.json({ id: auth.user.id, email: auth.user.email, tier: auth.tier, credits: auth.credits });
+});
+
+// Admin endpoint — set a user's tier (and reset credits) without going to the Supabase SQL editor.
+// Protected by ADMIN_SECRET env var. Usage:
+//   POST /api/admin/set-tier
+//   Header: x-admin-secret: <ADMIN_SECRET>
+//   Body:   { "userId": "<supabase-user-id>", "tier": "pro" }
+app.post('/api/admin/set-tier', async (req, res) => {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret || req.headers['x-admin-secret'] !== secret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  const { userId, tier } = req.body || {};
+  if (!userId || !['free', 'starter', 'pro'].includes(tier)) {
+    return res.status(400).json({ error: 'userId and tier (free|starter|pro) required' });
+  }
+  const tierCredits = { pro: 300, starter: 75, free: 0 }[tier];
+  const now = new Date();
+
+  if (supabase) {
+    const { error } = await supabase.from('profiles').update({
+      tier,
+      credits: tierCredits,
+      credits_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    }).eq('id', userId);
+    if (error) return res.status(500).json({ error: error.message });
+  } else {
+    // Without service key the PATCH will be blocked by RLS — admin endpoint requires it.
+    return res.status(503).json({ error: 'SUPABASE_SERVICE_KEY not configured on this server. Set it in Railway env vars.' });
+  }
+
+  console.error(`[Subsrf Admin] set-tier: userId=${userId} tier=${tier} credits=${tierCredits}`);
+  res.json({ ok: true, userId, tier, credits: tierCredits });
 });
 
 // Lightweight tier-only sync — called by the extension heartbeat so the
