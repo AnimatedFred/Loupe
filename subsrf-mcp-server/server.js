@@ -320,6 +320,22 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
     }
   }
 
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object;
+    const newPriceId = sub.items?.data?.[0]?.price?.id;
+    const proPriceId = process.env.STRIPE_PRICE_ID_PRO;
+    const starterPriceId = process.env.STRIPE_PRICE_ID_STARTER;
+    const tier = newPriceId === proPriceId ? 'pro' : newPriceId === starterPriceId ? 'starter' : null;
+    if (tier && sub.customer && supabase) {
+      const tierCredits = { pro: 300, starter: 75 }[tier];
+      const { error } = await supabase.from('profiles')
+        .update({ tier, credits: tierCredits, stripe_subscription_id: sub.id })
+        .eq('stripe_customer_id', sub.customer);
+      if (error) console.error('[Subsrf Stripe] Plan update failed:', error.message);
+      else console.error(`[Subsrf Stripe] Updated customer ${sub.customer} to ${tier}`);
+    }
+  }
+
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object;
     if (sub.customer && supabase) {
