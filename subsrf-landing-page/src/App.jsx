@@ -638,8 +638,13 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               <p style={{ color: 'var(--t2)', marginBottom: 40 }}>Unlock the full Subsrf intelligence suite.</p>
 
               {paymentStatus === 'success' && (
-                <div style={{ marginBottom: 24, padding: '14px 20px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 10, fontSize: 14, color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span>✓</span> Payment successful — your subscription has been activated!
+                <div style={{ marginBottom: 24, padding: '14px 20px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 10, fontSize: 14, color: 'var(--ok)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>✓ Payment successful — your subscription has been activated!</span>
+                  {tier === 'free' && (
+                    <button onClick={() => window.location.reload()} style={{ background: 'transparent', border: '1px solid rgba(57,217,138,0.4)', color: 'var(--ok)', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-main)', fontWeight: 600 }}>
+                      Refresh
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -786,7 +791,14 @@ function App() {
   }
 
   if (session) {
-    return <Dashboard session={session} tier={tier} onLogout={handleLogout} paymentStatus={paymentStatus} onTierRefresh={() => fetchTier(session.user.id).then(setTier)} />
+    const handleTierRefresh = async (attempts = 5) => {
+      const t = await fetchTier(session.user.id)
+      setTier(t)
+      if (t === 'free' && attempts > 1) {
+        setTimeout(() => handleTierRefresh(attempts - 1), 2000)
+      }
+    }
+    return <Dashboard session={session} tier={tier} onLogout={handleLogout} paymentStatus={paymentStatus} onTierRefresh={handleTierRefresh} />
   }
 
   return <LandingPage onLogin={handleLogin} loading={authLoading} />
