@@ -985,7 +985,8 @@ Rules:
     const abortTimer = setTimeout(() => abortCtrl.abort(), 25000);
     let anthropicRes;
     try {
-      anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      const anthropicBase = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
+      anthropicRes = await fetch(`${anthropicBase}/v1/messages`, {
         method: 'POST',
         signal: abortCtrl.signal,
         headers: {
