@@ -567,6 +567,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateInventory(stored.selectedElements);
   }
 
+  // ── Claude API Key management ──────────────────────────────────────────────
+  const claudeKeyStatus    = document.getElementById('claude-key-status');
+  const claudeKeyDisplay   = document.getElementById('claude-key-display');
+  const claudeKeyInputWrap = document.getElementById('claude-key-input-wrap');
+  const claudeKeyInput     = document.getElementById('claude-key-input');
+  const btnConfigureKey    = document.getElementById('btn-configure-claude-key');
+  const btnSaveKey         = document.getElementById('btn-save-claude-key');
+  const btnCancelKey       = document.getElementById('btn-cancel-claude-key');
+
+  async function renderClaudeKeyState() {
+    const { claude_api_key } = await chrome.storage.local.get('claude_api_key');
+    if (claude_api_key) {
+      claudeKeyStatus.textContent = 'CONFIGURED';
+      claudeKeyStatus.style.color = 'var(--ok)';
+      claudeKeyDisplay.textContent = claude_api_key.slice(0, 12) + '•••' + claude_api_key.slice(-4);
+      claudeKeyDisplay.style.display = 'block';
+      btnConfigureKey.textContent = 'Update Key';
+    } else {
+      claudeKeyStatus.textContent = 'NOT SET';
+      claudeKeyStatus.style.color = 'var(--t3)';
+      claudeKeyDisplay.style.display = 'none';
+      btnConfigureKey.textContent = 'Configure Key';
+    }
+    claudeKeyInputWrap.style.display = 'none';
+    btnConfigureKey.style.display = 'block';
+  }
+
+  btnConfigureKey.onclick = () => {
+    claudeKeyInputWrap.style.display = 'block';
+    btnConfigureKey.style.display = 'none';
+    claudeKeyDisplay.style.display = 'none';
+    claudeKeyInput.focus();
+  };
+
+  btnCancelKey.onclick = () => renderClaudeKeyState();
+
+  btnSaveKey.onclick = async () => {
+    const key = claudeKeyInput.value.trim();
+    if (!key || !key.startsWith('sk-ant-')) {
+      claudeKeyInput.style.borderColor = 'var(--err)';
+      setTimeout(() => { claudeKeyInput.style.borderColor = ''; }, 1500);
+      return;
+    }
+    btnSaveKey.textContent = 'Saving...';
+    await chrome.storage.local.set({ claude_api_key: key });
+    claudeKeyInput.value = '';
+    btnSaveKey.textContent = 'Save Key';
+    renderClaudeKeyState();
+  };
+
+  renderClaudeKeyState();
+  // ──────────────────────────────────────────────────────────────────────────
+
   checkBridge();
   setInterval(checkBridge, 3000);
 

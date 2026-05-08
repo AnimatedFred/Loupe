@@ -83,9 +83,138 @@ function renderAiGate() {
 }
 
 async function generateAiPrompt() {
-  // Phase 2: wire up the BYOK Claude API call here.
-  // For now, signal that the infrastructure is in place.
-  showToast('AI key setup coming next — infrastructure is live!');
+  const { claude_api_key, subsrf_session } = await chrome.storage.local.get(['claude_api_key', 'subsrf_session']);
+
+  if (!claude_api_key) {
+    showToast('Add your Claude API key in the popup → Account tab first');
+    return;
+  }
+  if (!subsrf_session?.accessToken) {
+    showToast('Sign in to use AI features');
+    return;
+  }
+
+  const btn = document.getElementById('btn-ai-generate');
+  const setBtn = (label, disabled = true) => { if (btn) { btn.textContent = label; btn.disabled = disabled; } };
+
+  // 1. Deduct 1 credit via Railway (atomic, server-side)
+  setBtn('Deducting credit…');
+  let creditDeducted = false;
+  try {
+    const deductRes = await fetch('https://api.subsrf.dev/api/credits/deduct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${subsrf_session.accessToken}` },
+      body: JSON.stringify({ cost: 1 })
+    });
+    const deductData = await deductRes.json();
+    if (!deductRes.ok) {
+      showToast(deductData.error === 'insufficient_credits' ? 'No credits remaining' : 'Credit check failed');
+      setBtn('Generate AI Prompt (1 credit)', false);
+      return;
+    }
+    creditDeducted = true;
+    session = { ...session, credits: deductData.balance };
+    await chrome.storage.local.set({ subsrf_session: session });
+    renderAiGate();
+  } catch (_e) {
+    showToast('Could not reach Subsrf — try again');
+    setBtn('Generate AI Prompt (1 credit)', false);
+    return;
+  }
+
+  // 2. Call Claude API (streaming, BYOK — cost goes to the user's Anthropic account)
+  setBtn('Generating…');
+  outputLabel.textContent = 'subsrf-ai-brief.txt';
+  outputEl.innerHTML = '<span style="color:rgba(0,255,135,0.55);">Generating AI prompt…</span>';
+
+  const systemPrompt = `You are an expert front-end engineer analyzing DOM elements captured from a live web page.
+Convert the raw element data into a structured, build-ready implementation brief.
+
+Your output must:
+1. Identify each element's semantic role (nav item, CTA, card, form field, badge, etc.)
+2. Group related elements into logical components with clear hierarchy
+3. Describe visual design with precision — hex colors, exact px spacing and sizing, font stack and weight
+4. Call out interactive states, hover behavior, or accessibility signals you can infer
+5. End with a concise implementation prompt ready to paste into Claude, Cursor, or Windsurf
+
+Be direct and precise. No preamble. An engineer reading this should be able to reconstruct the UI perfectly.`;
+
+  const userContent = [
+    `Page: ${context.title || (context.url ? (() => { try { return new URL(context.url).hostname; } catch { return context.url; } })() : 'Unknown')}`,
+    `URL: ${context.url || 'Unknown'}`,
+    `Viewport: ${context.viewport ? `${context.viewport.w}×${context.viewport.h}` : 'unknown'}`,
+    `Captured elements: ${elements.length}`,
+    '',
+    ...elements.map((el, i) => buildElementLines(el, i).join('\n'))
+  ].join('\n');
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': claude_api_key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        stream: true,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }]
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Anthropic API error ${response.status}`);
+    }
+
+    // Stream response into output panel
+    outputEl.textContent = '';
+    let fullText = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value, { stream: true }).split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(raw);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text;
+            outputEl.textContent = fullText;
+          }
+        } catch (_) {}
+      }
+    }
+
+    setBtn('Generate Again (1 credit)', false);
+    showToast('AI prompt generated');
+
+  } catch (e) {
+    // Refund the credit — the generation failed, user shouldn't be charged
+    if (creditDeducted) {
+      fetch('https://api.subsrf.dev/api/credits/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${subsrf_session.accessToken}` },
+        body: JSON.stringify({ cost: 1 })
+      }).then(r => r.json()).then(data => {
+        session = { ...session, credits: data.balance };
+        chrome.storage.local.set({ subsrf_session: session });
+        renderAiGate();
+      }).catch(() => {});
+    }
+    outputEl.textContent = `Error: ${e.message}`;
+    setBtn('Generate AI Prompt (1 credit)', false);
+    showToast('Generation failed — credit refunded');
+  }
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
