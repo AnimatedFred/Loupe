@@ -33,6 +33,21 @@ async function init() {
     ? new URL(context.url).hostname
     : 'No page context';
 
+  // Always fetch live tier + credits so the gate reflects the current account state,
+  // not whatever was cached in storage before the last login or plan change.
+  if (session?.accessToken) {
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/credits/balance', {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        session = { ...session, tier: data.tier || session.tier, credits: data.balance ?? session.credits };
+        await chrome.storage.local.set({ subsrf_session: session });
+      }
+    } catch (_) {}
+  }
+
   renderAiGate();
   renderSidebar();
   renderOutput();
