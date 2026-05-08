@@ -638,8 +638,9 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
-// Server-side AI generation — verifies JWT, deducts 1 credit, calls Anthropic,
-// streams SSE back to the extension. ANTHROPIC_API_KEY must be set in Railway env.
+// Smart Prompt Engine — interprets captured DOM elements using Claude and returns
+// structured semantic JSON. The extension assembles the final prompt from that data.
+// ANTHROPIC_API_KEY must be set in Railway env.
 app.post('/api/ai/generate', async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -651,7 +652,7 @@ app.post('/api/ai/generate', async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
-  // Deduct 1 credit before starting — refund on Anthropic failure
+  // Deduct 1 credit before the Anthropic call — refund on failure
   let newBalance;
   try {
     if (supabase) {
@@ -670,38 +671,50 @@ app.post('/api/ai/generate', async (req, res) => {
       newBalance = await r.json();
     }
   } catch (e) {
-    if (e.message === 'insufficient_credits') {
-      return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
-    }
+    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
     return res.status(500).json({ error: e.message });
   }
 
-  // Set up SSE stream
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
   const { elements = [], context: pageContext = {} } = req.body;
 
-  const systemPrompt = `You are an expert front-end engineer analyzing DOM elements captured from a live web page.
-Convert the raw element data into a structured, build-ready implementation brief.
+  // Interpretation prompt — Claude returns structured JSON, not prose.
+  // The extension assembles the final output from this data.
+  const systemPrompt = `You are a UI semantic analyzer. Given raw DOM element data captured from a live web page, return a structured JSON interpretation. Do NOT write prose or explanations. Return ONLY valid JSON with no markdown fences, no commentary, no text before or after.
 
-Your output must:
-1. Identify each element's semantic role (nav item, CTA, card, form field, badge, etc.)
-2. Group related elements into logical components with clear hierarchy
-3. Describe visual design with precision — hex colors, exact px spacing and sizing, font stack and weight
-4. Call out interactive states, hover behavior, or accessibility signals you can infer
-5. End with a concise implementation prompt ready to paste into Claude, Cursor, or Windsurf
+Required format:
+{
+  "pagePattern": "concise page type (e.g. 'SaaS pricing page', 'e-commerce product listing', 'dashboard nav')",
+  "components": [
+    {
+      "name": "Component name",
+      "elementIndices": [0, 1],
+      "description": "What this component does and its role in the UI"
+    }
+  ],
+  "elements": [
+    {
+      "index": 0,
+      "label": "Human-readable element name",
+      "semanticRole": "nav-cta | pricing-card | hero-headline | form-field | badge | card | modal | tab | etc.",
+      "description": "Semantic description — what is it, what does it do, why does it exist here",
+      "accessibilityNote": "Specific issue if present (missing aria-label, low contrast, etc.) or empty string"
+    }
+  ],
+  "accessibilityIssues": ["issue 1", "issue 2"],
+  "implementationPrompt": "2-3 sentence build-ready prompt describing what to reconstruct and how, ready to paste into a coding assistant"
+}
 
-Be direct and precise. No preamble. An engineer reading this should be able to reconstruct the UI perfectly.`;
+Rules:
+- Every captured element must appear in the elements array
+- Group related elements into components (a button and its label, a card and its children, etc.)
+- semanticRole must be a single short identifier, no spaces
+- implementationPrompt should mention the detected page pattern and the most important visual/layout details`;
 
   const userContent = [
     `Page: ${pageContext.title || pageContext.url || 'Unknown'}`,
     `URL: ${pageContext.url || 'Unknown'}`,
     `Viewport: ${pageContext.viewport ? `${pageContext.viewport.w}×${pageContext.viewport.h}` : 'unknown'}`,
-    `Captured elements: ${elements.length}`,
-    '',
+    `Elements (${elements.length}):`,
     JSON.stringify(elements, null, 2)
   ].join('\n');
 
@@ -716,7 +729,6 @@ Be direct and precise. No preamble. An engineer reading this should be able to r
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2048,
-        stream: true,
         system: systemPrompt,
         messages: [{ role: 'user', content: userContent }]
       })
@@ -727,39 +739,30 @@ Be direct and precise. No preamble. An engineer reading this should be able to r
       throw new Error(errData.error?.message || `Anthropic error ${anthropicRes.status}`);
     }
 
-    for await (const chunk of anthropicRes.body) {
-      const text = chunk.toString();
-      for (const line of text.split('\n')) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (raw === '[DONE]') continue;
-        try {
-          const evt = JSON.parse(raw);
-          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-            res.write(`data: ${JSON.stringify({ type: 'text', text: evt.delta.text })}\n\n`);
-          }
-        } catch (_) {}
-      }
+    const result = await anthropicRes.json();
+    const rawText = result.content?.[0]?.text || '';
+
+    // Parse the JSON — strip any accidental markdown fences Claude might add
+    let enriched;
+    try {
+      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      enriched = JSON.parse(cleaned);
+    } catch (_) {
+      const match = rawText.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error('Claude returned malformed JSON — please try again');
+      enriched = JSON.parse(match[0]);
     }
 
-    res.write(`data: ${JSON.stringify({ type: 'done', balance: newBalance })}\n\n`);
-    res.end();
-    console.error(`[Subsrf AI] Generated prompt for ${auth.user.email} — balance: ${newBalance}`);
+    console.error(`[Subsrf AI] Smart prompt for ${auth.user.email} (${elements.length} elements) — balance: ${newBalance}`);
+    res.json({ ok: true, enriched, balance: newBalance });
 
   } catch (e) {
-    // Refund on Anthropic failure
+    // Refund — generation failed, user should not be charged
     try {
-      if (supabase) {
-        await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 });
-      }
+      if (supabase) await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 });
     } catch (_) {}
-    if (!res.headersSent) {
-      res.status(500).json({ error: e.message });
-    } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: e.message })}\n\n`);
-      res.end();
-    }
-    console.error(`[Subsrf AI] Generation failed for ${auth.user.email}: ${e.message}`);
+    console.error(`[Subsrf AI] Smart prompt failed for ${auth.user.email}: ${e.message}`);
+    res.status(500).json({ error: e.message });
   }
 });
 

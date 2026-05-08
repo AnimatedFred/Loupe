@@ -7,6 +7,7 @@ let context = {};
 let session = null;
 let bridgeOnline = false;
 let figmaConnected = false;
+let smartEnriched = null; // populated after a successful Smart Prompt generation
 
 const outputEl    = document.getElementById('output');
 const outputLabel = document.getElementById('output-label');
@@ -66,7 +67,7 @@ function renderAiGate() {
 
   const badgeClass = credits === 0 ? 'empty' : credits <= 10 ? 'low' : '';
   const disabled   = credits < 1 || elements.length === 0;
-  const btnLabel   = credits === 0 ? 'No credits remaining' : 'Generate AI Prompt (1 credit)';
+  const btnLabel   = credits === 0 ? 'No credits remaining' : 'Generate Smart Prompt (1 credit)';
 
   gate.innerHTML = `
     <div class="ai-engine-bar">
@@ -93,63 +94,135 @@ async function generateAiPrompt() {
   const btn = document.getElementById('btn-ai-generate');
   const setBtn = (label, disabled = true) => { if (btn) { btn.textContent = label; btn.disabled = disabled; } };
 
-  setBtn('Generating…');
-  outputLabel.textContent = 'subsrf-ai-brief.txt';
-  outputEl.innerHTML = '<span style="color:rgba(0,255,135,0.55);">Generating AI prompt…</span>';
+  setBtn('Interpreting elements…');
+  outputLabel.textContent = 'subsrf-smart-brief.txt';
+  outputEl.innerHTML = '<span style="color:rgba(0,255,135,0.55);">Interpreting UI elements…</span>';
 
   try {
-    const response = await fetch('https://api.subsrf.dev/api/ai/generate', {
+    const res = await fetch('https://api.subsrf.dev/api/ai/generate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${subsrf_session.accessToken}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${subsrf_session.accessToken}` },
       body: JSON.stringify({ elements, context })
     });
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const msg = errData.error === 'insufficient_credits' ? 'No credits remaining' : (errData.error || 'Generation failed');
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data.error === 'insufficient_credits' ? 'No credits remaining' : (data.error || 'Generation failed');
       showToast(msg);
-      setBtn('Generate AI Prompt (1 credit)', false);
+      setBtn('Generate Smart Prompt (1 credit)', false);
       return;
     }
 
-    outputEl.textContent = '';
-    let fullText = '';
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    // Update credit balance from server response
+    session = { ...session, credits: data.balance };
+    await chrome.storage.local.set({ subsrf_session: session });
+    renderAiGate();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const lines = decoder.decode(value, { stream: true }).split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        let evt;
-        try { evt = JSON.parse(line.slice(6)); } catch (_) { continue; }
+    // Store enriched data and render the smart output
+    smartEnriched = data.enriched;
+    outputLabel.textContent = 'subsrf-smart-brief.txt';
+    outputEl.innerHTML = buildSmartPromptHTML(smartEnriched, elements, context);
 
-        if (evt.type === 'text') {
-          fullText += evt.text;
-          outputEl.textContent = fullText;
-        } else if (evt.type === 'done') {
-          session = { ...session, credits: evt.balance };
-          await chrome.storage.local.set({ subsrf_session: session });
-          renderAiGate();
-        } else if (evt.type === 'error') {
-          throw new Error(evt.message);
-        }
-      }
-    }
-
-    setBtn('Generate Again (1 credit)', false);
-    showToast('AI prompt generated');
+    setBtn('Regenerate (1 credit)', false);
+    showToast('Smart prompt ready');
 
   } catch (e) {
     outputEl.textContent = `Error: ${e.message}`;
-    setBtn('Generate AI Prompt (1 credit)', false);
+    setBtn('Generate Smart Prompt (1 credit)', false);
     showToast('Generation failed');
   }
+}
+
+// ── Smart Prompt Assembler ────────────────────────────────────────────────────
+
+const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+
+function buildSmartPromptLines(enriched, rawElements, ctx) {
+  const hostname = ctx.url
+    ? (() => { try { return new URL(ctx.url).hostname.replace(/^www\./, ''); } catch { return ctx.url; } })()
+    : 'Unknown';
+  const rule = '─'.repeat(56);
+  const lines = [];
+
+  lines.push(`SMART BRIEF — ${enriched.pagePattern || 'UI Capture'} | ${hostname}`);
+  lines.push(rule);
+  lines.push('');
+
+  // Build a map from element index → enriched element data
+  const elMap = {};
+  (enriched.elements || []).forEach(el => { elMap[el.index] = el; });
+
+  // Components with their elements
+  const components = enriched.components || [];
+  if (components.length > 0) {
+    lines.push('COMPONENTS');
+    lines.push('');
+    components.forEach((comp, ci) => {
+      const num = CIRCLED[ci] || `${ci + 1}.`;
+      lines.push(`${num} ${comp.name}`);
+      if (comp.description) lines.push(`   ${comp.description}`);
+      (comp.elementIndices || []).forEach(idx => {
+        const el = elMap[idx];
+        const raw = rawElements[idx];
+        if (!el && !raw) return;
+        const label = el?.label || raw?.tagName || `Element ${idx + 1}`;
+        const desc  = el?.description || '';
+        lines.push(`   └─ [${idx + 1}] ${label}${desc ? ' — ' + desc : ''}`);
+        if (el?.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
+      });
+      lines.push('');
+    });
+
+    // Any elements not assigned to a component
+    const assigned = new Set(components.flatMap(c => c.elementIndices || []));
+    const unassigned = rawElements
+      .map((_, i) => i)
+      .filter(i => !assigned.has(i) && elMap[i]);
+    if (unassigned.length > 0) {
+      lines.push(`${CIRCLED[components.length] || `${components.length + 1}.`} Other Elements`);
+      lines.push('');
+      unassigned.forEach(idx => {
+        const el = elMap[idx];
+        lines.push(`   └─ [${idx + 1}] ${el.label}${el.description ? ' — ' + el.description : ''}`);
+        if (el.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
+      });
+      lines.push('');
+    }
+  }
+
+  // Accessibility section
+  const a11y = enriched.accessibilityIssues || [];
+  if (a11y.length > 0) {
+    lines.push(rule);
+    lines.push('');
+    lines.push('ACCESSIBILITY GAPS');
+    lines.push('');
+    a11y.forEach(issue => lines.push(`  ⚠ ${issue}`));
+    lines.push('');
+  }
+
+  // Implementation prompt
+  if (enriched.implementationPrompt) {
+    lines.push(rule);
+    lines.push('');
+    lines.push('IMPLEMENTATION PROMPT');
+    lines.push('');
+    lines.push(enriched.implementationPrompt);
+    lines.push('');
+    lines.push('Stack: React 18 · Tailwind CSS · shadcn/ui');
+  }
+
+  return lines;
+}
+
+function buildSmartPromptHTML(enriched, rawElements, ctx) {
+  const lines = buildSmartPromptLines(enriched, rawElements, ctx);
+  return esc(lines.join('\n'));
+}
+
+function buildSmartPromptText(enriched, rawElements, ctx) {
+  return buildSmartPromptLines(enriched, rawElements, ctx).join('\n');
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -234,8 +307,13 @@ function renderOutput() {
   }
 
   if (mode === 'prompt') {
-    outputLabel.textContent = 'subsrf-brief.txt';
-    outputEl.innerHTML = generatePromptHTML(elements, context);
+    if (smartEnriched) {
+      outputLabel.textContent = 'subsrf-smart-brief.txt';
+      outputEl.innerHTML = buildSmartPromptHTML(smartEnriched, elements, context);
+    } else {
+      outputLabel.textContent = 'subsrf-brief.txt';
+      outputEl.innerHTML = generatePromptHTML(elements, context);
+    }
   } else {
     outputLabel.textContent = 'subsrf-export.css';
     outputEl.innerHTML = generateCSSHTML(elements, context);
@@ -561,10 +639,14 @@ togCss.addEventListener('click', () => {
 
 btnCopy.addEventListener('click', async () => {
   try {
-    // textContent strips HTML spans, giving clean plain text
-    const plain = mode === 'prompt'
-      ? generatePrompt(elements, context)
-      : generateCSS(elements, context);
+    let plain;
+    if (mode === 'prompt' && smartEnriched) {
+      plain = buildSmartPromptText(smartEnriched, elements, context);
+    } else if (mode === 'prompt') {
+      plain = generatePrompt(elements, context);
+    } else {
+      plain = generateCSS(elements, context);
+    }
     await navigator.clipboard.writeText(plain);
     showToast('Copied to clipboard!');
   } catch {
