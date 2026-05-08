@@ -70,16 +70,18 @@ async function signIn() {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
-        // Fetch tier + credits from profiles table
+        // Fetch tier + credits via Railway (service key bypasses RLS)
         let tier = 'free';
         let credits = 0;
         try {
-          const profiles = await supabaseFetch(
-            `/rest/v1/profiles?select=tier,credits&id=eq.${user.id}`,
-            { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
-          );
-          tier = profiles[0]?.tier || 'free';
-          credits = profiles[0]?.credits ?? 0;
+          const balRes = await fetch('https://api.subsrf.dev/api/credits/balance', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          if (balRes.ok) {
+            const balData = await balRes.json();
+            tier = balData.tier || 'free';
+            credits = balData.balance ?? 0;
+          }
         } catch (_) { /* profile may not exist yet — default to free/0 */ }
 
         const session = { accessToken, refreshToken, user, tier, credits, signedInAt: Date.now(), tierCheckedAt: Date.now() };
@@ -120,11 +122,12 @@ async function refreshSession() {
 
 async function fetchLiveProfile(session) {
   try {
-    const profiles = await supabaseFetch(
-      `/rest/v1/profiles?select=tier,credits&id=eq.${session.user.id}`,
-      { headers: { 'Authorization': `Bearer ${session.accessToken}`, 'Accept': 'application/json' } }
-    );
-    return profiles[0] || null;
+    const res = await fetch('https://api.subsrf.dev/api/credits/balance', {
+      headers: { 'Authorization': `Bearer ${session.accessToken}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return { tier: data.tier || 'free', credits: data.balance ?? 0 };
   } catch (e) {
     console.warn('[Subsrf Auth] Profile fetch failed:', e.message);
     return null;

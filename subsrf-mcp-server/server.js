@@ -138,57 +138,112 @@ async function verifyToken(req) {
   if (!auth || !auth.startsWith('Bearer ')) return null;
   const token = auth.slice(7);
 
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+
   // Service-key path — preferred when SUPABASE_SERVICE_KEY is set in Railway
   if (supabase) {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) return null;
-    const { data: profile } = await supabase
+    const { data: profile, error: profError } = await supabase
       .from('profiles')
       .select('tier, credits, credits_reset_at')
       .eq('id', user.id)
       .single();
 
+    if (profError) console.error('[Subsrf Auth] Profile fetch error:', profError.message);
+
     const tier = profile?.tier || 'free';
     let credits = profile?.credits ?? 0;
+    const tierCredits = { pro: 300, starter: 75 }[tier] ?? 0;
 
-    // Monthly reset: if credits_reset_at is from a previous month, reset credits
-    try {
-      const now = new Date();
-      const lastReset = profile?.credits_reset_at ? new Date(profile.credits_reset_at) : null;
-      const needsReset = !lastReset ||
-        lastReset.getFullYear() < now.getFullYear() ||
-        (lastReset.getFullYear() === now.getFullYear() && lastReset.getMonth() < now.getMonth());
-      if (needsReset) {
-        const tierCredits = { pro: 300, starter: 75 }[tier] ?? 0;
-        await supabase.from('profiles').update({
-          credits: tierCredits,
-          credits_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-        }).eq('id', user.id);
+    // Monthly reset + first-time paid user initialization.
+    // The DB DEFAULT sets credits_reset_at=now() (not start-of-month), so if getDate()!==1
+    // and credits===0 for a paid tier the user was never initialized — grant their balance.
+    const now = new Date();
+    const lastReset = profile?.credits_reset_at ? new Date(profile.credits_reset_at) : null;
+    const prevMonth = !lastReset ||
+      lastReset.getFullYear() < now.getFullYear() ||
+      (lastReset.getFullYear() === now.getFullYear() && lastReset.getMonth() < now.getMonth());
+    const neverInitialized = tierCredits > 0 && credits === 0 &&
+      (!lastReset || lastReset.getDate() !== 1);
+
+    if (prevMonth || neverInitialized) {
+      const { error: updateError } = await supabase.from('profiles').update({
+        credits: tierCredits,
+        credits_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      }).eq('id', user.id);
+      if (updateError) {
+        console.error('[Subsrf Credits] Init/reset update failed:', updateError.message);
+      } else {
+        console.error(`[Subsrf Credits] Init/reset for ${user.email}: ${credits} → ${tierCredits} (${neverInitialized ? 'first-time' : 'monthly'})`);
         credits = tierCredits;
       }
-    } catch (_) { /* reset failure is non-fatal */ }
+    }
 
+    console.error(`[Subsrf Auth] service-key path: ${user.email} tier=${tier} credits=${credits}`);
     return { user, tier, credits };
   }
 
-  // Anon-key fallback — uses the user's own token, same as the Chrome extension
+  // Anon-key fallback — used when SUPABASE_SERVICE_KEY is not set in Railway.
+  // Uses the user's own JWT so RLS applies; the SECURITY DEFINER refund_credits RPC
+  // handles initialization because regular users can't UPDATE their own credits via RLS.
   try {
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` }
     });
-    if (!userRes.ok) return null;
+    if (!userRes.ok) {
+      console.error('[Subsrf Auth] anon-key: user lookup failed', userRes.status);
+      return null;
+    }
     const user = await userRes.json();
     if (!user.id) return null;
+
     const profRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=tier,credits&id=eq.${user.id}`,
+      `${supabaseUrl}/rest/v1/profiles?select=tier,credits,credits_reset_at&id=eq.${user.id}`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
     const profile = profRes.ok ? (await profRes.json())[0] : null;
     const tier = profile?.tier || 'free';
-    const credits = profile?.credits ?? 0;
+    let credits = profile?.credits ?? 0;
+    const tierCredits = { pro: 300, starter: 75 }[tier] ?? 0;
+
+    // Initialize first-time paid users or do monthly reset via the SECURITY DEFINER RPC.
+    // refund_credits caps at tier max so calling it with the full balance is idempotent once initialized.
+    const now = new Date();
+    const lastReset = profile?.credits_reset_at ? new Date(profile.credits_reset_at) : null;
+    const prevMonth = !lastReset ||
+      lastReset.getFullYear() < now.getFullYear() ||
+      (lastReset.getFullYear() === now.getFullYear() && lastReset.getMonth() < now.getMonth());
+    const neverInitialized = tierCredits > 0 && credits === 0 &&
+      (!lastReset || lastReset.getDate() !== 1);
+
+    if (prevMonth || neverInitialized) {
+      // Set credits via UPDATE (needs RLS UPDATE policy) then fall back to RPC if that fails
+      const amount = tierCredits - credits; // top up to tier max
+      if (amount > 0) {
+        try {
+          const rpcRes = await fetch(`${supabaseUrl}/rest/v1/rpc/refund_credits`, {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id, amount })
+          });
+          if (rpcRes.ok) {
+            const newBal = await rpcRes.json();
+            console.error(`[Subsrf Credits] anon-key init/reset for ${user.email}: ${credits} → ${newBal}`);
+            credits = typeof newBal === 'number' ? newBal : tierCredits;
+          } else {
+            console.error('[Subsrf Credits] anon-key refund_credits failed:', rpcRes.status, await rpcRes.text().catch(() => ''));
+          }
+        } catch (rpcErr) {
+          console.error('[Subsrf Credits] anon-key RPC error:', rpcErr.message);
+        }
+      }
+    }
+
+    console.error(`[Subsrf Auth] anon-key path: ${user.email} tier=${tier} credits=${credits}`);
     return { user, tier, credits };
-  } catch (_) {
+  } catch (e) {
+    console.error('[Subsrf Auth] anon-key path error:', e.message);
     return null;
   }
 }
@@ -362,6 +417,15 @@ app.post("/api/auth/sync", async (req, res) => {
     lastEmail = auth.user?.email || lastEmail;
   }
   res.json({ ok: true, tier: lastTier });
+});
+
+// Returns the authenticated user's current credit balance.
+// Uses the service key path (bypasses RLS) so the extension doesn't need
+// column-level SELECT permissions on credits.
+app.get('/api/credits/balance', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+  res.json({ balance: auth.credits, tier: auth.tier });
 });
 
 // Atomically deduct credits. The extension calls this before any AI operation.
@@ -768,6 +832,7 @@ Rules:
 
 app.get("/api/state", async (req, res) => {
   let figmaRestAvailable = isFigmaRestAvailable();
+  let userCredits = null;
 
   // If the request comes from Figma, update heartbeat and optionally verify its own token
   if (req.query.source === 'figma') {
@@ -784,28 +849,31 @@ app.get("/api/state", async (req, res) => {
       }
     }
   } else if (req.headers.authorization) {
-    // Chrome extension polls /api/state with its Bearer token — return per-user PAT status
+    // Chrome extension polls /api/state with its Bearer token — return per-user PAT status + live credits
     const auth = await verifyToken(req);
     if (auth?.user?.id) {
       const pat = await getUserFigmaPat(auth.user.id, req.headers.authorization.slice(7));
       if (pat) figmaRestAvailable = true;
+      userCredits = auth.credits ?? null;
     }
   }
 
-  // Only expose elements to pro users — free users can't use Figma sync
-  const elementsVisible = lastTier === 'pro' ? lastElements : [];
+  // Only expose elements to paid users — free users can't use Figma sync
+  const isPaidTier = lastTier === 'pro' || lastTier === 'starter';
+  const elementsVisible = isPaidTier ? lastElements : [];
   res.json({
     page: lastContext,
     count: elementsVisible.length,
     elements: elementsVisible,
     prompt: lastPrompt,
-    screenshot: lastTier === 'pro' ? lastScreenshot : null,
+    screenshot: isPaidTier ? lastScreenshot : null,
     aiMessage: currentAiMessage,
     pendingQuery: pendingQuery,
     figmaConnected: lastFigmaHeartbeat > 0 && (Date.now() - lastFigmaHeartbeat) < 30000,
     restApiAvailable: figmaRestAvailable,
     tier: lastTier,
-    email: lastEmail
+    email: lastEmail,
+    credits: userCredits
   });
 });
 

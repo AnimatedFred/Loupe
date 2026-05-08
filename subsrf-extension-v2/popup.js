@@ -151,15 +151,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderSyncButton(isPro);
 
     const creditsEl = document.getElementById('acct-credits');
+    const headerCreditsEl = document.getElementById('header-credits');
+    const creditsStrip = document.getElementById('credits-strip');
     if (creditsEl) {
       const credits = session.credits ?? 0;
       const limit   = isPro ? 300 : tier === 'starter' ? 75 : 0;
       if (!isPaid) {
         creditsEl.textContent = '0 — Free tier';
         creditsEl.style.color = 'var(--t3)';
+        if (creditsStrip) creditsStrip.style.display = 'none';
       } else {
         creditsEl.textContent = `${credits} / ${limit}`;
         creditsEl.style.color = credits === 0 ? 'var(--danger)' : credits <= 10 ? 'var(--warn)' : 'var(--success)';
+        if (headerCreditsEl) {
+          headerCreditsEl.textContent = `${credits} / ${limit}`;
+          headerCreditsEl.style.color = credits === 0 ? 'var(--err)' : credits <= 10 ? 'var(--warn)' : 'var(--acid)';
+        }
+        if (creditsStrip) creditsStrip.style.display = 'flex';
       }
     }
 
@@ -188,26 +196,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderAuthState(subsrf_session || null);
     if (!subsrf_session?.accessToken) return;
 
-    // Fetch live tier directly from Supabase so stale cached tier is always corrected
+    // Fetch live tier + credits via Railway (service key bypasses RLS)
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?select=tier&id=eq.${subsrf_session.user.id}`,
-        {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${subsrf_session.accessToken}`,
-            'Accept': 'application/json'
-          }
-        }
-      );
+      const res = await fetch('https://api.subsrf.dev/api/credits/balance', {
+        headers: { 'Authorization': `Bearer ${subsrf_session.accessToken}` }
+      });
       if (res.ok) {
-        const profiles = await res.json();
-        const liveTier = profiles[0]?.tier || 'free';
-        if (liveTier !== subsrf_session.tier) {
-          const updated = { ...subsrf_session, tier: liveTier, tierCheckedAt: Date.now() };
-          await chrome.storage.local.set({ subsrf_session: updated });
-          renderAuthState(updated);
-        }
+        const data = await res.json();
+        const liveTier    = data.tier    || 'free';
+        const liveCredits = data.balance ?? 0;
+        // Always update — credits change after every AI operation
+        const updated = { ...subsrf_session, tier: liveTier, credits: liveCredits, tierCheckedAt: Date.now() };
+        await chrome.storage.local.set({ subsrf_session: updated });
+        renderAuthState(updated);
         // Tell the bridge about the current tier so the Figma plugin stays in sync
         chrome.runtime.sendMessage({ type: 'NOTIFY_BRIDGE' }, () => void chrome.runtime.lastError);
       }
@@ -378,6 +379,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             restStatusText.style.color = 'rgba(242,242,244,0.28)';
             restDot.classList.remove('on');
             document.getElementById('btn-show-rest-input').innerText = 'Configure Token';
+          }
+
+          // Live credit sync from bridge (updates display without a Supabase round-trip)
+          if (data.credits != null) {
+            const { subsrf_session: s } = await chrome.storage.local.get('subsrf_session');
+            if (s && s.credits !== data.credits) {
+              const updated = { ...s, credits: data.credits };
+              await chrome.storage.local.set({ subsrf_session: updated });
+              renderAuthState(updated);
+            }
           }
         }
       }

@@ -533,13 +533,17 @@
     }
 
     function applyTierBadge(tier) {
-      const isPro = tier === 'pro';
       const badge = document.getElementById('tierBadge');
-      if (isPro) {
+      if (tier === 'pro') {
         badge.textContent = 'PRO';
         badge.style.background = 'rgba(0,255,135,0.12)';
         badge.style.color = '#00FF87';
         badge.style.border = '1px solid rgba(0,255,135,0.2)';
+      } else if (tier === 'starter') {
+        badge.textContent = 'STARTER';
+        badge.style.background = 'rgba(255,171,0,0.12)';
+        badge.style.color = '#FFAB00';
+        badge.style.border = '1px solid rgba(255,171,0,0.25)';
       } else {
         badge.textContent = 'FREE';
         badge.style.background = 'rgba(255,255,255,0.05)';
@@ -560,33 +564,39 @@
         const data = await res.json();
         lastData = data;
 
-        const isPro = data.tier === 'pro';
-        applyTierBadge(data.tier);
+        const tier = data.tier || 'free';
+        const isPaidTier = tier === 'pro' || tier === 'starter';
+        applyTierBadge(tier);
 
         // Keep local session tier in sync
-        if (session && session.tier !== data.tier) {
-          session.tier = data.tier;
+        if (session && session.tier !== tier) {
+          session.tier = tier;
           storageSet('subsrf_session', session);
         }
 
         // Sync button
         const syncBtn = document.getElementById('syncBtn');
-        if (!isPro) {
+        if (!isPaidTier) {
           syncBtn.disabled = false;
-          syncBtn.textContent = '⚡ Get Subsrf Pro';
+          syncBtn.textContent = '⚡ Upgrade to Sync';
           syncBtn.onclick = function () { window.open(BRIDGE + '/#pricing', '_blank'); };
         } else {
           syncBtn.textContent = 'Sync Selection to Figma';
           syncBtn.onclick = function () {
             if (lastData && lastData.elements && lastData.elements.length > 0) {
-              parent.postMessage({ pluginMessage: { type: 'IMPORT_ELEMENTS', elements: lastData.elements } }, '*');
+              parent.postMessage({ pluginMessage: {
+                type: 'IMPORT_ELEMENTS',
+                elements: lastData.elements,
+                context: lastData.context || {},
+                tier: tier
+              } }, '*');
               addLog('Sent ' + lastData.elements.length + ' elements to canvas');
             }
           };
         }
 
         // Extension status
-        if (isPro && data.elements && data.elements.length > 0) {
+        if (isPaidTier && data.elements && data.elements.length > 0) {
           document.getElementById('extDot').className = 'dot on';
           document.getElementById('extStatus').textContent = 'Syncing ' + data.elements.length + ' elements';
           document.getElementById('extCard').classList.add('active');
@@ -596,15 +606,15 @@
             lastProcessedSyncId = syncId;
             addLog('Captured ' + data.elements.length + ' elements');
           }
-        } else if (!isPro) {
+        } else if (!isPaidTier) {
           document.getElementById('extDot').className = 'dot';
-          document.getElementById('extStatus').textContent = 'Pro plan required';
+          document.getElementById('extStatus').textContent = 'Paid plan required';
           document.getElementById('extCard').classList.remove('active');
         } else {
           document.getElementById('extDot').className = 'dot';
           document.getElementById('extStatus').textContent = 'Waiting for selection...';
           document.getElementById('extCard').classList.remove('active');
-          if (isPro) syncBtn.disabled = true;
+          syncBtn.disabled = true;
         }
 
         // AI commands
@@ -619,7 +629,7 @@
           }
         } else {
           document.getElementById('aiDot').className = 'dot on';
-          document.getElementById('aiStatus').textContent = isPro ? 'Connected' : 'Pro plan required';
+          document.getElementById('aiStatus').textContent = isPaidTier ? 'Connected' : 'Paid plan required';
           document.getElementById('aiCard').classList.remove('active');
         }
 

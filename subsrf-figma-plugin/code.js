@@ -125,6 +125,8 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'IMPORT_ELEMENTS') {
     var elements = msg.elements || (msg.data && msg.data.elements) || [];
     var context = msg.context || (msg.data && msg.data.context) || {};
+    var tier = msg.tier || 'free';
+    var isPaidTier = tier === 'starter' || tier === 'pro';
 
     if (!elements || elements.length === 0) {
       figma.notify('No elements found to sync');
@@ -199,6 +201,7 @@ figma.ui.onmessage = async (msg) => {
 
     // ── Create element frames ────────────────────────────────────────────────
     var frames = new Array(sorted.length).fill(null);
+    var autoLayoutInfo = {}; // index → 'HORIZONTAL' | 'VERTICAL'
 
     for (var j = 0; j < sorted.length; j++) {
       try {
@@ -212,8 +215,19 @@ figma.ui.onmessage = async (msg) => {
         container.resize(Math.max(1, rect.width), Math.max(1, rect.height));
         container.clipsContent = false;
 
-        // Background
-        if (styles.backgroundColor &&
+        // Background — gradient takes precedence over solid color
+        if (isPaidTier && styles.backgroundImage && styles.backgroundImage !== 'none') {
+          var gradFill = parseLinearGradient(styles.backgroundImage);
+          if (gradFill) {
+            container.fills = [gradFill];
+          } else if (styles.backgroundColor &&
+              styles.backgroundColor !== 'transparent' &&
+              styles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+            container.fills = [createSolidFill(styles.backgroundColor)];
+          } else {
+            container.fills = [];
+          }
+        } else if (styles.backgroundColor &&
             styles.backgroundColor !== 'transparent' &&
             styles.backgroundColor !== 'rgba(0, 0, 0, 0)') {
           container.fills = [createSolidFill(styles.backgroundColor)];
@@ -246,6 +260,37 @@ figma.ui.onmessage = async (msg) => {
           container.strokeAlign = 'INSIDE';
         }
 
+        // Auto Layout — map flex containers (Starter + Pro)
+        if (isPaidTier && styles.display === 'flex') {
+          var flexDir = styles.flexDirection || 'row';
+          var isRow = !flexDir.startsWith('column');
+          container.layoutMode = isRow ? 'HORIZONTAL' : 'VERTICAL';
+          container.layoutWrap = 'NO_WRAP';
+          container.primaryAxisSizingMode = 'FIXED';
+          container.counterAxisSizingMode = 'FIXED';
+
+          var gapPx = parseFloat(styles.gap) || 0;
+          if (gapPx > 0) container.itemSpacing = gapPx;
+
+          container.paddingTop    = parseInt(styles.paddingTop)    || 0;
+          container.paddingRight  = parseInt(styles.paddingRight)  || 0;
+          container.paddingBottom = parseInt(styles.paddingBottom) || 0;
+          container.paddingLeft   = parseInt(styles.paddingLeft)   || 0;
+
+          var jc = styles.justifyContent || 'flex-start';
+          container.primaryAxisAlignItems =
+            jc === 'center' ? 'CENTER' :
+            (jc === 'flex-end' || jc === 'end') ? 'MAX' :
+            jc === 'space-between' ? 'SPACE_BETWEEN' : 'MIN';
+
+          var ai = styles.alignItems || 'stretch';
+          container.counterAxisAlignItems =
+            ai === 'center' ? 'CENTER' :
+            (ai === 'flex-end' || ai === 'end') ? 'MAX' : 'MIN';
+
+          autoLayoutInfo[j] = isRow ? 'HORIZONTAL' : 'VERTICAL';
+        }
+
         // Image
         if (elObj.tagName && elObj.tagName.toLowerCase() === 'img' &&
             elObj.attributes && elObj.attributes.src) {
@@ -269,9 +314,16 @@ figma.ui.onmessage = async (msg) => {
             if (k === j) continue;
             var kText = (sorted[k].text || '').trim();
             var kArea = sorted[k].rect.width * sorted[k].rect.height;
-            // If a smaller element has meaningful text that appears inside
-            // our text, we are a container — suppress our text node.
-            if (kText.length > 4 && kArea < jArea && elText.includes(kText)) {
+            var kRect = sorted[k].rect;
+            // Only suppress text if the smaller element is geometrically inside this
+            // element's bounds — prevents unrelated page elements from triggering false
+            // suppression via accidental substring matches.
+            var isInsideBounds =
+              kRect.left   >= rect.left   - SLACK &&
+              kRect.top    >= rect.top    - SLACK &&
+              kRect.left + kRect.width  <= rect.left + rect.width  + SLACK &&
+              kRect.top  + kRect.height <= rect.top  + rect.height + SLACK;
+            if (kText.length > 4 && kArea < jArea && elText.includes(kText) && isInsideBounds) {
               isTextLeaf = false;
               break;
             }
@@ -334,21 +386,34 @@ figma.ui.onmessage = async (msg) => {
       return ra.top !== rb.top ? ra.top - rb.top : ra.left - rb.left;
     });
 
-    // ── Recursively append children with absolute positioning ────────────────
+    // ── Recursively append children ──────────────────────────────────────────
+    // Auto-layout parents: children are ordered by visual position, x/y skipped.
+    // Absolute parents: children are positioned relative to parent's top-left.
     function buildHierarchy(parentFrame, childList, parentJIdx) {
-      for (var k = 0; k < childList.length; k++) {
-        var c = childList[k];
+      var alDir = parentJIdx !== -1 ? autoLayoutInfo[parentJIdx] : null;
+
+      var orderedChildren = childList.slice();
+      if (alDir === 'HORIZONTAL') {
+        orderedChildren.sort(function(a, b) { return sorted[a].rect.left - sorted[b].rect.left; });
+      } else if (alDir === 'VERTICAL') {
+        orderedChildren.sort(function(a, b) { return sorted[a].rect.top - sorted[b].rect.top; });
+      }
+
+      for (var k = 0; k < orderedChildren.length; k++) {
+        var c = orderedChildren[k];
         if (!frames[c]) continue;
 
         parentFrame.appendChild(frames[c]);
 
-        // Position relative to parent's top-left corner
-        var cRect = sorted[c].rect;
-        var origin = parentJIdx === -1
-          ? { left: minX, top: minY }
-          : sorted[parentJIdx].rect;
-        frames[c].x = cRect.left - origin.left;
-        frames[c].y = cRect.top  - origin.top;
+        if (!alDir) {
+          // Absolute positioning relative to parent's top-left corner
+          var cRect = sorted[c].rect;
+          var origin = parentJIdx === -1
+            ? { left: minX, top: minY }
+            : sorted[parentJIdx].rect;
+          frames[c].x = cRect.left - origin.left;
+          frames[c].y = cRect.top  - origin.top;
+        }
 
         buildHierarchy(frames[c], childrenOf[c], c);
       }
@@ -446,6 +511,11 @@ function cssColorToRgb(color) {
 
 function parseRgb(color) {
   if (typeof color !== 'string') return { r: 0, g: 0, b: 0 };
+  var c = color.trim().toLowerCase();
+  var named = { white:{r:255,g:255,b:255}, black:{r:0,g:0,b:0}, red:{r:255,g:0,b:0},
+    blue:{r:0,g:0,b:255}, green:{r:0,g:128,b:0}, yellow:{r:255,g:255,b:0},
+    transparent:{r:0,g:0,b:0,a:0}, gray:{r:128,g:128,b:128}, grey:{r:128,g:128,b:128} };
+  if (named[c]) return named[c];
   if (color.startsWith('rgb')) {
     var values = color.match(/\d+(\.\d+)?/g).map(Number);
     return { r: values[0] || 0, g: values[1] || 0, b: values[2] || 0, a: values[3] };
@@ -460,4 +530,121 @@ function parseRgb(color) {
     };
   }
   return { r: 0, g: 0, b: 0 };
+}
+
+// ── Gradient fill (linear-gradient → GRADIENT_LINEAR) ─────────────────────
+
+function parseLinearGradient(bgImage) {
+  var content = extractGradientContent(bgImage);
+  if (!content) return null;
+
+  var parts = splitTopLevel(content);
+  if (parts.length < 2) return null;
+
+  var angle = 180; // default: to bottom
+  var firstPart = parts[0].trim();
+
+  if (/^to\s+/i.test(firstPart)) {
+    angle = keywordToAngle(firstPart);
+    parts = parts.slice(1);
+  } else if (/^-?\d+(\.\d+)?deg/i.test(firstPart)) {
+    angle = parseFloat(firstPart);
+    parts = parts.slice(1);
+  } else if (/^-?\d+(\.\d+)?turn/i.test(firstPart)) {
+    angle = parseFloat(firstPart) * 360;
+    parts = parts.slice(1);
+  } else if (/^-?\d+(\.\d+)?rad/i.test(firstPart)) {
+    angle = parseFloat(firstPart) * (180 / Math.PI);
+    parts = parts.slice(1);
+  }
+
+  var stops = [];
+  for (var i = 0; i < parts.length; i++) {
+    var stop = parseColorStop(parts[i].trim());
+    if (stop) stops.push(stop);
+  }
+  if (stops.length < 2) return null;
+
+  // Fill in missing positions
+  for (var i = 0; i < stops.length; i++) {
+    if (stops[i].position === null) {
+      if (i === 0) stops[i].position = 0;
+      else if (i === stops.length - 1) stops[i].position = 1;
+      else stops[i].position = i / (stops.length - 1);
+    }
+  }
+
+  // gradientTransform from angle — see formula derivation in comments
+  var theta = angle * Math.PI / 180;
+  var sinT = Math.sin(theta);
+  var cosT = Math.cos(theta);
+
+  return {
+    type: 'GRADIENT_LINEAR',
+    gradientTransform: [
+      [sinT,  cosT,  0.5 - 0.5 * sinT],
+      [-cosT, sinT,  0.5 + 0.5 * cosT]
+    ],
+    gradientStops: stops.map(function(s) {
+      return { position: s.position, color: { r: s.r / 255, g: s.g / 255, b: s.b / 255, a: s.a } };
+    }),
+    opacity: 1,
+    visible: true,
+    blendMode: 'NORMAL'
+  };
+}
+
+// Extract the argument string inside the outermost linear-gradient() call,
+// handling nested rgba() etc. via balanced-paren traversal.
+function extractGradientContent(bgImage) {
+  var idx = bgImage.indexOf('linear-gradient(');
+  if (idx === -1) return null;
+  var start = idx + 'linear-gradient('.length;
+  var depth = 1, i = start;
+  while (i < bgImage.length && depth > 0) {
+    if (bgImage[i] === '(') depth++;
+    else if (bgImage[i] === ')') depth--;
+    i++;
+  }
+  return bgImage.substring(start, i - 1);
+}
+
+// Split by top-level commas only (skips commas inside parentheses).
+function splitTopLevel(str) {
+  var parts = [], depth = 0, current = '';
+  for (var i = 0; i < str.length; i++) {
+    if (str[i] === '(') depth++;
+    else if (str[i] === ')') depth--;
+    else if (str[i] === ',' && depth === 0) { parts.push(current); current = ''; continue; }
+    current += str[i];
+  }
+  parts.push(current);
+  return parts;
+}
+
+function keywordToAngle(keyword) {
+  var map = {
+    'to top': 0, 'to top right': 45, 'to right top': 45,
+    'to right': 90, 'to bottom right': 135, 'to right bottom': 135,
+    'to bottom': 180, 'to bottom left': 225, 'to left bottom': 225,
+    'to left': 270, 'to top left': 315, 'to left top': 315
+  };
+  var k = keyword.toLowerCase().replace(/\s+/g, ' ').trim();
+  return map[k] !== undefined ? map[k] : 180;
+}
+
+// Parse one color stop: "rgba(0,0,0,0.5) 30%" → {r,g,b,a,position}
+function parseColorStop(str) {
+  var posMatch = str.match(/([\d.]+%)\s*$/);
+  var position = null;
+  if (posMatch) {
+    position = parseFloat(posMatch[1]) / 100;
+    str = str.slice(0, str.lastIndexOf(posMatch[0])).trim();
+  }
+  var colorStr = str.trim();
+  if (!colorStr || colorStr === 'transparent') {
+    return { r: 0, g: 0, b: 0, a: 0, position: position };
+  }
+  var rgb = parseRgb(colorStr);
+  return { r: rgb.r, g: rgb.g, b: rgb.b, a: rgb.a !== undefined ? rgb.a : 1, position: position };
 }

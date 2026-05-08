@@ -104,7 +104,8 @@
       'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
       'borderTopWidth', 'borderTopColor', 'borderTopStyle', 'borderRadius', 'boxShadow',
       'display', 'flexDirection', 'gap', 'justifyContent', 'alignItems', 'flexGrow',
-      'opacity', 'zIndex', 'position', 'lineHeight', 'textAlign', 'overflow'
+      'opacity', 'zIndex', 'position', 'lineHeight', 'textAlign', 'overflow',
+      'backgroundImage'
     ];
     props.forEach(p => { styles[p] = s[p]; });
     return styles;

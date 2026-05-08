@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Subsrf — Brand Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Azeret+Mono:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+/* ─────────────────────────────────────────
+   RESET & ROOT
+───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Core */
+  --void:      #050508;
+  --deep:      #0C0C12;
+  --layer:     #111118;
+  --surface:   #18181F;
+  --lift:      #202028;
+  --border:    rgba(255,255,255,0.06);
+  --border-md: rgba(255,255,255,0.10);
+
+  /* Accent — one color, used sparingly */
+  --acid:      #00FF87;
+  --acid-dim:  rgba(0,255,135,0.12);
+  --acid-glow: rgba(0,255,135,0.06);
+
+  /* Text */
+  --t1: #F2F2F4;
+  --t2: rgba(242,242,244,0.55);
+  --t3: rgba(242,242,244,0.28);
+  --t4: rgba(242,242,244,0.12);
+
+  /* Status */
+  --ok:   #39D98A;
+  --warn: #FFAB00;
+  --err:  #FF4D4D;
+
+  /* Type */
+  --display: 'Manrope', sans-serif;
+  --body:    'Manrope', sans-serif;
+  --mono:    'Azeret Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--t1);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  cursor: default;
+}
+
+/* ─────────────────────────────────────────
+   NOISE TEXTURE OVERLAY
+───────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─────────────────────────────────────────
+   NAV
+───────────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  height: 52px;
+  background: rgba(5,5,8,0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+  gap: 40px;
+}
+
+.nav-brand {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--acid);
+  margin-right: auto;
+}
+
+.nav-brand span { color: var(--t3); }
+
+.nav-item {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--t3);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-item:hover { color: var(--t1); }
+
+body { padding-top: 52px; }
+
+/* ─────────────────────────────────────────
+   LAYOUT
+───────────────────────────────────────── */
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 48px; position: relative; z-index: 1; }
+
+.chapter {
+  padding: 120px 0;
+  border-bottom: 1px solid var(--border);
+}
+.chapter:last-of-type { border-bottom: none; }
+
+/* ─────────────────────────────────────────
+   TYPE SYSTEM (used throughout)
+───────────────────────────────────────── */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--acid);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.eyebrow::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--acid);
+  flex-shrink: 0;
+}
+
+.ch-title {
+  font-family: var(--display);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+}
+
+.ch-desc {
+  font-size: 16px;
+  color: var(--t2);
+  max-width: 500px;
+  line-height: 1.75;
+  font-weight: 300;
+  margin-bottom: 64px;
+}
+
+/* ─────────────────────────────────────────
+   COVER
+───────────────────────────────────────── */
+.cover {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Scan lines */
+.cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,255,135,0.012) 2px,
+    rgba(0,255,135,0.012) 4px
+  );
+  pointer-events: none;
+}
+
+/* Deep glow from below */
+.cover-bg {
+  position: absolute;
+  bottom: -200px; left: 50%;
+  transform: translateX(-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse at center bottom, rgba(0,255,135,0.07) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Grid */
+.cover-grid-lines {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: linear-gradient(180deg, transparent 0%, black 30%, black 70%, transparent 100%);
+}
+
+.cover-content { position: relative; z-index: 2; width: 100%; }
+
+.cover-kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 48px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.cover-kicker::before {
+  content: '';
+  width: 1px; height: 40px;
+  background: linear-gradient(180deg, transparent, var(--acid), transparent);
+}
+
+.cover-headline {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(72px, 14vw, 160px);
+  line-height: 0.88;
+  letter-spacing: -6px;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.cover-headline .line1 {
+  display: block;
+  color: var(--t1);
+}
+
+.cover-headline .line2 {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(242,242,244,0.2);
+}
+
+.cover-headline .line3 {
+  display: block;
+  color: var(--acid);
+  text-shadow: 0 0 80px rgba(0,255,135,0.3);
+  font-size: 0.55em;
+  letter-spacing: -2px;
+  margin-top: 8px;
+}
+
+.cover-sub {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--t2);
+  max-width: 380px;
+  line-height: 1.75;
+  margin-bottom: 64px;
+}
+
+.cover-meta-row {
+  display: flex;
+  gap: 48px;
+}
+
+.cover-meta-item {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.5px;
+  line-height: 1.8;
+}
+
+.cover-meta-item strong {
+  display: block;
+  color: var(--t2);
+  margin-bottom: 2px;
+}
+
+/* ─────────────────────────────────────────
+   BRAND STORY
+───────────────────────────────────────── */
+.story-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 48px;
+}
+
+.story-cell {
+  background: var(--layer);
+  padding: 44px 40px;
+}
+
+.story-cell-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--acid);
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+
+.story-cell-title {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+  line-height: 1.15;
+}
+
+.story-cell-body {
+  font-size: 14px;
+  color: var(--t2);
+  line-height: 1.75;
+  font-weight: 300;
+}
+
+/* Manifesto block */
+.manifesto {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--acid);
+  border-radius: 0 12px 12px 0;
+  padding: 40px 48px;
+  margin-bottom: 48px;
+}
+
+.manifesto p {
+  font-family: var(--display);
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.5px;
+  color: var(--t1);
+}
+
+.manifesto p em {
+  font-style: normal;
+  color: var(--acid);
+}
+
+/* ─────────────────────────────────────────
+   LOGO
+───────────────────────────────────────── */
+.logo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.logo-tile {
+  border-radius: 16px;
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 240px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-tile.on-void  { background: var(--void); }
+.logo-tile.on-layer { background: var(--layer); }
+.logo-tile.on-acid  { background: var(--acid); }
+.logo-tile.on-white { background: #F2F2F4; }
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-wordmark {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.on-void  .logo-wordmark, .on-layer .logo-wordmark { color: var(--t1); }
+.on-acid  .logo-wordmark { color: var(--void); }
+.on-white .logo-wordmark { color: var(--void); }
+
+.logo-tile-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.on-void  .logo-tile-label, .on-layer .logo-tile-label { color: var(--t3); }
+.on-acid  .logo-tile-label { color: rgba(5,5,8,0.45); }
+.on-white .logo-tile-label { color: rgba(5,5,8,0.35); }
+
+/* Icon sizes */
+.icon-sizes {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.icon-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-wrap {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-sz-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 1px;
+}
+
+/* Logo construction */
+.logo-construction {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px;
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 64px;
+  flex-wrap: wrap;
+}
+
+.construction-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.construction-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.plus-sign {
+  font-family: var(--mono);
+  font-size: 24px;
+  color: var(--t4);
+  padding-bottom: 24px;
+}
+
+/* ─────────────────────────────────────────
+   COLOR
+───────────────────────────────────────── */
+.palette-primary {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.palette-secondary {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.swatch {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.swatch-block { width: 100%; }
+.swatch-info {
+  background: var(--layer);
+  padding: 14px 16px;
+}
+.swatch-name {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.swatch-hex {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t3);
+}
+.swatch-use {
+  font-size: 11px;
+  color: var(--t3);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Color in use demo */
+.color-demo {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.color-demo-panel {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.demo-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 20px;
+}
+
+/* ─────────────────────────────────────────
+   TYPOGRAPHY
+───────────────────────────────────────── */
+.type-specimen { margin-bottom: 64px; }
+
+.type-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 48px;
+  padding: 48px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+.type-row:last-child { border-bottom: none; }
+
+.type-meta-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--acid);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.type-meta-detail {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t3);
+  line-height: 1.9;
+}
+
+/* Specimens */
+.specimen-display {
+  font-family: var(--display);
+  font-size: clamp(56px, 10vw, 96px);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -4px;
+}
+
+.specimen-heading {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+.specimen-subheading {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+  color: var(--t2);
+}
+
+.specimen-body {
+  font-family: var(--body);
+  font-size: 16px;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--t2);
+  max-width: 480px;
+}
+
+.specimen-mono {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.8;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.specimen-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--acid);
+}
+
+/* Type scale */
+.type-scale { margin-top: 64px; }
+.scale-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.scale-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 1px;
+  width: 80px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────
+   VOICE
+───────────────────────────────────────── */
+.voice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.voice-card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.voice-card h3 {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+}
+
+.voice-card p {
+  font-size: 13px;
+  color: var(--t2);
+  margin-bottom: 20px;
+  line-height: 1.65;
+  font-weight: 300;
+}
+
+.voice-eg {
+  background: var(--deep);
+  border-left: 2px solid var(--acid);
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  color: var(--t2);
+  font-family: var(--mono);
+  line-height: 1.6;
+}
+
+/* Do / Don't */
+.dd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.dd-card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+}
+.dd-card.do   { border-top: 2px solid var(--ok); }
+.dd-card.dont { border-top: 2px solid var(--err); }
+
+.dd-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.dd-card.do .dd-header   { color: var(--ok); }
+.dd-card.dont .dd-header { color: var(--err); }
+
+.dd-item {
+  font-size: 13px;
+  color: var(--t2);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+  font-weight: 300;
+  display: flex;
+  gap: 10px;
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item::before { flex-shrink: 0; }
+.dd-card.do   .dd-item::before { content: '✓'; color: var(--ok); }
+.dd-card.dont .dd-item::before { content: '✗'; color: var(--err); }
+
+/* ─────────────────────────────────────────
+   UI SYSTEM
+───────────────────────────────────────── */
+.ui-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ui-card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px;
+}
+
+.ui-card-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 24px;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.badge.ok      { background: rgba(57,217,138,0.1); color: var(--ok); border: 1px solid rgba(57,217,138,0.2); }
+.badge.acid    { background: rgba(0,255,135,0.12); color: var(--acid); border: 1px solid rgba(0,255,135,0.2); }
+.badge.neutral { background: rgba(255,255,255,0.05); color: var(--t3); border: 1px solid var(--border); }
+.badge.err     { background: rgba(255,77,77,0.1); color: var(--err); border: 1px solid rgba(255,77,77,0.2); }
+
+.badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: default;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.btn.primary   { background: var(--acid); color: var(--void); }
+.btn.secondary { background: rgba(255,255,255,0.06); color: var(--t1); border-color: var(--border-md); }
+.btn.ghost     { background: transparent; color: var(--t2); border-color: var(--border); }
+.btn.danger    { background: rgba(255,77,77,0.1); color: var(--err); border-color: rgba(255,77,77,0.2); }
+
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Counter */
+.big-counter {
+  font-family: var(--mono);
+  font-size: 64px;
+  font-weight: 400;
+  color: var(--acid);
+  line-height: 1;
+  text-shadow: 0 0 40px rgba(0,255,135,0.25);
+  margin: 12px 0 6px;
+  letter-spacing: -2px;
+}
+
+/* Input */
+.ui-input {
+  width: 100%;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--t2);
+  margin-top: 10px;
+  outline: none;
+}
+
+/* Code block */
+.code-block {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--t2);
+  line-height: 1.8;
+  margin-top: 10px;
+}
+
+.code-block .key   { color: var(--acid); }
+.code-block .val   { color: var(--t1); }
+.code-block .muted { color: var(--t3); }
+
+/* Spacing */
+.spacing-display {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.sp-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-bar {
+  background: rgba(0,255,135,0.12);
+  border: 1px solid rgba(0,255,135,0.2);
+  border-radius: 3px;
+  width: 32px;
+}
+
+.sp-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--acid);
+}
+.sp-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 1px;
+}
+
+/* ─────────────────────────────────────────
+   FOOTER
+───────────────────────────────────────── */
+.brand-footer {
+  padding: 80px 0 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-mark {
+  font-family: var(--mono);
+  font-size: 48px;
+  font-weight: 600;
+  letter-spacing: -3px;
+  color: var(--acid);
+  line-height: 1;
+  text-shadow: 0 0 60px rgba(0,255,135,0.2);
+}
+
+.footer-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  line-height: 2;
+  text-align: right;
+  letter-spacing: 0.5px;
+}
+
+/* ─────────────────────────────────────────
+   UTILITIES
+───────────────────────────────────────── */
+.mt-12 { margin-top: 12px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+.mt-48 { margin-top: 48px; }
+.mt-64 { margin-top: 64px; }
+
+.acid  { color: var(--acid); }
+.muted { color: var(--t3); }
+.t2    { color: var(--t2); }
+
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav">
+  <div class="nav-brand">subsrf<span>.dev</span></div>
+  <a href="#story"  class="nav-item">Story</a>
+  <a href="#logo"   class="nav-item">Logo</a>
+  <a href="#color"  class="nav-item">Color</a>
+  <a href="#type"   class="nav-item">Type</a>
+  <a href="#voice"  class="nav-item">Voice</a>
+  <a href="#ui"     class="nav-item">UI</a>
+</nav>
+
+<!-- ── COVER ── -->
+<section class="cover">
+  <div class="cover-bg"></div>
+  <div class="cover-grid-lines"></div>
+  <div class="wrap cover-content">
+    <div class="cover-kicker">Brand Guidelines — v1.0 — 2025</div>
+    <h1 class="cover-headline">
+      <span class="line1">Sub</span>
+      <span class="line2">surface</span>
+      <span class="line3">subsrf.dev</span>
+    </h1>
+    <p class="cover-sub">The brand guide for Subsrf — the tool that reads what's underneath any interface and pipes it to wherever you need it.</p>
+    <div class="cover-meta-row">
+      <div class="cover-meta-item">
+        <strong>Type</strong>
+        Manrope + Azeret Mono
+      </div>
+      <div class="cover-meta-item">
+        <strong>Accent</strong>
+        #00FF87 — Neon
+      </div>
+      <div class="cover-meta-item">
+        <strong>Tone</strong>
+        Precise. Dense. Trusted.
+      </div>
+      <div class="cover-meta-item">
+        <strong>Category</strong>
+        Developer infrastructure
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BRAND STORY ── -->
+<section class="chapter" id="story">
+  <div class="wrap">
+    <div class="eyebrow">Brand Story</div>
+    <h2 class="ch-title">What lives beneath</h2>
+    <p class="ch-desc">Every interface has two layers. The surface is what users see. The subsurface is what developers live in — selectors, computed styles, structure, hierarchy. Subsrf is the tool that bridges them.</p>
+
+    <div class="manifesto">
+      <p>
+        Every UI has a <em>surface</em> and a <em>subsurface</em>.<br/>
+        Designers live on top. Developers live underneath.<br/>
+        AI needs both. Subsrf gives it both.
+      </p>
+    </div>
+
+    <div class="story-layout">
+      <div class="story-cell">
+        <div class="story-cell-num">01 — PRECISE</div>
+        <div class="story-cell-title">Exact data, always</div>
+        <p class="story-cell-body">Subsrf deals in computed values — not raw CSS, not estimates. Pixels, not ems. Resolved colors, not variables. When you relay element data through Subsrf, it is exact. The brand reflects this: no softness, no approximation.</p>
+      </div>
+      <div class="story-cell">
+        <div class="story-cell-num">02 — DEEP</div>
+        <div class="story-cell-title">Goes further than the surface</div>
+        <p class="story-cell-body">Other tools show you the surface. Subsrf reads the layer beneath — the actual computed state of any element on any page. XPath, selectors, layout, the full style tree. That depth is the product and the brand.</p>
+      </div>
+      <div class="story-cell">
+        <div class="story-cell-num">03 — CONNECTED</div>
+        <div class="story-cell-title">The bridge between everything</div>
+        <p class="story-cell-body">Browser to AI. Browser to Figma. Browser to test suite. Subsrf doesn't care where it sends — it's the universal pipe for UI context. The neon green accent is the signal that data is moving.</p>
+      </div>
+      <div class="story-cell">
+        <div class="story-cell-num">04 — TRUSTED</div>
+        <div class="story-cell-title">Infrastructure, not a gadget</div>
+        <p class="story-cell-body">Developers and designers pipe their work through Subsrf. It has to feel like infrastructure. The dark palette, the monospaced wordmark, the sparse use of color — all of it signals that this is a serious tool built by people who ship.</p>
+      </div>
+    </div>
+
+    <div class="dd-grid">
+      <div class="dd-card do">
+        <div class="dd-header">✓ Subsrf is</div>
+        <div class="dd-item">Developer infrastructure with a design sensibility</div>
+        <div class="dd-item">Precise, deep, connected, trusted</div>
+        <div class="dd-item">The subsurface layer of any UI, piped anywhere</div>
+        <div class="dd-item">Built for developers and designers who care about quality</div>
+        <div class="dd-item">Quiet confidence — no shouting required</div>
+      </div>
+      <div class="dd-card dont">
+        <div class="dd-header">✗ Subsrf is not</div>
+        <div class="dd-item">A consumer app or browser toy</div>
+        <div class="dd-item">Playful, bubbly, or enthusiastic</div>
+        <div class="dd-item">Enterprise software with a sales motion</div>
+        <div class="dd-item">Trying to win a design award</div>
+        <div class="dd-item">For people who don't know what XPath is</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LOGO ── -->
+<section class="chapter" id="logo">
+  <div class="wrap">
+    <div class="eyebrow">Logo System</div>
+    <h2 class="ch-title">The mark</h2>
+    <p class="ch-desc">The Subsrf logo is a monospaced wordmark — no icon, no symbol. The name is the mark. The abbreviated spelling (subsrf, not subsurface) is itself the design decision: it signals the culture before a single pixel is seen.</p>
+
+    <div class="logo-grid">
+
+      <div class="logo-tile on-void">
+        <div class="logo-mark">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <!-- Two stacked layers — the "sub" and "surface" -->
+            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+            <!-- Arrow going down into subsurface -->
+            <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5"/>
+            <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="logo-wordmark">subsrf</div>
+        </div>
+        <div class="logo-tile-label">Primary — Void</div>
+      </div>
+
+      <div class="logo-tile on-layer">
+        <div class="logo-mark">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+            <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5"/>
+            <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="logo-wordmark">subsrf</div>
+        </div>
+        <div class="logo-tile-label">On Layer</div>
+      </div>
+
+      <div class="logo-tile on-acid">
+        <div class="logo-mark">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#050508" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(5,5,8,0.3)" stroke-width="1.5" fill="none"/>
+            <line x1="18" y1="8" x2="18" y2="22" stroke="#050508" stroke-width="1.5"/>
+            <path d="M14 19 L18 23 L22 19" stroke="#050508" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="logo-wordmark">subsrf</div>
+        </div>
+        <div class="logo-tile-label">Neon — Accent use only</div>
+      </div>
+
+      <div class="logo-tile on-white">
+        <div class="logo-mark">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#050508" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(5,5,8,0.25)" stroke-width="1.5" fill="none"/>
+            <line x1="18" y1="8" x2="18" y2="22" stroke="#050508" stroke-width="1.5"/>
+            <path d="M14 19 L18 23 L22 19" stroke="#050508" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <div class="logo-wordmark" style="color:#050508">subsrf</div>
+        </div>
+        <div class="logo-tile-label">Light backgrounds</div>
+      </div>
+
+    </div>
+
+    <!-- Icon at sizes -->
+    <div class="eyebrow mt-48">App Icon</div>
+    <p class="t2" style="font-size:14px;font-weight:300;margin-bottom:32px;">At small sizes the icon replaces the wordmark. Two stacked rectangles with a downward arrow — surface above, subsurface below.</p>
+
+    <div class="icon-sizes">
+      <div class="icon-box">
+        <div class="icon-wrap" style="width:96px;height:96px;border-radius:22px;">
+          <svg width="52" height="52" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="7" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="21" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+            <line x1="18" y1="7" x2="18" y2="21" stroke="#00FF87" stroke-width="1.5"/>
+            <path d="M14 18 L18 22 L22 18" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="icon-sz-label">96px</div>
+      </div>
+      <div class="icon-box">
+        <div class="icon-wrap" style="width:64px;height:64px;border-radius:15px;">
+          <svg width="34" height="34" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="7" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none"/>
+            <rect x="2" y="21" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
+            <line x1="18" y1="7" x2="18" y2="21" stroke="#00FF87" stroke-width="1.5"/>
+            <path d="M14 18 L18 22 L22 18" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="icon-sz-label">64px</div>
+      </div>
+      <div class="icon-box">
+        <div class="icon-wrap" style="width:48px;height:48px;border-radius:11px;">
+          <svg width="26" height="26" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="7" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="2" fill="none"/>
+            <rect x="2" y="21" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="2" fill="none"/>
+            <line x1="18" y1="7" x2="18" y2="21" stroke="#00FF87" stroke-width="2"/>
+            <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="icon-sz-label">48px</div>
+      </div>
+      <div class="icon-box">
+        <div class="icon-wrap" style="width:32px;height:32px;border-radius:8px;">
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none">
+            <rect x="2" y="6" width="32" height="11" rx="2" stroke="#00FF87" stroke-width="2.5" fill="none"/>
+            <rect x="2" y="21" width="32" height="11" rx="2" stroke="rgba(0,255,135,0.35)" stroke-width="2.5" fill="none"/>
+            <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="icon-sz-label">32px</div>
+      </div>
+      <div class="icon-box">
+        <div class="icon-wrap" style="width:20px;height:20px;border-radius:5px;">
+          <svg width="12" height="12" viewBox="0 0 36 36" fill="none">
+            <rect x="1" y="5" width="34" height="12" rx="3" stroke="#00FF87" stroke-width="3" fill="none"/>
+            <rect x="1" y="21" width="34" height="12" rx="3" stroke="rgba(0,255,135,0.4)" stroke-width="3" fill="none"/>
+          </svg>
+        </div>
+        <div class="icon-sz-label">20px</div>
+      </div>
+      <div style="margin-left:16px;align-self:center;">
+        <p style="font-family:var(--mono);font-size:11px;color:var(--t3);line-height:1.9;">
+          Drop inner arrow at 32px.<br/>
+          At 20px, two rects only.<br/>
+          Minimum clear space: 8px.<br/>
+          Never scale below 16px.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COLOR ── -->
+<section class="chapter" id="color">
+  <div class="wrap">
+    <div class="eyebrow">Color System</div>
+    <h2 class="ch-title">One accent. Used sparingly.</h2>
+    <p class="ch-desc">The palette is almost entirely void and dark surfaces. Neon — #00FF87 — is the single accent color. It appears only when something is active, alive, or moving. If everything is neon, nothing is.</p>
+
+    <div class="palette-primary">
+      <div class="swatch">
+        <div class="swatch-block" style="height:140px;background:#050508;border-bottom:1px solid rgba(255,255,255,0.04)"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Void</div>
+          <div class="swatch-hex">#050508</div>
+          <div class="swatch-use">Primary background. The world Subsrf lives in.</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:140px;background:#0C0C12"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Deep</div>
+          <div class="swatch-hex">#0C0C12</div>
+          <div class="swatch-use">Code blocks, inputs</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:140px;background:#111118"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Layer</div>
+          <div class="swatch-hex">#111118</div>
+          <div class="swatch-use">Cards, panels</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:140px;background:#18181F"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Surface</div>
+          <div class="swatch-hex">#18181F</div>
+          <div class="swatch-use">Elevated UI</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:140px;background:#00FF87"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Neon</div>
+          <div class="swatch-hex">#00FF87</div>
+          <div class="swatch-use">The only accent. Active states, CTAs, data moving.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="palette-secondary">
+      <div class="swatch">
+        <div class="swatch-block" style="height:80px;background:#F2F2F4"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">White</div>
+          <div class="swatch-hex">#F2F2F4</div>
+          <div class="swatch-use">Primary text</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:80px;background:rgba(242,242,244,0.55)"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">White 55</div>
+          <div class="swatch-hex">55% opacity</div>
+          <div class="swatch-use">Secondary text</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:80px;background:#39D98A"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Green</div>
+          <div class="swatch-hex">#39D98A</div>
+          <div class="swatch-use">Connected / success</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:80px;background:#FFAB00"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Amber</div>
+          <div class="swatch-hex">#FFAB00</div>
+          <div class="swatch-use">Warning / pending</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-block" style="height:80px;background:#FF4D4D"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Red</div>
+          <div class="swatch-hex">#FF4D4D</div>
+          <div class="swatch-use">Error / offline</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color rules -->
+    <div class="dd-grid">
+      <div class="dd-card do">
+        <div class="dd-header">✓ Use Neon for</div>
+        <div class="dd-item">Primary CTA buttons</div>
+        <div class="dd-item">Active / connected status indicators</div>
+        <div class="dd-item">Live data counters and numbers</div>
+        <div class="dd-item">Eyebrow labels and section markers</div>
+        <div class="dd-item">The logo mark icon strokes</div>
+      </div>
+      <div class="dd-card dont">
+        <div class="dd-header">✗ Never use Neon for</div>
+        <div class="dd-item">Background fills of large areas</div>
+        <div class="dd-item">Body text or paragraph content</div>
+        <div class="dd-item">More than one element per screen section</div>
+        <div class="dd-item">Decorative or purely aesthetic purposes</div>
+        <div class="dd-item">Anything that isn't interactive or live data</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TYPOGRAPHY ── -->
+<section class="chapter" id="type">
+  <div class="wrap">
+    <div class="eyebrow">Typography</div>
+    <h2 class="ch-title">Manrope + Azeret Mono</h2>
+    <p class="ch-desc">Manrope for everything human — headlines, body, UI labels. Azeret Mono for everything machine — code, data, the wordmark itself. Do not introduce a third typeface.</p>
+
+    <div class="type-specimen">
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Display</div>
+          <div class="type-meta-detail">
+            Manrope<br/>
+            Weight: 800<br/>
+            Size: 64–160px<br/>
+            Leading: 0.88<br/>
+            Tracking: −4 to −6px
+          </div>
+        </div>
+        <div class="specimen-display">Subsrf</div>
+      </div>
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Heading</div>
+          <div class="type-meta-detail">
+            Manrope<br/>
+            Weight: 700<br/>
+            Size: 32–52px<br/>
+            Leading: 1.05<br/>
+            Tracking: −1.5px
+          </div>
+        </div>
+        <div class="specimen-heading">What lives beneath<br/>any interface.</div>
+      </div>
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Subheading</div>
+          <div class="type-meta-detail">
+            Manrope<br/>
+            Weight: 500<br/>
+            Size: 18–24px<br/>
+            Leading: 1.3<br/>
+            Tracking: −0.3px
+          </div>
+        </div>
+        <div class="specimen-subheading">Getting started with the MCP bridge</div>
+      </div>
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Body</div>
+          <div class="type-meta-detail">
+            Manrope<br/>
+            Weight: 300<br/>
+            Size: 14–16px<br/>
+            Leading: 1.8<br/>
+            Tracking: 0
+          </div>
+        </div>
+        <div class="specimen-body">Subsrf reads the computed state of any element on any webpage — styles, selectors, structure, hierarchy — and pipes it directly to your AI client, Figma workspace, or test suite. No API key required. No middleware. Just the subsurface, wherever you need it.</div>
+      </div>
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Mono / Code</div>
+          <div class="type-meta-detail">
+            Azeret Mono<br/>
+            Weight: 300–500<br/>
+            Size: 11–14px<br/>
+            Leading: 1.8<br/>
+            Tracking: 0
+          </div>
+        </div>
+        <div class="specimen-mono">
+          <span style="color:var(--acid)">xpath</span>: //header/nav/button[@class="cta"]<br/>
+          <span style="color:var(--acid)">css</span>:   header > nav > button.cta<br/>
+          <span style="color:var(--acid)">width</span>: 140px · <span style="color:var(--acid)">height</span>: 44px<br/>
+          <span style="color:var(--acid)">bg</span>:    rgb(200, 255, 0) → {r:0.78, g:1.0, b:0.0}
+        </div>
+      </div>
+
+      <div class="type-row">
+        <div>
+          <div class="type-meta-title">Label</div>
+          <div class="type-meta-detail">
+            Azeret Mono<br/>
+            Weight: 400<br/>
+            Size: 9–11px<br/>
+            Leading: 1<br/>
+            Tracking: 2–3px<br/>
+            Always uppercase
+          </div>
+        </div>
+        <div class="specimen-label">MCP · CONNECTED · 4 ELEMENTS CAPTURED</div>
+      </div>
+
+    </div>
+
+    <!-- Scale -->
+    <div class="eyebrow">Type Scale</div>
+    <div class="type-scale">
+      <div class="scale-row">
+        <span class="scale-tag">160px / 800</span>
+        <span style="font-family:var(--display);font-weight:800;font-size:clamp(52px,9vw,96px);letter-spacing:-4px;line-height:0.9">Subsrf</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-tag">52px / 700</span>
+        <span style="font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,52px);letter-spacing:-1.5px">What lives beneath.</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-tag">32px / 700</span>
+        <span style="font-family:var(--display);font-weight:700;font-size:clamp(20px,3vw,32px);letter-spacing:-0.8px">MCP Bridge setup</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-tag">22px / 500</span>
+        <span style="font-family:var(--display);font-weight:500;font-size:22px;color:var(--t2)">Connect your AI client once.</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-tag">16px / 300</span>
+        <span style="font-family:var(--body);font-weight:300;font-size:16px;color:var(--t2)">Select any UI element on any page. Pipe it to Claude, Figma, or your test suite.</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-tag">11px / 400</span>
+        <span style="font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--acid)">MCP · CONNECTED · 4 ELEMENTS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── VOICE ── -->
+<section class="chapter" id="voice">
+  <div class="wrap">
+    <div class="eyebrow">Voice & Tone</div>
+    <h2 class="ch-title">How Subsrf speaks</h2>
+    <p class="ch-desc">Our users spot bad copy the way they spot a memory leak. Write with the precision of someone who ships production code and the taste of someone who uses Linear.</p>
+
+    <div class="voice-grid">
+      <div class="voice-card">
+        <h3>Terminal-brief</h3>
+        <p>Say the thing. No warm-up. No outro. If you can cut a word without losing meaning, cut it.</p>
+        <div class="voice-eg">
+          "4 elements captured."<br/>
+          Not: "Great work! You've selected 4 elements and they're ready to use."
+        </div>
+      </div>
+      <div class="voice-card">
+        <h3>Technically fluent</h3>
+        <p>Use correct terms. XPath, not "the element path thing". Computed styles, not "CSS stuff". But don't show off — accuracy isn't the same as density.</p>
+        <div class="voice-eg">
+          "Computed styles and XPath included."<br/>
+          Not: "We've included the computed cascaded style properties and XML path expression."
+        </div>
+      </div>
+      <div class="voice-card">
+        <h3>Flat affect, no hype</h3>
+        <p>We don't celebrate. We confirm. The tool did its job — state that, move on. Save enthusiasm for the product, not the copy.</p>
+        <div class="voice-eg">
+          "Sent to MCP."<br/>
+          Not: "🎉 Your elements have been successfully relayed to your AI client!"
+        </div>
+      </div>
+      <div class="voice-card">
+        <h3>Dry, occasionally</h3>
+        <p>One dry line in the right place is earned. Never more than one per screen. Never forced.</p>
+        <div class="voice-eg">
+          "No API key. We checked."<br/>
+          "Works with your AI. All of them."
+        </div>
+      </div>
+    </div>
+
+    <div class="dd-grid mt-24">
+      <div class="dd-card do">
+        <div class="dd-header">✓ Write this</div>
+        <div class="dd-item">Capture any UI element</div>
+        <div class="dd-item">MCP server not running</div>
+        <div class="dd-item">4 elements · subsrf.dev/capture/a3f9</div>
+        <div class="dd-item">Works with Claude, Cursor, Zed</div>
+        <div class="dd-item">Pipe it to Figma</div>
+      </div>
+      <div class="dd-card dont">
+        <div class="dd-header">✗ Not this</div>
+        <div class="dd-item">Supercharge your AI workflow!</div>
+        <div class="dd-item">Oops! Looks like the server isn't running yet 😅</div>
+        <div class="dd-item">Your shareable link is ready to go! 🔗</div>
+        <div class="dd-item">Seamlessly integrates with leading AI platforms</div>
+        <div class="dd-item">Leverage the power of Subsrf to send elements</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── UI SYSTEM ── -->
+<section class="chapter" id="ui">
+  <div class="wrap">
+    <div class="eyebrow">UI System</div>
+    <h2 class="ch-title">Product patterns</h2>
+    <p class="ch-desc">The recurring components used across the extension, sidebar, and web. Consistent use of these builds trust faster than any marketing copy.</p>
+
+    <div class="ui-grid">
+
+      <!-- Badges -->
+      <div class="ui-card">
+        <div class="ui-card-label">Status Badges</div>
+        <div class="badge-row">
+          <div class="badge ok"><div class="badge-dot"></div>MCP Connected</div>
+          <div class="badge acid"><div class="badge-dot"></div>4 elements</div>
+          <div class="badge neutral">Free</div>
+          <div class="badge err"><div class="badge-dot"></div>Offline</div>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:12px;line-height:1.8;">
+          Green = system live · Neon = active count<br/>
+          Neutral = tier/state · Red = error
+        </p>
+      </div>
+
+      <!-- Buttons -->
+      <div class="ui-card">
+        <div class="ui-card-label">Buttons</div>
+        <div class="btn-row">
+          <div class="btn primary">⚡ Send to AI</div>
+          <div class="btn secondary">Clear</div>
+          <div class="btn ghost">Docs</div>
+        </div>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:16px;line-height:1.8;">
+          Primary = Neon fill, Void text<br/>
+          Secondary = white-06, border<br/>
+          Ghost = transparent, border only
+        </p>
+      </div>
+
+      <!-- Counter -->
+      <div class="ui-card">
+        <div class="ui-card-label">Element Counter</div>
+        <div class="big-counter">12</div>
+        <p style="font-size:13px;color:var(--t2);font-weight:300;">elements captured</p>
+        <p style="font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:12px;line-height:1.8;">
+          Azeret Mono · 64px · Neon color<br/>
+          Neon glow active when count > 0
+        </p>
+      </div>
+
+      <!-- Code output -->
+      <div class="ui-card">
+        <div class="ui-card-label">Data Output</div>
+        <div class="code-block">
+          <span class="key">tag</span>: <span class="val">button</span><br/>
+          <span class="key">role</span>: <span class="val">button</span><br/>
+          <span class="key">css</span>: <span class="val">nav > .cta-btn</span><br/>
+          <span class="key">w</span>: <span class="val">140px</span> · <span class="key">h</span>: <span class="val">44px</span><br/>
+          <span class="key">bg</span>: <span class="val">{r:0.78, g:1.0, b:0}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Spacing -->
+    <div class="eyebrow mt-48">Spacing Scale</div>
+    <p class="t2" style="font-size:14px;font-weight:300;margin-bottom:32px;">Base unit: 4px. Every spacing value is a multiple of 4. No exceptions.</p>
+
+    <div class="spacing-display">
+      <div class="sp-item"><div class="sp-bar" style="height:4px"></div><div class="sp-val">4</div><div class="sp-name">xs</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:8px"></div><div class="sp-val">8</div><div class="sp-name">sm</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:12px"></div><div class="sp-val">12</div><div class="sp-name">—</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:16px"></div><div class="sp-val">16</div><div class="sp-name">md</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:24px"></div><div class="sp-val">24</div><div class="sp-name">—</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:32px"></div><div class="sp-val">32</div><div class="sp-name">lg</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:48px"></div><div class="sp-val">48</div><div class="sp-name">xl</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:64px"></div><div class="sp-val">64</div><div class="sp-name">2xl</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:96px"></div><div class="sp-val">96</div><div class="sp-name">3xl</div></div>
+      <div class="sp-item"><div class="sp-bar" style="height:128px"></div><div class="sp-val">128</div><div class="sp-name">4xl</div></div>
+    </div>
+
+    <!-- Motion -->
+    <div class="eyebrow mt-48">Motion Principles</div>
+    <div class="ui-grid mt-12">
+      <div class="ui-card">
+        <div class="ui-card-label">Timing</div>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--t2);line-height:2;">
+          Instant feedback: <span class="acid">0ms</span><br/>
+          Micro interactions: <span class="acid">100–150ms</span><br/>
+          Panel transitions: <span class="acid">200ms</span><br/>
+          Page-level: <span class="acid">300ms</span><br/>
+          Never exceed: <span class="acid">400ms</span>
+        </p>
+      </div>
+      <div class="ui-card">
+        <div class="ui-card-label">Easing</div>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--t2);line-height:2;">
+          Default: <span class="acid">ease-out</span><br/>
+          Enter: <span class="acid">cubic-bezier(0,0,0.2,1)</span><br/>
+          Exit: <span class="acid">cubic-bezier(0.4,0,1,1)</span><br/>
+          Spring: <span class="acid">cubic-bezier(0.34,1.56,0.64,1)</span><br/>
+          Rule: <span style="color:var(--t3)">if it doesn't inform, remove it</span>
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<div class="wrap">
+  <div class="brand-footer">
+    <div class="footer-mark">subsrf</div>
+    <div class="footer-meta">
+      Brand Guidelines · v1.0<br/>
+      subsrf.dev · 2025<br/>
+      Internal use and approved partners only
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

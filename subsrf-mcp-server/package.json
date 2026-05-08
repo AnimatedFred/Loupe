@@ -1,11 +1,11 @@
 {
   "name": "subsrf-intelligence",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Subsrf Intelligence — MCP server for AI-powered Figma sync",
   "main": "server.js",
   "type": "module",
   "bin": {
-    "subsrf-intelligence": "./server.js"
+    "subsrf-intelligence": "server.js"
   },
   "scripts": {
     "start": "node server.js",
@@ -14,7 +14,12 @@
   "files": [
     "server.js"
   ],
-  "keywords": ["mcp", "figma", "ai", "subsrf"],
+  "keywords": [
+    "mcp",
+    "figma",
+    "ai",
+    "subsrf"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
