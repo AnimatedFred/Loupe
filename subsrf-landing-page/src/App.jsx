@@ -639,7 +639,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
 
               {paymentStatus === 'success' && (
                 <div style={{ marginBottom: 24, padding: '14px 20px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 10, fontSize: 14, color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span>✓</span> Payment successful — your account has been upgraded to Pro!
+                  <span>✓</span> Payment successful — your subscription has been activated!
                 </div>
               )}
 
