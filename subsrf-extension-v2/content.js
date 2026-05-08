@@ -148,6 +148,42 @@
         }
       }
     });
+
+    // Make box interactive for hover/click deselect
+    box.style.setProperty('pointer-events', 'auto', 'important');
+    box.style.cursor = 'pointer';
+
+    box.addEventListener('mouseenter', () => {
+      box.style.setProperty('border-color', 'rgba(255,80,80,0.8)', 'important');
+      box.style.setProperty('background', 'rgba(255,80,80,0.08)', 'important');
+      badge.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 2L8 8M8 2L2 8" stroke="#ff5555" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      badge.style.borderColor = 'rgba(255,80,80,0.5)';
+    });
+
+    box.addEventListener('mouseleave', () => {
+      box.style.removeProperty('border-color');
+      box.style.removeProperty('background');
+      const idx = highlightedElements.findIndex(h => h.element === el);
+      badge.innerText = idx + 1;
+      badge.style.borderColor = '';
+    });
+
+    box.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const idx = highlightedElements.findIndex(h => h.element === el);
+      if (idx > -1) {
+        box.remove();
+        highlightedElements.splice(idx, 1);
+        highlightedElements.forEach((h, i) => {
+          const b = h.box.querySelector('.uipb-badge');
+          if (b) b.innerText = i + 1;
+        });
+        broadcastUpdate();
+        updateToolbar();
+      }
+    });
+
     broadcastUpdate();
     updateToolbar();
   }
@@ -198,6 +234,7 @@
       <button class="uipb-toolbar-btn ${currentMode === 'region' ? 'primary' : ''}" id="uipb-btn-area">Region Tool</button>
       <button class="uipb-toolbar-btn ${currentMode === 'screenshot' ? 'primary' : ''}" id="uipb-btn-screenshot">Screenshot</button>
       <div class="uipb-toolbar-divider"></div>
+      <button class="uipb-toolbar-btn" id="uipb-clear-all" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Clear All</button>
       <button class="uipb-toolbar-btn secondary" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled' : ''}>Show AI Prompt</button>
       <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
     `;
@@ -206,6 +243,17 @@
     document.getElementById('uipb-btn-area').onclick = (e) => { e.stopPropagation(); currentMode = 'region'; updateToolbar(); };
     document.getElementById('uipb-btn-screenshot').onclick = (e) => { e.stopPropagation(); currentMode = 'screenshot'; updateToolbar(); };
     document.getElementById('uipb-exit').onclick = (e) => { e.stopPropagation(); exitSelection(); };
+
+    const clearAllBtn = document.getElementById('uipb-clear-all');
+    if (clearAllBtn && highlightedElements.length > 0) {
+      clearAllBtn.onclick = (e) => {
+        e.stopPropagation();
+        highlightedElements.forEach(h => h.box.remove());
+        highlightedElements = [];
+        broadcastUpdate();
+        updateToolbar();
+      };
+    }
 
     const prevBtn = document.getElementById('uipb-preview');
     if (prevBtn && highlightedElements.length > 0) {
