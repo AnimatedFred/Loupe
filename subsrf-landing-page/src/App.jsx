@@ -20,11 +20,7 @@ async function fetchTier(userId) {
 
 function LogoMark({ size = 28 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="2" width="24" height="10" rx="2.5" fill="#00FF87"/>
-      <rect x="2" y="16" width="24" height="10" rx="2.5" fill="#00FF87" opacity="0.4"/>
-      <path d="M14 12v4M11 14l3 3 3-3" stroke="#050508" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
+    <img src="/subsrf-icon.png" width={size} height={size} alt="Subsrf" style={{ borderRadius: size * 0.22, display: 'block', flexShrink: 0 }} />
   )
 }
 
