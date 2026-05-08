@@ -372,24 +372,29 @@
   });
 
   document.addEventListener('click', (e) => {
-    if (!isCapturingUI || currentMode !== 'click') return;
+    if (!isCapturingUI) return;
     if (e.target.closest('#uipb-toolbar, .uipb-highlight-box, .uipb-badge')) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
+
     const idx = highlightedElements.findIndex(h => h.element === e.target);
+
     if (idx > -1) {
+      // Always allow deselecting an already-highlighted element regardless of mode
+      e.preventDefault();
+      e.stopPropagation();
       highlightedElements[idx].box.remove();
       highlightedElements.splice(idx, 1);
       highlightedElements.forEach((h, i) => {
         const b = h.box.querySelector('.uipb-badge');
         if (b) { b.innerText = i + 1; }
       });
-    } else {
+      broadcastUpdate();
+    } else if (currentMode === 'click') {
+      // Only add new elements in click mode
+      e.preventDefault();
+      e.stopPropagation();
       addHighlight(e.target);
+      broadcastUpdate();
     }
-    broadcastUpdate();
   }, true);
 
 })();
