@@ -239,13 +239,18 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   const avatar = user.user_metadata?.avatar_url
   const initial = displayName?.[0]?.toUpperCase() || '?'
 
+  const [hasStripeBilling, setHasStripeBilling] = useState(false)
+
   useEffect(() => {
     supabase
       .from('profiles')
-      .select('figma_pat')
+      .select('figma_pat, stripe_customer_id')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => { if (data?.figma_pat) setFigmaPat(data.figma_pat) })
+      .then(({ data }) => {
+        if (data?.figma_pat) setFigmaPat(data.figma_pat)
+        setHasStripeBilling(!!data?.stripe_customer_id)
+      })
   }, [user.id])
 
   useEffect(() => {
@@ -652,9 +657,9 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                     className="btn btn-secondary"
                     style={{ width: '100%' }}
                     onClick={() => handleUpgrade('starter')}
-                    disabled={!!upgrading || tier === 'starter' || tier === 'pro'}
+                    disabled={!!upgrading || (hasStripeBilling && tier === 'starter')}
                   >
-                    {upgrading === 'starter' ? 'Redirecting...' : tier === 'starter' ? 'Current plan' : tier === 'pro' ? 'Downgrade' : 'Get Starter'}
+                    {upgrading === 'starter' ? 'Redirecting...' : (hasStripeBilling && tier === 'starter') ? 'Current plan' : 'Get Starter'}
                   </button>
                 </div>
 
@@ -674,9 +679,9 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                     className="btn btn-primary"
                     style={{ width: '100%' }}
                     onClick={() => handleUpgrade('pro')}
-                    disabled={!!upgrading || tier === 'pro'}
+                    disabled={!!upgrading || (hasStripeBilling && tier === 'pro')}
                   >
-                    {upgrading === 'pro' ? 'Redirecting...' : tier === 'pro' ? 'Current plan' : 'Upgrade to Pro'}
+                    {upgrading === 'pro' ? 'Redirecting...' : (hasStripeBilling && tier === 'pro') ? 'Current plan' : 'Upgrade to Pro'}
                   </button>
                 </div>
               </div>
@@ -688,7 +693,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                 Cancel anytime · Billed monthly
               </div>
 
-              {(tier === 'starter' || tier === 'pro') && (
+              {hasStripeBilling && (
                 <div style={{ marginTop: 32, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>Manage subscription</div>
                   <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 16 }}>
