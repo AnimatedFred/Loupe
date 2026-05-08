@@ -214,7 +214,12 @@
   }
 
   function showPreviewModal() {
-    window.open(chrome.runtime.getURL('prompt.html'), '_blank');
+    try {
+      // Use a port to guarantee the MV3 service worker is awake before sending
+      const port = chrome.runtime.connect({ name: 'subsrf-prompt' });
+      port.postMessage({ type: 'OPEN_PROMPT_PAGE' });
+      port.disconnect();
+    } catch (e) {}
     showToast('Opening Prompt Studio...');
   }
 

@@ -448,7 +448,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case 'OPEN_PROMPT_PAGE': {
       chrome.tabs.create({ url: chrome.runtime.getURL('prompt.html') });
-      break;
+      safeSend(sendResponse, { ok: true });
+      return true;
     }
 
     case 'OPEN_SIDEBAR': {
@@ -507,6 +508,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return false; // Synchronous response (or no response)
 });
 
+
+// Keep service worker alive while a content script holds a port open
+chrome.runtime.onConnect.addListener((port) => {
+  port.onMessage.addListener((msg) => {
+    if (msg.type === 'OPEN_PROMPT_PAGE') {
+      chrome.tabs.create({ url: chrome.runtime.getURL('prompt.html') });
+    }
+  });
+});
 
 // ── Tier heartbeat ────────────────────────────────────────────────────────────
 // Pushes the auth token to /api/auth/sync every minute so the Figma plugin
