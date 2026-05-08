@@ -4,6 +4,7 @@
 let mode = 'prompt';
 let elements = [];
 let context = {};
+let session = null;
 let bridgeOnline = false;
 let figmaConnected = false;
 
@@ -20,9 +21,10 @@ const toastEl     = document.getElementById('toast');
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext']);
+  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext', 'subsrf_session']);
   elements = stored.selectedElements || [];
   context  = stored.lastPageContext  || {};
+  session  = stored.subsrf_session   || null;
 
   pageCtxEl.textContent = context.title
     ? context.title
@@ -30,10 +32,60 @@ async function init() {
     ? new URL(context.url).hostname
     : 'No page context';
 
+  renderAiGate();
   renderSidebar();
   renderOutput();
   await checkBridge();
   setInterval(checkBridge, 6000);
+}
+
+// ── AI Gate ───────────────────────────────────────────────────────────────────
+
+function renderAiGate() {
+  const gate = document.getElementById('ai-gate');
+  if (!gate) return;
+
+  const tier    = session?.tier || 'free';
+  const credits = session?.credits ?? 0;
+  const isPaid  = tier === 'starter' || tier === 'pro';
+
+  if (!isPaid) {
+    gate.innerHTML = `
+      <div class="upgrade-banner">
+        <div class="upgrade-text">
+          <strong>AI Prompt Engine</strong> — Starter &amp; Pro<br>
+          Let Claude interpret your captured UI and generate a semantically rich, build-ready prompt.
+        </div>
+        <button class="btn-upgrade-sm" id="btn-upgrade-gate">Upgrade — $9/mo</button>
+      </div>`;
+    document.getElementById('btn-upgrade-gate').onclick = () => {
+      chrome.tabs.create({ url: 'https://www.subsrf.dev/#pricing' });
+    };
+    return;
+  }
+
+  const badgeClass = credits === 0 ? 'empty' : credits <= 10 ? 'low' : '';
+  const disabled   = credits < 1 || elements.length === 0;
+  const btnLabel   = credits === 0 ? 'No credits remaining' : 'Generate AI Prompt (1 credit)';
+
+  gate.innerHTML = `
+    <div class="ai-engine-bar">
+      <div class="ai-engine-label">
+        AI Prompt Engine
+        <span class="credit-badge ${badgeClass}">${credits} credit${credits !== 1 ? 's' : ''}</span>
+      </div>
+      <button class="btn-generate" id="btn-ai-generate" ${disabled ? 'disabled' : ''}>${btnLabel}</button>
+    </div>`;
+
+  if (!disabled) {
+    document.getElementById('btn-ai-generate').onclick = () => generateAiPrompt();
+  }
+}
+
+async function generateAiPrompt() {
+  // Phase 2: wire up the BYOK Claude API call here.
+  // For now, signal that the infrastructure is in place.
+  showToast('AI key setup coming next — infrastructure is live!');
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────

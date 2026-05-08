@@ -142,11 +142,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       authAvatar.style.display = '';
     }
 
-    const isPro = (session.tier || 'free').toLowerCase() === 'pro';
-    currentTier = isPro ? 'pro' : 'free';
-    authTierBadge.textContent = isPro ? '⚡ PRO' : 'FREE';
-    authTierBadge.className   = 'tier-badge ' + (isPro ? 'tier-pro' : 'tier-free');
+    const tier   = (session.tier || 'free').toLowerCase();
+    const isPro  = tier === 'pro';
+    const isPaid = tier === 'starter' || tier === 'pro';
+    currentTier = tier;
+    authTierBadge.textContent = isPro ? '⚡ PRO' : tier === 'starter' ? '✦ STARTER' : 'FREE';
+    authTierBadge.className   = 'tier-badge ' + (isPaid ? 'tier-pro' : 'tier-free');
     renderSyncButton(isPro);
+
+    const creditsEl = document.getElementById('acct-credits');
+    if (creditsEl) {
+      const credits = session.credits ?? 0;
+      const limit   = isPro ? 300 : tier === 'starter' ? 75 : 0;
+      if (!isPaid) {
+        creditsEl.textContent = '0 — Free tier';
+        creditsEl.style.color = 'var(--t3)';
+      } else {
+        creditsEl.textContent = `${credits} / ${limit}`;
+        creditsEl.style.color = credits === 0 ? 'var(--danger)' : credits <= 10 ? 'var(--warn)' : 'var(--success)';
+      }
+    }
 
     // Update REST token button label based on whether this user already has a PAT stored
     chrome.storage.local.get([`figma_pat_${user.id}`], (stored) => {
@@ -163,9 +178,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       mcpStatus.style.color   = isPro ? 'var(--success)' : 'var(--danger)';
     }
     const upgradeCta = document.getElementById('acct-upgrade-cta');
-    if (upgradeCta) upgradeCta.style.display = isPro ? 'none' : '';
+    if (upgradeCta) upgradeCta.style.display = isPaid ? 'none' : '';
 
-    renderMcpTab(isPro);
+    renderMcpTab(isPaid);
   }
 
   async function loadAuthState() {

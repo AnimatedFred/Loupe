@@ -70,17 +70,19 @@ async function signIn() {
           headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
-        // Fetch tier from profiles table
+        // Fetch tier + credits from profiles table
         let tier = 'free';
+        let credits = 0;
         try {
           const profiles = await supabaseFetch(
-            `/rest/v1/profiles?select=tier&id=eq.${user.id}`,
+            `/rest/v1/profiles?select=tier,credits&id=eq.${user.id}`,
             { headers: { 'Authorization': `Bearer ${accessToken}`, 'Accept': 'application/json' } }
           );
           tier = profiles[0]?.tier || 'free';
-        } catch (_) { /* profile may not exist yet — default to free */ }
+          credits = profiles[0]?.credits ?? 0;
+        } catch (_) { /* profile may not exist yet — default to free/0 */ }
 
-        const session = { accessToken, refreshToken, user, tier, signedInAt: Date.now(), tierCheckedAt: Date.now() };
+        const session = { accessToken, refreshToken, user, tier, credits, signedInAt: Date.now(), tierCheckedAt: Date.now() };
         await chrome.storage.local.set({ subsrf_session: session });
         console.log(`[Subsrf Auth] Signed in as ${user.email} (${tier})`);
         // Push tier to Railway so the Figma plugin sees it immediately
@@ -116,15 +118,15 @@ async function refreshSession() {
   }
 }
 
-async function fetchLiveTier(session) {
+async function fetchLiveProfile(session) {
   try {
     const profiles = await supabaseFetch(
-      `/rest/v1/profiles?select=tier&id=eq.${session.user.id}`,
+      `/rest/v1/profiles?select=tier,credits&id=eq.${session.user.id}`,
       { headers: { 'Authorization': `Bearer ${session.accessToken}`, 'Accept': 'application/json' } }
     );
-    return profiles[0]?.tier || 'free';
+    return profiles[0] || null;
   } catch (e) {
-    console.warn('[Subsrf Auth] Tier fetch failed:', e.message);
+    console.warn('[Subsrf Auth] Profile fetch failed:', e.message);
     return null;
   }
 }
@@ -152,16 +154,21 @@ async function getAuthState() {
     subsrf_session = await refreshSession() || subsrf_session;
   }
 
-  // Re-fetch tier from Supabase if last checked more than 2 minutes ago
-  const tierAge = Date.now() - (subsrf_session.tierCheckedAt || 0);
-  if (tierAge > 2 * 60 * 1000 && subsrf_session.accessToken) {
-    const liveTier = await fetchLiveTier(subsrf_session);
-    if (liveTier !== null) {
-      const tierChanged = liveTier !== subsrf_session.tier;
-      subsrf_session = { ...subsrf_session, tier: liveTier, tierCheckedAt: Date.now() };
+  // Re-fetch profile (tier + credits) from Supabase if last checked more than 2 minutes ago
+  const profileAge = Date.now() - (subsrf_session.tierCheckedAt || 0);
+  if (profileAge > 2 * 60 * 1000 && subsrf_session.accessToken) {
+    const liveProfile = await fetchLiveProfile(subsrf_session);
+    if (liveProfile !== null) {
+      const tierChanged = liveProfile.tier !== subsrf_session.tier;
+      subsrf_session = {
+        ...subsrf_session,
+        tier: liveProfile.tier || 'free',
+        credits: liveProfile.credits ?? 0,
+        tierCheckedAt: Date.now()
+      };
       await chrome.storage.local.set({ subsrf_session });
-      console.log(`[Subsrf Auth] Tier refreshed: ${liveTier}`);
-      if (tierChanged) notifyBridge(); // Keep Railway in sync when tier changes
+      console.log(`[Subsrf Auth] Profile refreshed: tier=${subsrf_session.tier} credits=${subsrf_session.credits}`);
+      if (tierChanged) notifyBridge();
     }
   }
 

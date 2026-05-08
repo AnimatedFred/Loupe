@@ -377,6 +377,109 @@
       border-radius: 4px;
     }
 
+    /* ── AI Gate ── */
+    #ai-gate {
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ai-engine-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: rgba(0, 255, 135, 0.04);
+    }
+
+    .ai-engine-label {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #00FF87;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .credit-badge {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(0, 255, 135, 0.1);
+      border: 1px solid rgba(0, 255, 135, 0.25);
+      color: #00FF87;
+    }
+
+    .credit-badge.low {
+      background: rgba(255, 77, 77, 0.1);
+      border-color: rgba(255, 77, 77, 0.3);
+      color: #FF4D4D;
+    }
+
+    .credit-badge.empty {
+      background: rgba(242, 242, 244, 0.04);
+      border-color: rgba(242, 242, 244, 0.08);
+      color: rgba(242, 242, 244, 0.28);
+    }
+
+    .btn-generate {
+      background: #00FF87;
+      color: #050508;
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-generate:hover { background: #00e87a; box-shadow: 0 4px 12px rgba(0,255,135,0.25); }
+    .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+
+    .upgrade-banner {
+      padding: 12px 20px;
+      background: rgba(242, 242, 244, 0.02);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .upgrade-text {
+      font-size: 12px;
+      color: rgba(242, 242, 244, 0.55);
+      line-height: 1.5;
+    }
+
+    .upgrade-text strong {
+      color: #F2F2F4;
+      font-weight: 700;
+    }
+
+    .btn-upgrade-sm {
+      background: transparent;
+      border: 1px solid rgba(0, 255, 135, 0.35);
+      color: #00FF87;
+      font-family: 'Manrope', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .btn-upgrade-sm:hover { background: rgba(0, 255, 135, 0.08); border-color: rgba(0, 255, 135, 0.6); }
+
     /* ── Toast ── */
     .toast {
       position: fixed;
@@ -450,6 +553,7 @@
 
     <!-- Main output -->
     <main class="main">
+      <div id="ai-gate"></div>
       <div class="output-wrap">
         <div class="output-box">
           <div class="output-box-hd">

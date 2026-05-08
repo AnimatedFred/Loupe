@@ -144,10 +144,31 @@ async function verifyToken(req) {
     if (error || !user) return null;
     const { data: profile } = await supabase
       .from('profiles')
-      .select('tier')
+      .select('tier, credits, credits_reset_at')
       .eq('id', user.id)
       .single();
-    return { user, tier: profile?.tier || 'free' };
+
+    const tier = profile?.tier || 'free';
+    let credits = profile?.credits ?? 0;
+
+    // Monthly reset: if credits_reset_at is from a previous month, reset credits
+    try {
+      const now = new Date();
+      const lastReset = profile?.credits_reset_at ? new Date(profile.credits_reset_at) : null;
+      const needsReset = !lastReset ||
+        lastReset.getFullYear() < now.getFullYear() ||
+        (lastReset.getFullYear() === now.getFullYear() && lastReset.getMonth() < now.getMonth());
+      if (needsReset) {
+        const tierCredits = { pro: 300, starter: 75 }[tier] ?? 0;
+        await supabase.from('profiles').update({
+          credits: tierCredits,
+          credits_reset_at: new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        }).eq('id', user.id);
+        credits = tierCredits;
+      }
+    } catch (_) { /* reset failure is non-fatal */ }
+
+    return { user, tier, credits };
   }
 
   // Anon-key fallback — uses the user's own token, same as the Chrome extension
@@ -160,11 +181,13 @@ async function verifyToken(req) {
     const user = await userRes.json();
     if (!user.id) return null;
     const profRes = await fetch(
-      `${supabaseUrl}/rest/v1/profiles?select=tier&id=eq.${user.id}`,
+      `${supabaseUrl}/rest/v1/profiles?select=tier,credits&id=eq.${user.id}`,
       { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } }
     );
-    const tier = profRes.ok ? ((await profRes.json())[0]?.tier || 'free') : 'free';
-    return { user, tier };
+    const profile = profRes.ok ? (await profRes.json())[0] : null;
+    const tier = profile?.tier || 'free';
+    const credits = profile?.credits ?? 0;
+    return { user, tier, credits };
   } catch (_) {
     return null;
   }
@@ -339,6 +362,78 @@ app.post("/api/auth/sync", async (req, res) => {
     lastEmail = auth.user?.email || lastEmail;
   }
   res.json({ ok: true, tier: lastTier });
+});
+
+// Atomically deduct credits. The extension calls this before any AI operation.
+// Railway verifies the JWT here, then calls the Supabase RPC with the service key.
+// The RPC is SECURITY DEFINER — never exposed directly to extension clients.
+app.post('/api/credits/deduct', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const cost = parseInt(req.body?.cost) || 1;
+  if (auth.credits < cost) {
+    return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
+  }
+
+  try {
+    let newBalance;
+    if (supabase) {
+      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: cost });
+      if (error) throw new Error(error.message);
+      newBalance = data;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+      const token = req.headers.authorization?.slice(7);
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/deduct_credits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: auth.user.id, amount: cost })
+      });
+      if (!r.ok) throw new Error(`Deduct RPC failed: ${r.status}`);
+      newBalance = await r.json();
+    }
+    console.error(`[Subsrf Credits] Deducted ${cost} credit(s) for ${auth.user.email} — balance: ${newBalance}`);
+    res.json({ ok: true, balance: newBalance });
+  } catch (e) {
+    if (e.message === 'insufficient_credits') {
+      return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
+    }
+    console.error('[Subsrf Credits] Deduct failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Refund credits when an AI operation fails — caps at the tier monthly limit.
+app.post('/api/credits/refund', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const cost = parseInt(req.body?.cost) || 1;
+
+  try {
+    let newBalance;
+    if (supabase) {
+      const { data, error } = await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: cost });
+      if (error) throw new Error(error.message);
+      newBalance = data;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+      const token = req.headers.authorization?.slice(7);
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/refund_credits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: auth.user.id, amount: cost })
+      });
+      if (!r.ok) throw new Error(`Refund RPC failed: ${r.status}`);
+      newBalance = await r.json();
+    }
+    console.error(`[Subsrf Credits] Refunded ${cost} credit(s) for ${auth.user.email} — balance: ${newBalance}`);
+    res.json({ ok: true, balance: newBalance });
+  } catch (e) {
+    console.error('[Subsrf Credits] Refund failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Per-user Figma PAT — in-memory cache backed by Supabase profiles.figma_pat
