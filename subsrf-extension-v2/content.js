@@ -214,7 +214,7 @@
   }
 
   function showPreviewModal() {
-    safeSendMessage({ type: 'OPEN_PROMPT_PAGE' });
+    window.open(chrome.runtime.getURL('prompt.html'), '_blank');
     showToast('Opening Prompt Studio...');
   }
 
