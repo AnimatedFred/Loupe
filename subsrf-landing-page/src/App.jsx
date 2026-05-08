@@ -213,8 +213,8 @@ function LandingPage({ onLogin, loading }) {
         <p style={{ color: 'var(--t2)', marginBottom: 32 }}>Engineered for designers who move fast.</p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 40, color: 'var(--t3)', fontSize: 14 }}>
           <span>© 2026 Subsrf Intelligence Suite</span>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a>
+          <a href="/privacy.html" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+          <a href="/terms.html" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a>
         </div>
       </footer>
     </div>
