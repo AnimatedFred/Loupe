@@ -400,12 +400,12 @@ app.post('/api/user/figma-pat', async (req, res) => {
 // Pending sessions keyed by state UUID — TTL 10 minutes
 const figmaAuthSessions = new Map();
 
-const BRIDGE_URL = process.env.BRIDGE_URL || 'https://www.subsrf.dev';
+const BRIDGE_URL = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
 const SUPABASE_URL_PUBLIC = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
 
 // Step 1 — plugin opens this URL to start OAuth
 // redirect_to includes the state as a query param — add the wildcard entry
-// https://www.subsrf.dev/auth/figma/callback* to Supabase's
+// https://api.subsrf.dev/auth/figma/callback* to Supabase's
 // allowed redirect URLs so the query string doesn't break the allowlist match.
 app.get('/auth/figma/start', (req, res) => {
   const state = req.query.state || randomUUID().slice(0, 16);

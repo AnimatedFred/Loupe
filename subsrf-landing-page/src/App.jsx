@@ -246,8 +246,8 @@ function Dashboard({ session, tier, onLogout }) {
   }, [user.id])
 
   const mcpConfig = figmaPat
-    ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
-    : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev'] } } }
+    ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
+    : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2))
@@ -391,7 +391,7 @@ function Dashboard({ session, tier, onLogout }) {
                   <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                     <div>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://www.subsrf.dev</div>
+                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://api.subsrf.dev</div>
                     </div>
                     <div style={{ padding: '5px 12px', background: 'rgba(57,217,138,0.08)', color: 'var(--ok)', borderRadius: 100, fontSize: 11, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", border: '1px solid rgba(57,217,138,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--ok)', display: 'inline-block' }} />
@@ -503,7 +503,7 @@ function Dashboard({ session, tier, onLogout }) {
                     </div>
                     <div className="glass" style={{ padding: 24 }}>
                       <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://www.subsrf.dev</div>
+                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://api.subsrf.dev</div>
                     </div>
                   </div>
                   {/* Lock overlay */}

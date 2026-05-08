@@ -395,7 +395,7 @@ async function checkBridge() {
   const lblFigma  = document.getElementById('lbl-figma');
 
   try {
-    const res = await fetch('https://www.subsrf.dev/api/state');
+    const res = await fetch('https://api.subsrf.dev/api/state');
     if (!res.ok) throw new Error('not ok');
     const data = await res.json();
 

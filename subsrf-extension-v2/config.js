@@ -1,5 +1,5 @@
 var SUBSRF_CONFIG = {
-  SERVER_URL: 'https://www.subsrf.dev',
+  SERVER_URL: 'https://api.subsrf.dev',
   VERSION: '2.0.0',
 
   // ── Supabase ──────────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ var SUBSRF_CONFIG = {
   CURRENT_TIER: 'FREE',
 
   // ── MCP Bridge ────────────────────────────────────────────────────────────
-  MCP_ENDPOINT: 'https://www.subsrf.dev/api/update',
+  MCP_ENDPOINT: 'https://api.subsrf.dev/api/update',
   MCP_TOKEN: '',
 
   AUTO_CAPTURE: false,

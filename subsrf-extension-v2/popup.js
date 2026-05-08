@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (stored.subsrf_session?.accessToken) {
         headers['Authorization'] = `Bearer ${stored.subsrf_session.accessToken}`;
       }
-      await fetch('https://www.subsrf.dev/api/update', {
+      await fetch('https://api.subsrf.dev/api/update', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     mcpServers: {
       subsrf: {
         command: 'npx',
-        args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev']
+        args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev']
       }
     }
   };
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (subsrf_session?.accessToken) {
         headers['Authorization'] = `Bearer ${subsrf_session.accessToken}`;
       }
-      const res = await fetch('https://www.subsrf.dev/api/state', { headers });
+      const res = await fetch('https://api.subsrf.dev/api/state', { headers });
       if (res.ok) {
         const data = await res.json();
         const bridgeStatusText = document.getElementById('bridge-status-text');
@@ -448,7 +448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Also update Railway in-memory cache (best-effort — ok if it fails)
-      fetch('https://www.subsrf.dev/api/user/figma-pat', {
+      fetch('https://api.subsrf.dev/api/user/figma-pat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${freshSession.accessToken}` },
         body: JSON.stringify({ pat: token })
@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       mcpServers: {
         subsrf: {
           command: 'npx',
-          args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://www.subsrf.dev'],
+          args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'],
           env: { FIGMA_PAT: token }
         }
       }

@@ -515,7 +515,7 @@ async function syncTierToBridge() {
   try {
     const subsrf_session = await getAuthState();
     if (!subsrf_session?.accessToken) return;
-    await fetch('https://www.subsrf.dev/api/auth/sync', {
+    await fetch('https://api.subsrf.dev/api/auth/sync', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
