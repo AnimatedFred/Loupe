@@ -21,7 +21,9 @@ window.onload = async () => {
     dCtx = drawCanvas.getContext('2d');
   
     console.log('[Subsrf Studio] Initializing...');
-    const data = await chrome.storage.local.get(['lastCapture', 'lastCaptureRect', 'lastCaptureViewportWidth']);
+    const data = await chrome.storage.local.get(['lastCapture', 'lastCaptureRect', 'lastCaptureViewportWidth', 'openAnalysisTab']);
+    const pendingAnalysis = data.openAnalysisTab || null;
+    if (pendingAnalysis) chrome.storage.local.remove('openAnalysisTab');
     console.log('[Subsrf Studio] Storage retrieved. Capture size:', data.lastCapture ? data.lastCapture.length : 0);
 
     if (data.lastCapture) {
@@ -53,6 +55,7 @@ window.onload = async () => {
           zoom = (window.innerWidth - 320) / mainCanvas.width; updateZoom();
         }
         requestAnimationFrame(drawLoop);
+        if (pendingAnalysis) activateAnalysisTab(pendingAnalysis);
       };
       img.onerror = (e) => {
         console.error('[Subsrf Studio] Image failed to load:', e);
@@ -467,7 +470,7 @@ function refreshLayers() {
   const list = document.getElementById('layer-list');
   if (!list) return;
   list.innerHTML = '';
-  [...objects].reverse().forEach((obj, revIndex) => {
+  [...objects].reverse().forEach((obj) => {
     const index = objects.indexOf(obj);
     const item = document.createElement('div');
     item.className = `layer-item ${index === selectedIndex ? 'active' : ''}`;
@@ -520,11 +523,6 @@ function handleLayerDeleteById(id) {
   }
 }
 
-window.handleLayerDelete = (e, index) => {
-  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-  if (objects[index]) handleLayerDeleteById(objects[index].id);
-};
-
 function showToast(msg) {
   const toast = document.getElementById('toast-notification');
   const msgEl = document.getElementById('toast-message');
@@ -536,7 +534,7 @@ function showToast(msg) {
 
 window.addEventListener('keydown', (e) => {
   if ((e.key === 'Delete' || e.key === 'Backspace') && document.activeElement.tagName !== 'INPUT') {
-    if (selectedIndex !== -1) window.handleLayerDelete(e, selectedIndex);
+    if (selectedIndex !== -1 && objects[selectedIndex]) handleLayerDeleteById(objects[selectedIndex].id);
   }
 });
 
@@ -581,3 +579,214 @@ async function copyToClipboard() {
     showToast('Copied to clipboard!');
   });
 }
+
+// ── AI Vision Analysis ────────────────────────────────────────────────────────
+
+let editorVisionMode = 'build_prompt';
+
+const EDITOR_MODE_LABELS = {
+  build_prompt:  'vision-build-prompt.txt',
+  describe:      'vision-describe.txt',
+  accessibility: 'vision-a11y-audit.txt',
+};
+
+function activateAnalysisTab(config) {
+  const aside = document.querySelector('aside');
+  document.getElementById('tab-analysis').classList.add('active');
+  document.getElementById('tab-layers').classList.remove('active');
+  document.getElementById('panel-layers').style.display = 'none';
+  document.getElementById('panel-analysis').style.display = 'flex';
+  if (aside) aside.classList.add('wide');
+  if (config.mode) {
+    editorVisionMode = config.mode;
+    document.querySelectorAll('.analysis-mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.analysis-mode-btn[data-mode="${config.mode}"]`)?.classList.add('active');
+  }
+  if (config.autoRun) setTimeout(() => runEditorAnalysis(), 300);
+}
+
+function setupAnalysisPanel() {
+  const aside = document.querySelector('aside');
+
+  document.getElementById('tab-layers').addEventListener('click', () => {
+    document.getElementById('tab-layers').classList.add('active');
+    document.getElementById('tab-analysis').classList.remove('active');
+    document.getElementById('panel-layers').style.display = '';
+    document.getElementById('panel-analysis').style.display = 'none';
+    if (aside) aside.classList.remove('wide');
+  });
+  document.getElementById('tab-analysis').addEventListener('click', () => {
+    document.getElementById('tab-analysis').classList.add('active');
+    document.getElementById('tab-layers').classList.remove('active');
+    document.getElementById('panel-layers').style.display = 'none';
+    document.getElementById('panel-analysis').style.display = 'flex';
+    if (aside) aside.classList.add('wide');
+  });
+
+  document.querySelectorAll('.analysis-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editorVisionMode = btn.dataset.mode;
+      document.querySelectorAll('.analysis-mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  document.getElementById('btn-analyze').addEventListener('click', runEditorAnalysis);
+}
+
+function getEditorImageBase64() {
+  const composite = document.createElement('canvas');
+  composite.width  = mainCanvas.width;
+  composite.height = mainCanvas.height;
+  const ctx = composite.getContext('2d');
+  ctx.drawImage(mainCanvas, 0, 0);
+  ctx.drawImage(drawCanvas, 0, 0);
+  return composite.toDataURL('image/png').split(',')[1];
+}
+
+async function runEditorAnalysis() {
+  let subsrf_session;
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
+    subsrf_session = resp?.session;
+  } catch (_) {
+    const s = await chrome.storage.local.get('subsrf_session');
+    subsrf_session = s.subsrf_session;
+  }
+  if (!subsrf_session?.accessToken) { showToast('Sign in to use AI Analysis'); return; }
+
+  const tier    = subsrf_session.tier || 'free';
+  const credits = subsrf_session.credits ?? 0;
+  if (tier === 'free')  { showToast('Paid plan required for AI Analysis'); return; }
+  if (credits < 1)      { showToast('No credits remaining'); return; }
+
+  const btn = document.getElementById('btn-analyze');
+  btn.textContent = 'Analyzing…';
+  btn.disabled = true;
+
+  const resultEl  = document.getElementById('analysis-result');
+  const outputEl  = document.getElementById('analysis-output');
+  if (resultEl) resultEl.style.display = 'none';
+
+  try {
+    const body = {
+      image:    getEditorImageBase64(),
+      mimeType: 'image/png',
+      mode:     editorVisionMode,
+    };
+
+    const res  = await fetch('https://api.subsrf.dev/api/ai/vision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${subsrf_session.accessToken}` },
+      body: JSON.stringify(body)
+    });
+
+    let data;
+    try { data = await res.json(); }
+    catch {
+      if (res.status === 401) { showToast('Session expired — sign in again'); }
+      else { showToast(`Analysis failed (${res.status})`); }
+      return;
+    }
+
+    if (!res.ok) {
+      if (res.status === 401) { showToast('Session expired — sign in again'); return; }
+      showToast(data.error === 'insufficient_credits' ? 'No credits remaining' : (data.error || 'Analysis failed'));
+      return;
+    }
+
+    // Update credits in storage
+    const updated = { ...subsrf_session, credits: data.balance };
+    await chrome.storage.local.set({ subsrf_session: updated });
+
+    const lines = buildEditorVisionText(data.result, data.mode);
+    if (outputEl) outputEl.textContent = lines;
+    if (resultEl) resultEl.style.display = '';
+    showToast('Analysis complete');
+
+  } catch (e) {
+    showToast('Analysis failed: ' + e.message);
+  } finally {
+    btn.textContent = 'Analyze (1 credit)';
+    btn.disabled = false;
+  }
+}
+
+function buildEditorVisionText(result, vMode) {
+  const rule  = '─'.repeat(48);
+  const lines = [];
+
+  if (vMode === 'describe') {
+    const ds = result.designSystem || {};
+    lines.push(`UI ANALYSIS — ${result.pagePattern || 'Capture'}`);
+    lines.push(rule);
+    if ((ds.colors || []).length) {
+      lines.push('\nColors');
+      (ds.colors || []).forEach(c => lines.push(`  ${c.value}  ${c.role}  ${c.usage ? '— ' + c.usage : ''}`));
+    }
+    if ((ds.typography || []).length) {
+      lines.push('\nTypography');
+      (ds.typography || []).forEach(t => lines.push(`  ${t.family} ${t.weight}/${t.size}  — ${t.role || ''}`));
+    }
+    if ((ds.spacing || []).length) lines.push(`\nSpacing  ${ds.spacing.join(' · ')}`);
+    if ((ds.radii   || []).length) lines.push(`Radii    ${ds.radii.join(' · ')}`);
+    lines.push('\n' + rule + '\nCOMPONENTS\n');
+    (result.components || []).forEach((c, i) => {
+      lines.push(`${i + 1}. ${c.name}  [${c.type}]`);
+      if (c.description) lines.push(`   ${c.description}`);
+    });
+    if (result.semanticPurpose) lines.push(`\n${rule}\n${result.semanticPurpose}`);
+
+  } else if (vMode === 'build_prompt') {
+    const dt = result.designTokens || {};
+    lines.push(`BUILD PROMPT — ${result.pagePattern || 'Capture'}`);
+    lines.push(rule);
+    if ((dt.colors || []).length) {
+      lines.push('\nColors');
+      (dt.colors || []).forEach(c => lines.push(`  ${c.value}  ${c.role}`));
+    }
+    if ((dt.typography || []).length) {
+      lines.push('\nTypography');
+      (dt.typography || []).forEach(t => lines.push(`  ${t.family} ${t.weight}/${t.size}  — ${t.role}`));
+    }
+    if ((dt.spacing || []).length) lines.push(`\nSpacing  ${dt.spacing.join(' · ')}`);
+    lines.push('\n' + rule + '\nCOMPONENTS\n');
+    (result.components || []).forEach((c, i) => {
+      lines.push(`${i + 1}. ${c.name}`);
+      if (c.keyStyles)   lines.push(`   ${c.keyStyles}`);
+      if (c.description) lines.push(`   ${c.description}`);
+    });
+    if (result.implementationPrompt) {
+      lines.push('\n' + rule + '\nIMPLEMENTATION PROMPT\n');
+      lines.push(result.implementationPrompt);
+      lines.push('\nStack: React 18 · Tailwind CSS · shadcn/ui');
+    }
+
+  } else if (vMode === 'accessibility') {
+    const score = result.overallScore ?? '?';
+    lines.push(`ACCESSIBILITY AUDIT — ${result.wcagLevel || '?'}  ·  ${score}/100`);
+    lines.push(rule);
+    if (result.summary) lines.push(`\n${result.summary}`);
+    if ((result.issues || []).length) {
+      lines.push('\n' + rule + '\nISSUES\n');
+      (result.issues || []).forEach(iss => {
+        lines.push(`  [${(iss.severity || 'minor').toUpperCase()}]  ${iss.wcagCriteria}`);
+        lines.push(`  ${iss.element}`);
+        lines.push(`  ${iss.issue}`);
+        if (iss.estimatedValue) lines.push(`  ${iss.estimatedValue} (req: ${iss.requiredValue})`);
+        lines.push(`  Fix: ${iss.fix}\n`);
+      });
+    }
+    if ((result.positives || []).length) {
+      lines.push(rule + '\nPOSITIVES\n');
+      (result.positives || []).forEach(p => lines.push(`  ✓ ${p}`));
+    }
+  }
+
+  return lines.join('\n');
+}
+
+// Wire up analysis panel after DOM is ready
+document.addEventListener('DOMContentLoaded', setupAnalysisPanel);
+// Fallback if DOMContentLoaded already fired
+if (document.readyState !== 'loading') setupAnalysisPanel();

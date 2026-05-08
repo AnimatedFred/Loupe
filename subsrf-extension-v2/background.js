@@ -147,14 +147,29 @@ async function signOut() {
   console.log('[Subsrf Auth] Signed out');
 }
 
+function jwtMsUntilExpiry(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return (payload.exp || 0) * 1000 - Date.now();
+  } catch { return -1; }
+}
+
 async function getAuthState() {
   let { subsrf_session } = await chrome.storage.local.get('subsrf_session');
   if (!subsrf_session) return null;
 
-  // Refresh JWT if token is older than 50 minutes (Supabase tokens last 60 min)
-  const tokenAge = Date.now() - (subsrf_session.signedInAt || 0);
-  if (tokenAge > 50 * 60 * 1000) {
-    subsrf_session = await refreshSession() || subsrf_session;
+  // Use the actual JWT exp claim — more reliable than signedInAt
+  const msLeft = jwtMsUntilExpiry(subsrf_session.accessToken);
+  if (msLeft < 5 * 60 * 1000) {
+    const refreshed = await refreshSession();
+    if (refreshed) {
+      subsrf_session = refreshed;
+    } else if (msLeft <= 0) {
+      // Token is definitely expired and refresh failed — force re-login
+      await chrome.storage.local.remove('subsrf_session');
+      return null;
+    }
+    // Token is within 5 min of expiry but refresh failed — continue and hope
   }
 
   // Re-fetch profile (tier + credits) from Supabase if last checked more than 2 minutes ago
@@ -502,6 +517,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             lastCaptureTime: Date.now()
           }, () => {
              chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
+          });
+        }
+      });
+      break;
+    }
+
+    case 'CAPTURE_ACCESSIBILITY_AUDIT': {
+      console.log('[Subsrf Background] Initializing Accessibility Audit Capture...', msg.rect);
+      throttleCapture((dataUrl) => {
+        if (dataUrl) {
+          chrome.storage.local.set({
+            lastCapture: dataUrl,
+            lastCaptureRect: msg.rect,
+            lastCaptureViewportWidth: msg.viewportWidth,
+            lastCaptureTime: Date.now(),
+            openAnalysisTab: { mode: 'accessibility', autoRun: true }
+          }, () => {
+            chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
           });
         }
       });

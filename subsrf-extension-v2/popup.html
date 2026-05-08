@@ -381,6 +381,15 @@
       <span id="header-credits" style="font-family:'Azeret Mono',monospace; font-size:11px; font-weight:700; color:var(--acid);">—</span>
     </div>
 
+    <div class="section-label">Analyze Image</div>
+    <div id="popup-drop-zone" style="position:relative; border:1.5px dashed rgba(0,255,135,0.22); border-radius:10px; background:rgba(0,255,135,0.02); padding:16px 12px; text-align:center; cursor:pointer; transition:all 0.15s; margin-bottom:12px;">
+      <input type="file" id="popup-image-input" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;">
+      <div id="popup-drop-hint" style="font-size:11px; color:rgba(242,242,244,0.4); line-height:1.7; pointer-events:none;">
+        <span style="color:var(--acid); font-weight:700;">Drop</span> a screenshot, Figma export or wireframe<br>
+        <span style="font-size:10px; opacity:0.6;">Opens in Studio for AI analysis</span>
+      </div>
+    </div>
+
     <button class="btn btn-primary" id="btn-sync">Sync with Figma</button>
   </div>
 

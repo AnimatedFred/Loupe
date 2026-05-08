@@ -95,8 +95,37 @@
       flex: 1; background: #000; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 80px 40px; position: relative;
     }
 
-    aside { width: 260px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px; }
+    aside { width: 280px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.2s ease; }
+    aside.wide { width: 400px; }
     .panel-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
+
+    /* Aside tabs */
+    .aside-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .aside-tab { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-muted); font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
+    .aside-tab:hover { color: var(--text); }
+    .aside-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* Layers panel */
+    #panel-layers { flex: 1; overflow-y: auto; padding: 16px; }
+
+    /* Analysis panel */
+    #panel-analysis { flex: 1; overflow-y: auto; padding: 14px; display: none; flex-direction: column; gap: 10px; }
+    .analysis-modes { display: flex; flex-wrap: wrap; gap: 5px; }
+    .analysis-mode-btn {
+      padding: 5px 10px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: rgba(242,242,244,0.55); font-family: 'Manrope', sans-serif;
+      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .analysis-mode-btn:hover { border-color: rgba(0,255,135,0.35); color: var(--text); }
+    .analysis-mode-btn.active { background: rgba(0,255,135,0.1); border-color: rgba(0,255,135,0.4); color: var(--primary); }
+    .ref-drop { border: 1px dashed rgba(0,255,135,0.22); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; font-size: 11px; color: rgba(242,242,244,0.4); position: relative; transition: all 0.15s; }
+    .ref-drop:hover { border-color: rgba(0,255,135,0.45); }
+    .ref-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .ref-drop img { max-width: 100%; border-radius: 6px; display: block; }
+    .analysis-result { font-family: 'Azeret Mono', monospace; font-size: 10.5px; line-height: 1.75; color: rgba(242,242,244,0.65); white-space: pre-wrap; word-break: break-word; background: rgba(5,5,8,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; }
+    .btn-analyze { background: var(--primary); color: #050508; border: none; border-radius: 8px; padding: 9px 14px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.15s; }
+    .btn-analyze:hover { background: var(--primary-hover); }
+    .btn-analyze:disabled { opacity: 0.38; cursor: not-allowed; }
 
     #layer-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
     .layer-item {
@@ -287,8 +316,30 @@
       </div>
     </main>
     <aside>
-      <div class="panel-title">Layers</div>
-      <div id="layer-list"></div>
+      <div class="aside-tabs">
+        <button class="aside-tab active" id="tab-layers">Layers</button>
+        <button class="aside-tab" id="tab-analysis">AI Analysis</button>
+      </div>
+
+      <!-- Layers panel -->
+      <div id="panel-layers">
+        <div id="layer-list"></div>
+      </div>
+
+      <!-- AI Analysis panel -->
+      <div id="panel-analysis">
+        <div class="analysis-modes">
+          <button class="analysis-mode-btn active" data-mode="build_prompt">Build Prompt</button>
+          <button class="analysis-mode-btn" data-mode="describe">Describe UI</button>
+          <button class="analysis-mode-btn" data-mode="accessibility">Accessibility</button>
+        </div>
+
+        <button class="btn-analyze" id="btn-analyze">Analyze (1 credit)</button>
+
+        <div id="analysis-result" style="display:none;">
+          <pre class="analysis-result" id="analysis-output"></pre>
+        </div>
+      </div>
     </aside>
   </div>
 

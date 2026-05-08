@@ -288,24 +288,12 @@
       margin-bottom: 4px;
     }
 
-    .swatches {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-    }
-
-    .swatch {
-      width: 13px;
-      height: 13px;
-      border-radius: 3px;
-      border: 1px solid rgba(255,255,255,0.1);
-      flex-shrink: 0;
-    }
-
-    .swatch-dim {
+    .el-dim {
       font-size: 9px;
-      color: rgba(242, 242, 244, 0.4);
+      color: rgba(242, 242, 244, 0.35);
       font-family: 'Azeret Mono', monospace;
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
     /* ── Main ── */
@@ -500,6 +488,7 @@
     }
 
     .toast.show { opacity: 1; transform: translateY(0); }
+
   </style>
 </head>
 <body>
@@ -555,7 +544,7 @@
     <main class="main">
       <div id="ai-gate"></div>
       <div class="output-wrap">
-        <div class="output-box">
+        <div class="output-box" id="output-box">
           <div class="output-box-hd">
             <div class="mac-dot" style="background:#ef4444;"></div>
             <div class="mac-dot" style="background:#f59e0b;"></div>
@@ -564,6 +553,7 @@
           </div>
           <pre class="output" id="output">Loading...</pre>
         </div>
+
       </div>
     </main>
 

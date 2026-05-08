@@ -531,6 +531,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
   };
 
+  // ── Image drop zone → open in Studio for AI analysis ──────────────────────
+  const popupDropZone  = document.getElementById('popup-drop-zone');
+  const popupImgInput  = document.getElementById('popup-image-input');
+
+  async function openImageInStudio(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      await chrome.storage.local.set({
+        lastCapture:   e.target.result,
+        lastCaptureTime: Date.now(),
+        openAnalysisTab: {},
+      });
+      chrome.storage.local.remove(['lastCaptureRect', 'lastCaptureViewportWidth']);
+      chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
+      window.close();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  popupDropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    popupDropZone.style.borderColor = 'rgba(0,255,135,0.55)';
+    popupDropZone.style.background  = 'rgba(0,255,135,0.06)';
+  });
+  popupDropZone.addEventListener('dragleave', () => {
+    popupDropZone.style.borderColor = '';
+    popupDropZone.style.background  = '';
+  });
+  popupDropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    popupDropZone.style.borderColor = '';
+    popupDropZone.style.background  = '';
+    openImageInStudio(e.dataTransfer?.files?.[0]);
+  });
+  popupImgInput.addEventListener('change', () => openImageInStudio(popupImgInput.files?.[0]));
+
   document.getElementById('btn-clear-all').onclick = async () => {
     // Clear highlight boxes on the page
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

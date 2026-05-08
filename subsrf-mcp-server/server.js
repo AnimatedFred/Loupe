@@ -939,44 +939,60 @@ app.post('/api/ai/generate', async (req, res) => {
 
   const { elements = [], context: pageContext = {} } = req.body;
 
-  // Interpretation prompt — Claude returns structured JSON, not prose.
-  // The extension assembles the final output from this data.
-  const systemPrompt = `You are a UI semantic analyzer. Given raw DOM element data captured from a live web page, return a structured JSON interpretation. Do NOT write prose or explanations. Return ONLY valid JSON with no markdown fences, no commentary, no text before or after.
+  // Interpretation prompt — Claude extracts design tokens from actual DOM styles and
+  // returns structured JSON. The extension assembles the final prompt from this data.
+  const systemPrompt = `You are a senior frontend engineer and design-systems expert. Given raw DOM element data captured from a live web page — including all computed CSS properties — analyze the design and return structured JSON. Return ONLY valid JSON, no markdown fences, no commentary, no text before or after.
 
 Required format:
 {
   "pagePattern": "concise page type (e.g. 'SaaS pricing page', 'e-commerce product listing', 'dashboard nav')",
+  "designTokens": {
+    "colors": [
+      { "value": "#1a1a2e", "role": "primary-bg", "usage": "page/nav background" }
+    ],
+    "typography": [
+      { "family": "Inter, sans-serif", "weight": "700", "size": "32px", "lineHeight": "1.2", "role": "heading-xl" }
+    ],
+    "spacing": ["4px", "8px", "16px", "24px", "48px"],
+    "radii": ["4px", "8px", "9999px"],
+    "shadows": ["0 4px 24px rgba(0,0,0,0.4)"]
+  },
   "components": [
     {
       "name": "Component name",
       "elementIndices": [0, 1],
-      "description": "What this component does and its role in the UI"
+      "description": "What this component is and its role in the UI",
+      "layout": "flex-row | flex-col | grid | block"
     }
   ],
   "elements": [
     {
       "index": 0,
       "label": "Human-readable element name",
-      "semanticRole": "nav-cta | pricing-card | hero-headline | form-field | badge | card | modal | tab | etc.",
-      "description": "Semantic description — what is it, what does it do, why does it exist here",
+      "semanticRole": "hero-headline | nav-cta | pricing-card | form-field | badge | card | tab | etc.",
+      "description": "What it is and what it does in one sentence",
+      "keyStyles": "The 3-5 most visually significant computed style values for this element, as a compact string e.g. 'Inter 700/32px · color #f8fafc · bg #6366f1 · radius 8px · shadow 0 4px 16px rgba(0,0,0,0.3)'",
       "accessibilityNote": "Specific issue if present (missing aria-label, low contrast, etc.) or empty string"
     }
   ],
   "accessibilityIssues": ["issue 1", "issue 2"],
-  "implementationPrompt": "2-3 sentence build-ready prompt describing what to reconstruct and how, ready to paste into a coding assistant"
+  "implementationPrompt": "Detailed 4-6 sentence implementation prompt. MUST reference: the detected page pattern, exact hex color values from designTokens, font families and weights, key spacing/radius values, any notable visual treatments (shadows, gradients, glassmorphism, etc.). Never use generic descriptions like 'dark background' — always cite the actual value. Written to enable pixel-perfect reconstruction when pasted into a coding assistant."
 }
 
 Rules:
+- Extract designTokens by reading ALL backgroundColor, color, fontFamily, fontSize, fontWeight, borderRadius, boxShadow, gap, padding values in the raw elements — deduplicate and assign semantic roles
 - Every captured element must appear in the elements array
-- Group related elements into components (a button and its label, a card and its children, etc.)
-- semanticRole must be a single short identifier, no spaces
-- implementationPrompt should mention the detected page pattern and the most important visual/layout details`;
+- Group related elements into meaningful components
+- semanticRole is a single short kebab-case identifier
+- keyStyles must quote actual computed values from the raw element data, not invent them
+- implementationPrompt MUST cite specific hex codes, font names, and px values from the captured data`;
 
   const userContent = [
     `Page: ${pageContext.title || pageContext.url || 'Unknown'}`,
     `URL: ${pageContext.url || 'Unknown'}`,
     `Viewport: ${pageContext.viewport ? `${pageContext.viewport.w}×${pageContext.viewport.h}` : 'unknown'}`,
-    `Elements (${elements.length}):`,
+    '',
+    `Captured ${elements.length} DOM elements with computed styles:`,
     JSON.stringify(elements, null, 2)
   ].join('\n');
 
@@ -996,7 +1012,7 @@ Rules:
         },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
-          max_tokens: 2048,
+          max_tokens: 3500,
           system: systemPrompt,
           messages: [{ role: 'user', content: userContent }]
         })
@@ -1033,6 +1049,215 @@ Rules:
       if (supabase) await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 });
     } catch (_) {}
     console.error(`[Subsrf AI] Smart prompt failed for ${auth.user.email}: ${e.message}`);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Vision Analysis — sends a screenshot / dropped image to Claude and returns structured JSON.
+// Five modes: describe, build_prompt, match, push_figma, accessibility.
+const VISION_PROMPTS = {
+  describe: `You are a UI design analyst with deep frontend expertise. Analyze the provided UI screenshot and return a structured JSON breakdown. Return ONLY valid JSON, no markdown fences, no commentary.
+Required format:
+{
+  "pagePattern": "concise page type e.g. 'SaaS landing page'",
+  "designSystem": {
+    "colors": [{ "value": "#hex", "role": "role-name", "usage": "where used" }],
+    "typography": [{ "family": "font name", "weight": "400|700|etc", "size": "estimated px", "role": "heading-xl|body|caption|etc" }],
+    "spacing": ["8px", "16px", "..."],
+    "radii": ["4px", "8px", "..."],
+    "shadows": ["box-shadow value or omit if none"]
+  },
+  "components": [
+    { "name": "...", "type": "section|card|nav|button|form|list|hero|footer|etc", "description": "what it does", "estimatedLayout": "flex-row|flex-col|grid|etc" }
+  ],
+  "semanticPurpose": "one sentence describing the page goal"
+}`,
+
+  build_prompt: `You are a senior frontend engineer. Analyze this UI screenshot and generate a precise implementation brief. Return ONLY valid JSON, no markdown fences.
+Required format:
+{
+  "pagePattern": "concise page type",
+  "designTokens": {
+    "colors": [{ "value": "#hex", "role": "role-name", "usage": "where used" }],
+    "typography": [{ "family": "font name", "weight": "number", "size": "px", "lineHeight": "ratio", "role": "heading-xl|body|etc" }],
+    "spacing": ["px values"],
+    "radii": ["px values"],
+    "shadows": ["box-shadow values"]
+  },
+  "components": [
+    { "name": "...", "description": "...", "keyStyles": "compact style summary with estimated values e.g. Inter 700/32px · color #fff · bg #6366f1 · radius 8px", "layout": "flex-row|flex-col|grid|etc" }
+  ],
+  "implementationPrompt": "Detailed 5-7 sentence implementation prompt. MUST cite: detected page pattern, estimated hex colors, font families and weights, estimated px values for type and spacing, border-radius and shadow details, component hierarchy. Written to enable pixel-perfect reconstruction by a React/Tailwind developer."
+}`,
+
+  match: `You are a frontend engineer doing design QA. The FIRST image is the reference design. The SECOND image is the current implementation. Compare them carefully. Return ONLY valid JSON, no markdown fences.
+Required format:
+{
+  "matchScore": 0-100,
+  "summary": "one sentence overall assessment",
+  "matches": ["specific visual element that is correct"],
+  "differences": [
+    { "element": "UI element name", "reference": "what design shows", "implementation": "what was built instead", "severity": "critical|major|minor" }
+  ],
+  "fixes": [
+    { "element": "...", "property": "CSS property", "currentValue": "...", "targetValue": "...", "fix": "exact change to make" }
+  ]
+}
+Severity: critical = visually broken or wrong by >20%; major = noticeable; minor = subtle polish.`,
+
+  push_figma: `You are a Figma expert. Analyze this UI screenshot and estimate a Figma frame structure with elements that match what you see. Return ONLY valid JSON, no markdown fences.
+Required format:
+{
+  "pagePattern": "...",
+  "frames": [
+    {
+      "name": "Frame name",
+      "estimatedWidth": 1440,
+      "estimatedHeight": 900,
+      "backgroundColor": "#hex",
+      "elements": [
+        {
+          "tagName": "div|h1|h2|h3|p|button|img|nav|a|span",
+          "text": "visible text or empty string",
+          "semanticRole": "hero-headline|nav-cta|body|label|card|etc",
+          "rect": { "left": 0, "top": 0, "width": 200, "height": 48 },
+          "styles": {
+            "backgroundColor": "hex or rgba or transparent",
+            "color": "#hex",
+            "fontSize": "32px",
+            "fontFamily": "Inter, sans-serif",
+            "fontWeight": "700",
+            "borderRadius": "8px",
+            "boxShadow": "none"
+          }
+        }
+      ]
+    }
+  ]
+}
+Assume viewport 1440px wide. Estimate all coordinates and sizes from visual proportions in the image.`,
+
+  accessibility: `You are a WCAG 2.1 accessibility expert. Analyze this UI screenshot for accessibility issues. Return ONLY valid JSON, no markdown fences.
+Required format:
+{
+  "overallScore": 0-100,
+  "wcagLevel": "AAA|AA|A|Fails",
+  "summary": "2-3 sentence assessment",
+  "issues": [
+    {
+      "severity": "critical|major|minor",
+      "element": "describe UI element visually",
+      "issue": "specific accessibility problem",
+      "wcagCriteria": "e.g. 1.4.3 Contrast (Minimum)",
+      "estimatedValue": "e.g. contrast ratio ~2.8:1",
+      "requiredValue": "e.g. contrast ratio 4.5:1",
+      "fix": "specific actionable fix"
+    }
+  ],
+  "positives": ["what IS done well for accessibility"]
+}
+Severity: critical = fails WCAG AA; major = fails AAA but passes AA; minor = best practice.`
+};
+
+app.post('/api/ai/vision', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const isPaid = auth.tier === 'starter' || auth.tier === 'pro';
+  if (!isPaid) return res.status(403).json({ error: 'AI features require a paid plan' });
+  if (auth.credits < 1) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
+
+  const { image, mimeType = 'image/png', mode = 'build_prompt', referenceImage, referenceMimeType = 'image/png' } = req.body;
+  if (!image) return res.status(400).json({ error: 'image is required' });
+  if (!VISION_PROMPTS[mode]) return res.status(400).json({ error: `Unknown mode: ${mode}` });
+
+  // Deduct 1 credit before the Anthropic call — refund on failure
+  let newBalance;
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: 1 });
+      if (error) throw new Error(error.message);
+      newBalance = data;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+      const token = req.headers.authorization?.slice(7);
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/deduct_credits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: auth.user.id, amount: 1 })
+      });
+      if (!r.ok) throw new Error(`Deduct RPC failed: ${r.status}`);
+      newBalance = await r.json();
+    }
+  } catch (e) {
+    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
+    return res.status(500).json({ error: e.message });
+  }
+
+  // Build message content — match mode sends two images
+  const content = [];
+  if (mode === 'match' && referenceImage) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: referenceMimeType, data: referenceImage } });
+    content.push({ type: 'text', text: 'This is the REFERENCE design (first image).' });
+    content.push({ type: 'image', source: { type: 'base64', media_type: mimeType, data: image } });
+    content.push({ type: 'text', text: 'This is the current IMPLEMENTATION (second image). Compare them.' });
+  } else {
+    content.push({ type: 'image', source: { type: 'base64', media_type: mimeType, data: image } });
+    content.push({ type: 'text', text: 'Analyze this UI screenshot.' });
+  }
+
+  try {
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 45000);
+    let anthropicRes;
+    try {
+      const anthropicBase = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
+      anthropicRes = await fetch(`${anthropicBase}/v1/messages`, {
+        method: 'POST',
+        signal: abortCtrl.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4096,
+          system: VISION_PROMPTS[mode],
+          messages: [{ role: 'user', content }]
+        })
+      });
+    } finally {
+      clearTimeout(abortTimer);
+    }
+
+    if (!anthropicRes.ok) {
+      const errData = await anthropicRes.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Anthropic error ${anthropicRes.status}`);
+    }
+
+    const apiResult = await anthropicRes.json();
+    const rawText = apiResult.content?.[0]?.text || '';
+
+    let parsed;
+    try {
+      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (_) {
+      const m = rawText.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('Claude returned malformed JSON — please try again');
+      parsed = JSON.parse(m[0]);
+    }
+
+    console.error(`[Subsrf AI] Vision/${mode} for ${auth.user.email} — balance: ${newBalance}`);
+    res.json({ ok: true, result: parsed, mode, balance: newBalance });
+
+  } catch (e) {
+    try { if (supabase) await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 }); } catch (_) {}
+    console.error(`[Subsrf AI] Vision/${mode} failed for ${auth.user.email}: ${e.message}`);
     res.status(500).json({ error: e.message });
   }
 });

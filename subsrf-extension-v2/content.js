@@ -114,7 +114,7 @@
   // --- UI Elements ---
   function addHighlight(el) {
     if (!el || el === document.body || el === document.documentElement) return;
-    if (el.closest('#uipb-toolbar, .uipb-highlight-box')) return;
+    if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
 
     const rect = el.getBoundingClientRect();
     const box = document.createElement('div');
@@ -237,6 +237,7 @@
       <div class="uipb-toolbar-divider"></div>
       <button class="uipb-toolbar-btn" id="uipb-clear-all" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Clear All</button>
       <button class="uipb-toolbar-btn secondary" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled' : ''}>Show AI Prompt</button>
+      <button class="uipb-toolbar-btn secondary" id="uipb-audit" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Accessibility Audit</button>
       <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
     `;
 
@@ -260,6 +261,27 @@
     if (prevBtn && highlightedElements.length > 0) {
       prevBtn.onclick = (e) => { e.stopPropagation(); showPreviewModal(); };
     }
+
+    const auditBtn = document.getElementById('uipb-audit');
+    if (auditBtn && highlightedElements.length > 0) {
+      auditBtn.onclick = (e) => {
+        e.stopPropagation();
+        const bbox = getSelectionBoundingBox();
+        if (!bbox) return;
+        if (toolbar) toolbar.style.opacity = '0';
+        document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
+        safeSendMessage({
+          type: 'CAPTURE_ACCESSIBILITY_AUDIT',
+          rect: bbox,
+          viewportWidth: window.innerWidth
+        });
+        setTimeout(() => {
+          if (toolbar) toolbar.style.opacity = '';
+          document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
+          showToast('Opening accessibility audit…');
+        }, 1200);
+      };
+    }
   }
 
   function showPreviewModal() {
@@ -270,6 +292,26 @@
       port.disconnect();
     } catch (e) {}
     showToast('Opening Prompt Studio...');
+  }
+
+  // --- Selection Bounding Box ---
+  function getSelectionBoundingBox() {
+    if (highlightedElements.length === 0) return null;
+    let minLeft = Infinity, minTop = Infinity, maxRight = -Infinity, maxBottom = -Infinity;
+    highlightedElements.forEach(h => {
+      const r = h.data.rect;
+      minLeft   = Math.min(minLeft,   r.left);
+      minTop    = Math.min(minTop,    r.top);
+      maxRight  = Math.max(maxRight,  r.left + r.width);
+      maxBottom = Math.max(maxBottom, r.top  + r.height);
+    });
+    const PAD = 24;
+    return {
+      x: Math.max(0, minLeft - PAD),
+      y: Math.max(0, minTop  - PAD),
+      w: Math.min(window.innerWidth,  maxRight  + PAD) - Math.max(0, minLeft - PAD),
+      h: Math.min(window.innerHeight, maxBottom + PAD) - Math.max(0, minTop  - PAD),
+    };
   }
 
   // --- Region / Screenshot Logic ---
@@ -307,6 +349,7 @@
         // Select all elements within the drawn region — no screenshot
         const candidates = document.querySelectorAll('div, h1, h2, h3, h4, p, span, img, button, a');
         candidates.forEach(el => {
+          if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
           const r = el.getBoundingClientRect();
           if (r.top >= rect.top && r.left >= rect.left && r.bottom <= rect.bottom && r.right <= rect.right) {
             if (!highlightedElements.find(h => h.element === el)) addHighlight(el);

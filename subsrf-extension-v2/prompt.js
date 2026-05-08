@@ -7,7 +7,8 @@ let context = {};
 let session = null;
 let bridgeOnline = false;
 let figmaConnected = false;
-let smartEnriched = null; // populated after a successful Smart Prompt generation
+let smartEnriched = null;
+
 
 const outputEl    = document.getElementById('output');
 const outputLabel = document.getElementById('output-label');
@@ -22,10 +23,9 @@ const toastEl     = document.getElementById('toast');
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext', 'subsrf_session']);
+  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext']);
   elements = stored.selectedElements || [];
   context  = stored.lastPageContext  || {};
-  session  = stored.subsrf_session   || null;
 
   pageCtxEl.textContent = context.title
     ? context.title
@@ -33,19 +33,14 @@ async function init() {
     ? new URL(context.url).hostname
     : 'No page context';
 
-  // Always fetch live tier + credits so the gate reflects the current account state,
-  // not whatever was cached in storage before the last login or plan change.
-  if (session?.accessToken) {
-    try {
-      const res = await fetch('https://api.subsrf.dev/api/credits/balance', {
-        headers: { Authorization: `Bearer ${session.accessToken}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        session = { ...session, tier: data.tier || session.tier, credits: data.balance ?? session.credits };
-        await chrome.storage.local.set({ subsrf_session: session });
-      }
-    } catch (_) {}
+  // Route through background so the JWT is auto-refreshed if expired;
+  // fall back to direct storage read if the service worker isn't awake yet
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
+    session = resp?.session || null;
+  } catch (_) {
+    const s = await chrome.storage.local.get('subsrf_session');
+    session = s.subsrf_session || null;
   }
 
   renderAiGate();
@@ -99,7 +94,14 @@ function renderAiGate() {
 }
 
 async function generateAiPrompt() {
-  const { subsrf_session } = await chrome.storage.local.get('subsrf_session');
+  let subsrf_session;
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
+    subsrf_session = resp?.session;
+  } catch (_) {
+    const s = await chrome.storage.local.get('subsrf_session');
+    subsrf_session = s.subsrf_session;
+  }
 
   if (!subsrf_session?.accessToken) {
     showToast('Sign in to use AI features');
@@ -157,56 +159,118 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
   const hostname = ctx.url
     ? (() => { try { return new URL(ctx.url).hostname.replace(/^www\./, ''); } catch { return ctx.url; } })()
     : 'Unknown';
-  const rule = '─'.repeat(56);
+  const rule = '─'.repeat(60);
   const lines = [];
 
   lines.push(`SMART BRIEF — ${enriched.pagePattern || 'UI Capture'} | ${hostname}`);
   lines.push(rule);
   lines.push('');
 
-  // Build a map from element index → enriched element data
+  // ── Design Tokens ──────────────────────────────────────────
+  const dt = enriched.designTokens || {};
+
+  const colors = dt.colors || [];
+  const typo   = dt.typography || [];
+  const spacing = dt.spacing || [];
+  const radii  = dt.radii || [];
+  const shadows = dt.shadows || [];
+
+  const hasTokens = colors.length || typo.length || spacing.length || radii.length || shadows.length;
+  if (hasTokens) {
+    lines.push('DESIGN TOKENS');
+    lines.push('');
+
+    if (colors.length) {
+      lines.push('Colors');
+      colors.forEach(c => {
+        const swatch = c.value || c;
+        const role   = c.role  ? `  ${c.role}` : '';
+        const usage  = c.usage ? `  — ${c.usage}` : '';
+        lines.push(`  ${swatch}${role}${usage}`);
+      });
+      lines.push('');
+    }
+
+    if (typo.length) {
+      lines.push('Typography');
+      typo.forEach(t => {
+        const lh   = t.lineHeight && t.lineHeight !== 'normal' ? `/lh ${t.lineHeight}` : '';
+        const desc = `  ${t.family || 'unknown'} ${t.weight || '400'} / ${t.size || '?'}${lh}`;
+        const role = t.role ? `  — ${t.role}` : '';
+        lines.push(`${desc}${role}`);
+      });
+      lines.push('');
+    }
+
+    if (spacing.length) {
+      lines.push(`Spacing   ${spacing.join(' · ')}`);
+      lines.push('');
+    }
+
+    if (radii.length) {
+      lines.push(`Radii     ${radii.join(' · ')}`);
+      lines.push('');
+    }
+
+    if (shadows.length) {
+      lines.push('Shadows');
+      shadows.forEach(s => lines.push(`  ${s}`));
+      lines.push('');
+    }
+
+    lines.push(rule);
+    lines.push('');
+  }
+
+  // ── Components ─────────────────────────────────────────────
   const elMap = {};
   (enriched.elements || []).forEach(el => { elMap[el.index] = el; });
 
-  // Components with their elements
   const components = enriched.components || [];
   if (components.length > 0) {
     lines.push('COMPONENTS');
     lines.push('');
+
     components.forEach((comp, ci) => {
       const num = CIRCLED[ci] || `${ci + 1}.`;
-      lines.push(`${num} ${comp.name}`);
+      const layout = comp.layout ? `  [${comp.layout}]` : '';
+      lines.push(`${num} ${comp.name}${layout}`);
       if (comp.description) lines.push(`   ${comp.description}`);
+      lines.push('');
+
       (comp.elementIndices || []).forEach(idx => {
-        const el = elMap[idx];
+        const el  = elMap[idx];
         const raw = rawElements[idx];
         if (!el && !raw) return;
         const label = el?.label || raw?.tagName || `Element ${idx + 1}`;
-        const desc  = el?.description || '';
-        lines.push(`   └─ [${idx + 1}] ${label}${desc ? ' — ' + desc : ''}`);
+        const role  = el?.semanticRole ? ` [${el.semanticRole}]` : '';
+        lines.push(`   └─ [${idx + 1}] ${label}${role}`);
+        if (el?.keyStyles)        lines.push(`      ${el.keyStyles}`);
+        if (el?.description)      lines.push(`      ${el.description}`);
         if (el?.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
       });
       lines.push('');
     });
 
-    // Any elements not assigned to a component
+    // Unassigned elements
     const assigned = new Set(components.flatMap(c => c.elementIndices || []));
-    const unassigned = rawElements
-      .map((_, i) => i)
-      .filter(i => !assigned.has(i) && elMap[i]);
+    const unassigned = rawElements.map((_, i) => i).filter(i => !assigned.has(i) && elMap[i]);
     if (unassigned.length > 0) {
       lines.push(`${CIRCLED[components.length] || `${components.length + 1}.`} Other Elements`);
       lines.push('');
       unassigned.forEach(idx => {
         const el = elMap[idx];
-        lines.push(`   └─ [${idx + 1}] ${el.label}${el.description ? ' — ' + el.description : ''}`);
+        const role = el.semanticRole ? ` [${el.semanticRole}]` : '';
+        lines.push(`   └─ [${idx + 1}] ${el.label}${role}`);
+        if (el.keyStyles)         lines.push(`      ${el.keyStyles}`);
+        if (el.description)       lines.push(`      ${el.description}`);
         if (el.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
       });
       lines.push('');
     }
   }
 
-  // Accessibility section
+  // ── Accessibility ──────────────────────────────────────────
   const a11y = enriched.accessibilityIssues || [];
   if (a11y.length > 0) {
     lines.push(rule);
@@ -217,7 +281,7 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
     lines.push('');
   }
 
-  // Implementation prompt
+  // ── Implementation Prompt ──────────────────────────────────
   if (enriched.implementationPrompt) {
     lines.push(rule);
     lines.push('');
@@ -251,8 +315,6 @@ function renderSidebar() {
   }
 
   elListEl.innerHTML = elements.map((el, i) => {
-    const bg  = el.styles?.backgroundColor;
-    const fg  = el.styles?.color;
     const cls = el.cls
       ? el.cls.split(' ').filter(Boolean).map(c => '.' + c).join('').slice(0, 24)
       : '';
@@ -260,22 +322,15 @@ function renderSidebar() {
     const w   = el.rect?.width  ? Math.round(el.rect.width)  : null;
     const h   = el.rect?.height ? Math.round(el.rect.height) : null;
 
-    const hasBg = bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)';
-    const hasFg = fg && fg !== 'transparent';
-
     return `
       <div class="el-card" data-index="${i}">
         <div class="el-top">
           <span class="el-num">${i + 1}</span>
           <span class="el-tag">${el.tagName}</span>
           ${cls ? `<span class="el-cls">${cls}</span>` : ''}
+          ${w && h ? `<span class="el-dim">${w}×${h}</span>` : ''}
         </div>
         ${txt ? `<div class="el-txt">${txt}</div>` : ''}
-        <div class="swatches">
-          ${hasBg ? `<div class="swatch" title="${bg}" style="background:${bg};"></div>` : ''}
-          ${hasFg ? `<div class="swatch" title="${fg}" style="background:${fg};"></div>` : ''}
-          ${w && h ? `<span class="swatch-dim">${w}×${h}</span>` : ''}
-        </div>
       </div>`;
   }).join('');
 
