@@ -279,11 +279,8 @@ function LandingPage({ onLogin, loading }) {
             subsrf
           </div>
           <div className="flex gap-md font-mono-data text-mono-data text-white-muted">
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms</a>
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy</a>
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Security</a>
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Status</a>
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">GitHub</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/terms.html">Terms</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/privacy.html">Privacy</a>
           </div>
           <div className="font-mono-data text-mono-data text-neon dark:text-neon text-[10px]">
             © 2026 SUBSRF INFRASTRUCTURE. ALL RIGHTS RESERVED.
