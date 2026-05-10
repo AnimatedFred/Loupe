@@ -56,8 +56,9 @@ function LandingPage({ onLogin, loading }) {
       {/* TopNavBar */}
       <header className="fixed top-0 w-full z-50 border-b border-white-border flat no shadows bg-void" style={{ backgroundColor: '#050508' }}>
         <div className="flex justify-between items-center max-w-[1080px] mx-auto px-lg h-16">
-          <div className="font-label-caps text-label-caps tracking-widest text-white-primary">
-            subsrf.dev
+          <div className="flex items-center gap-xs">
+            <LogoMark size={28} />
+            <Wordmark size={18} />
           </div>
           <nav className="hidden md:flex gap-lg">
             <a className="font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform text-neon" href="#">Plugin</a>
