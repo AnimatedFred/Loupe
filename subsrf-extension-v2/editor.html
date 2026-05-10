@@ -123,6 +123,11 @@
     .ref-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
     .ref-drop img { max-width: 100%; border-radius: 6px; display: block; }
     .analysis-result { font-family: 'Azeret Mono', monospace; font-size: 10.5px; line-height: 1.75; color: rgba(242,242,244,0.65); white-space: pre-wrap; word-break: break-word; background: rgba(5,5,8,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; }
+    .analysis-credit-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 7px; }
+    .analysis-credit-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(242,242,244,0.4); }
+    .analysis-credit-badge { font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.25); color: #00FF87; }
+    .analysis-credit-badge.low { background: rgba(255,77,77,0.1); border-color: rgba(255,77,77,0.3); color: #FF4D4D; }
+    .analysis-credit-badge.empty { background: rgba(242,242,244,0.04); border-color: rgba(242,242,244,0.08); color: rgba(242,242,244,0.28); }
     .btn-analyze { background: var(--primary); color: #050508; border: none; border-radius: 8px; padding: 9px 14px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.15s; }
     .btn-analyze:hover { background: var(--primary-hover); }
     .btn-analyze:disabled { opacity: 0.38; cursor: not-allowed; }
@@ -332,6 +337,11 @@
           <button class="analysis-mode-btn active" data-mode="build_prompt">Build Prompt</button>
           <button class="analysis-mode-btn" data-mode="describe">Describe UI</button>
           <button class="analysis-mode-btn" data-mode="accessibility">Accessibility</button>
+        </div>
+
+        <div class="analysis-credit-row">
+          <span class="analysis-credit-label">Credits</span>
+          <span class="analysis-credit-badge" id="analysis-credit-badge">—</span>
         </div>
 
         <button class="btn-analyze" id="btn-analyze">Analyze (1 credit)</button>

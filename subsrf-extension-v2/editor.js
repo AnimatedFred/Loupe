@@ -597,12 +597,23 @@ function activateAnalysisTab(config) {
   document.getElementById('panel-layers').style.display = 'none';
   document.getElementById('panel-analysis').style.display = 'flex';
   if (aside) aside.classList.add('wide');
+  refreshCreditBadge();
   if (config.mode) {
     editorVisionMode = config.mode;
     document.querySelectorAll('.analysis-mode-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.analysis-mode-btn[data-mode="${config.mode}"]`)?.classList.add('active');
   }
   if (config.autoRun) setTimeout(() => runEditorAnalysis(), 300);
+}
+
+async function refreshCreditBadge() {
+  const badge = document.getElementById('analysis-credit-badge');
+  if (!badge) return;
+  const s = await chrome.storage.local.get('subsrf_session');
+  const credits = s.subsrf_session?.credits ?? null;
+  if (credits === null) { badge.textContent = '—'; badge.className = 'analysis-credit-badge'; return; }
+  badge.textContent = `${credits} credit${credits !== 1 ? 's' : ''}`;
+  badge.className = 'analysis-credit-badge' + (credits === 0 ? ' empty' : credits <= 3 ? ' low' : '');
 }
 
 function setupAnalysisPanel() {
@@ -621,6 +632,7 @@ function setupAnalysisPanel() {
     document.getElementById('panel-layers').style.display = 'none';
     document.getElementById('panel-analysis').style.display = 'flex';
     if (aside) aside.classList.add('wide');
+    refreshCreditBadge();
   });
 
   document.querySelectorAll('.analysis-mode-btn').forEach(btn => {
@@ -657,8 +669,10 @@ async function runEditorAnalysis() {
 
   const tier    = subsrf_session.tier || 'free';
   const credits = subsrf_session.credits ?? 0;
-  if (tier === 'free')  { showToast('Paid plan required for AI Analysis'); return; }
-  if (credits < 1)      { showToast('No credits remaining'); return; }
+  const isPaid  = tier === 'starter' || tier === 'pro';
+
+  if (!isPaid)    { showToast('Paid plan required for AI Analysis'); return; }
+  if (credits < 1) { showToast('No credits remaining'); return; }
 
   const btn = document.getElementById('btn-analyze');
   btn.textContent = 'Analyzing…';
@@ -695,9 +709,10 @@ async function runEditorAnalysis() {
       return;
     }
 
-    // Update credits in storage
+    // Update credits in storage and refresh badge
     const updated = { ...subsrf_session, credits: data.balance };
     await chrome.storage.local.set({ subsrf_session: updated });
+    refreshCreditBadge();
 
     const lines = buildEditorVisionText(data.result, data.mode);
     if (outputEl) outputEl.textContent = lines;

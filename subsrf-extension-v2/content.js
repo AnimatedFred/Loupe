@@ -112,6 +112,7 @@
   }
 
   // --- UI Elements ---
+
   function addHighlight(el) {
     if (!el || el === document.body || el === document.documentElement) return;
     if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;

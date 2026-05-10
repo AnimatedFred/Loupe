@@ -22,12 +22,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnArea = document.getElementById('btn-area');
   const btnFullPage = document.getElementById('btn-full-page');
   const btnScreenshot = document.getElementById('btn-screenshot');
-  const btnSync = document.getElementById('btn-sync');
   const countText = document.getElementById('countText');
 
   btnClick.onclick = () => ensureAndExecute((id) => setMode(id, 'click'));
   btnArea.onclick = () => ensureAndExecute((id) => setMode(id, 'region'));
-  
+
   btnFullPage.onclick = () => ensureAndExecute((id) => {
     chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
     setTimeout(() => window.close(), 100);
@@ -37,60 +36,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setMode(id, 'screenshot');
     setTimeout(() => window.close(), 100);
   });
-
-  let currentTier = 'free';
-
-  function renderSyncButton(isPro) {
-    if (isPro) {
-      btnSync.textContent = 'Sync with Figma';
-      btnSync.className   = 'btn btn-primary';
-      btnSync.style.cssText = '';
-    } else {
-      btnSync.textContent = '🔒 Sync with Figma — Pro';
-      btnSync.className   = 'btn';
-      btnSync.style.cssText = 'background: var(--bg2); color: var(--text-dim); border: 1px solid var(--border); cursor: pointer;';
-    }
-  }
-
-  btnSync.onclick = async () => {
-    if (currentTier !== 'pro') {
-      // Switch to Account tab so user can upgrade
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.querySelector('[data-view="account"]').classList.add('active');
-      document.getElementById('view-account').classList.add('active');
-      return;
-    }
-
-    const stored = await chrome.storage.local.get(['selectedElements', 'subsrf_session']);
-    if (!stored.selectedElements || stored.selectedElements.length === 0) return;
-
-    btnSync.innerText = 'Syncing...';
-    btnSync.disabled = true;
-
-    try {
-      const headers = { 'Content-Type': 'application/json' };
-      if (stored.subsrf_session?.accessToken) {
-        headers['Authorization'] = `Bearer ${stored.subsrf_session.accessToken}`;
-      }
-      await fetch('https://api.subsrf.dev/api/update', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          type: 'ELEMENTS_UPDATE',
-          elements: stored.selectedElements
-        })
-      });
-      btnSync.innerText = 'Success!';
-      setTimeout(() => {
-        btnSync.innerText = 'Sync with Figma';
-        btnSync.disabled = false;
-      }, 2000);
-    } catch (e) {
-      btnSync.innerText = 'Bridge Error';
-      btnSync.disabled = false;
-    }
-  };
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -124,9 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!session) {
       authSignedOut.style.display = '';
       authSignedIn.style.display  = 'none';
-      currentTier = 'free';
-      renderSyncButton(false);
-      renderMcpTab(false);
+        renderMcpTab(false);
       return;
     }
     authSignedOut.style.display = 'none';
@@ -145,10 +88,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tier   = (session.tier || 'free').toLowerCase();
     const isPro  = tier === 'pro';
     const isPaid = tier === 'starter' || tier === 'pro';
-    currentTier = tier;
     authTierBadge.textContent = isPro ? '⚡ PRO' : tier === 'starter' ? '✦ STARTER' : 'FREE';
     authTierBadge.className   = 'tier-badge ' + (isPaid ? 'tier-pro' : 'tier-free');
-    renderSyncButton(isPro);
 
     const creditsEl = document.getElementById('acct-credits');
     const headerCreditsEl = document.getElementById('header-credits');

@@ -1174,7 +1174,7 @@ app.post('/api/ai/vision', async (req, res) => {
   if (!image) return res.status(400).json({ error: 'image is required' });
   if (!VISION_PROMPTS[mode]) return res.status(400).json({ error: `Unknown mode: ${mode}` });
 
-  // Deduct 1 credit before the Anthropic call — refund on failure
+  // Deduct credits before the Anthropic call — refund on failure
   let newBalance;
   try {
     if (supabase) {
