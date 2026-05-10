@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import ExtensionPage from './ExtensionPage'
 import PluginPage from './PluginPage'
+import PricingPage from './PricingPage'
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export function TopNavBar({ onLogin, loading }) {
         <nav className="hidden md:flex gap-lg">
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#plugin">Plugin</a>
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#extension">Extension</a>
-          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Pricing</a>
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#pricing">Pricing</a>
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
         </nav>
         <div className="flex gap-md">
@@ -909,6 +910,10 @@ function App() {
 
   if (currentPath === '#plugin') {
     return <PluginPage onLogin={handleLogin} loading={authLoading} />
+  }
+
+  if (currentPath === '#pricing') {
+    return <PricingPage onLogin={handleLogin} loading={authLoading} />
   }
 
   return <LandingPage onLogin={handleLogin} loading={authLoading} />
