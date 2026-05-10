@@ -1,14 +1,5 @@
 import React from 'react';
-
-// A simple LogoMark equivalent using the hexagon icon matching the provided design
-function ExtLogo() {
-  return (
-    <div className="font-label-caps text-label-caps tracking-widest text-white-primary flex items-center gap-sm">
-      <span className="material-symbols-outlined text-[18px]">hexagon</span>
-      subsrf.dev
-    </div>
-  );
-}
+import { TopNavBar, Footer } from './App';
 
 export default function ExtensionPage({ onLogin, loading }) {
   const scrollToGetStarted = (e) => {
@@ -19,31 +10,7 @@ export default function ExtensionPage({ onLogin, loading }) {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
-      <nav className="bg-void/85 backdrop-blur-md fixed top-0 w-full z-50 border-b border-white-border shadow-none">
-        <div className="flex justify-between items-center max-w-[1080px] mx-auto px-lg h-16">
-          <a href="#" className="hover:opacity-80 transition-opacity">
-            <ExtLogo />
-          </a>
-          <div className="hidden md:flex items-center gap-lg font-body text-body font-light">
-            <a className="text-white-secondary font-light hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Plugin</a>
-            <a className="text-neon font-medium border-b-2 border-neon pb-1 hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#extension">Extension</a>
-            <a className="text-white-secondary font-light hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Pricing</a>
-            <a className="text-white-secondary font-light hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
-          </div>
-          <div className="flex items-center gap-md">
-            <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center justify-center gap-sm" onClick={onLogin} disabled={loading}>
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
-              </svg>
-              {loading ? 'Wait...' : 'Login with Google'}
-            </button>
-            <a href="/#" className="font-label-caps text-label-caps bg-neon text-void px-md py-sm rounded-DEFAULT hover:opacity-90 transition-opacity duration-200">Get Started</a>
-          </div>
-        </div>
-      </nav>
+      <TopNavBar onLogin={onLogin} loading={loading} />
 
       <main className="flex-grow pt-4xl pb-4xl flex flex-col items-center bg-void">
         <section className="max-w-[1080px] w-full px-lg mb-4xl">
@@ -227,17 +194,7 @@ export default function ExtensionPage({ onLogin, loading }) {
         </section>
       </main>
 
-      <footer className="bg-void dark:bg-void w-full py-xl border-t border-white-border shadow-none">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-[1080px] mx-auto px-lg gap-md font-mono-data text-mono-data">
-          <div className="font-label-caps text-label-caps text-white-muted">
-            © 2026 SUBSRF INFRASTRUCTURE. ALL RIGHTS RESERVED.
-          </div>
-          <div className="flex gap-lg">
-            <a className="text-white-muted hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/terms.html">Terms</a>
-            <a className="text-white-muted hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/privacy.html">Privacy</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }

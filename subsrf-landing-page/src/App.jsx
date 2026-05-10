@@ -19,13 +19,13 @@ async function fetchTier(userId) {
 
 // ── Brand components ──────────────────────────────────────────────────────────
 
-function LogoMark({ size = 28 }) {
+export function LogoMark({ size = 28 }) {
   return (
     <img src="/subsrf-icon.png" width={size} height={size} alt="Subsrf" style={{ borderRadius: size * 0.22, display: 'block', flexShrink: 0 }} />
   )
 }
 
-function Wordmark({ size = 18 }) {
+export function Wordmark({ size = 18 }) {
   return (
     <span style={{ fontSize: size, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", letterSpacing: '-0.02em', color: 'var(--t1)' }}>
       subsrf
@@ -46,6 +46,70 @@ function highlightJson(obj) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+export function TopNavBar({ onLogin, loading }) {
+  const scrollToGetStarted = (e) => {
+    e.preventDefault();
+    if (window.location.hash === '#extension') {
+      window.location.hash = '';
+      setTimeout(() => {
+        document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <header className="fixed top-0 w-full z-50 border-b border-white-border flat no shadows bg-void" style={{ backgroundColor: '#050508' }}>
+      <div className="flex justify-between items-center max-w-[1080px] mx-auto px-lg h-16">
+        <a href="#" className="flex items-center gap-xs hover:opacity-80 transition-opacity">
+          <LogoMark size={28} />
+          <Wordmark size={18} />
+        </a>
+        <nav className="hidden md:flex gap-lg">
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Plugin</a>
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#extension">Extension</a>
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Pricing</a>
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
+        </nav>
+        <div className="flex gap-md">
+          <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center justify-center gap-sm" onClick={onLogin} disabled={loading}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
+            </svg>
+            {loading ? 'Wait...' : 'Login with Google'}
+          </button>
+          <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>
+            Get Started
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function Footer() {
+  return (
+    <footer className="bg-void dark:bg-void w-full py-xl border-t border-white-border flat no shadows mt-auto">
+      <div className="flex flex-col md:flex-row justify-between items-center max-w-[1080px] mx-auto px-lg gap-md">
+        <div className="font-label-caps text-label-caps text-white-muted">
+          subsrf
+        </div>
+        <div className="flex gap-md font-mono-data text-mono-data text-white-muted">
+          <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/terms.html">Terms</a>
+          <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/privacy.html">Privacy</a>
+        </div>
+        <div className="font-mono-data text-mono-data text-neon dark:text-neon text-[10px]">
+          © 2026 SUBSRF INFRASTRUCTURE. ALL RIGHTS RESERVED.
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 function LandingPage({ onLogin, loading }) {
   const scrollToGetStarted = (e) => {
     e.preventDefault();
@@ -54,35 +118,7 @@ function LandingPage({ onLogin, loading }) {
 
   return (
     <>
-      {/* TopNavBar */}
-      <header className="fixed top-0 w-full z-50 border-b border-white-border flat no shadows bg-void" style={{ backgroundColor: '#050508' }}>
-        <div className="flex justify-between items-center max-w-[1080px] mx-auto px-lg h-16">
-          <div className="flex items-center gap-xs">
-            <LogoMark size={28} />
-            <Wordmark size={18} />
-          </div>
-          <nav className="hidden md:flex gap-lg">
-            <a className="font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform text-neon" href="#">Plugin</a>
-            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#extension">Extension</a>
-            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Pricing</a>
-            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
-          </nav>
-          <div className="flex gap-md">
-            <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center justify-center gap-sm" onClick={onLogin} disabled={loading}>
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
-              </svg>
-              {loading ? 'Wait...' : 'Login with Google'}
-            </button>
-            <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>
-              Get Started
-            </button>
-          </div>
-        </div>
-      </header>
+      <TopNavBar onLogin={onLogin} loading={loading} />
 
       {/* Main Canvas */}
       <main className="flex-grow pt-3xl pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
@@ -274,21 +310,7 @@ function LandingPage({ onLogin, loading }) {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-void dark:bg-void w-full py-xl border-t border-white-border flat no shadows mt-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center max-w-[1080px] mx-auto px-lg gap-md">
-          <div className="font-label-caps text-label-caps text-white-muted">
-            subsrf
-          </div>
-          <div className="flex gap-md font-mono-data text-mono-data text-white-muted">
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/terms.html">Terms</a>
-            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="/privacy.html">Privacy</a>
-          </div>
-          <div className="font-mono-data text-mono-data text-neon dark:text-neon text-[10px]">
-            © 2026 SUBSRF INFRASTRUCTURE. ALL RIGHTS RESERVED.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </>
   )
 }
