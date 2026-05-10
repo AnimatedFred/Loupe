@@ -1,12 +1,221 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Subsrf Intelligence — UI to Figma in Seconds</title>
+    <title>subsrf.dev - Infrastructure for UI Data</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400&family=Manrope:wght@300;500;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#b9cbb9",
+                    "on-surface": "#dae6d8",
+                    "inverse-surface": "#dae6d8",
+                    "neon-glow": "rgba(0, 255, 135, 0.06)",
+                    "secondary-container": "#454749",
+                    "white-muted": "rgba(242, 242, 244, 0.28)",
+                    "error": "#ffb4ab",
+                    "inverse-on-surface": "#29332a",
+                    "on-secondary-fixed": "#1a1c1d",
+                    "primary": "#f1ffef",
+                    "surface-container": "#18221a",
+                    "outline-variant": "#3b4b3d",
+                    "on-secondary-container": "#b4b5b7",
+                    "deep": "#0C0C12",
+                    "status-warn": "#FFAB00",
+                    "on-tertiary": "#3d2f00",
+                    "surface-tint": "#00e478",
+                    "background": "#0c160e",
+                    "primary-container": "#00ff87",
+                    "on-primary-fixed-variant": "#005227",
+                    "layer": "#111118",
+                    "primary-fixed-dim": "#00e478",
+                    "white-border": "rgba(242, 242, 244, 0.12)",
+                    "surface-dim": "#0c160e",
+                    "status-ok": "#39D98A",
+                    "on-error": "#690005",
+                    "surface-container-high": "#222c24",
+                    "tertiary-container": "#ffdb79",
+                    "status-err": "#FF4D4D",
+                    "outline": "#849585",
+                    "lift": "#202028",
+                    "on-secondary-fixed-variant": "#454749",
+                    "inverse-primary": "#006d36",
+                    "on-primary": "#003919",
+                    "on-primary-fixed": "#00210c",
+                    "surface": "#18181F",
+                    "secondary": "#c6c6c8",
+                    "secondary-fixed-dim": "#c6c6c8",
+                    "surface-bright": "#323c32",
+                    "void": "#050508",
+                    "error-container": "#93000a",
+                    "surface-variant": "#2d372e",
+                    "white-secondary": "rgba(242, 242, 244, 0.55)",
+                    "secondary-fixed": "#e2e2e4",
+                    "tertiary": "#fffaf7",
+                    "on-background": "#dae6d8",
+                    "on-tertiary-fixed": "#241a00",
+                    "surface-container-highest": "#2d372e",
+                    "on-tertiary-container": "#795f01",
+                    "on-primary-container": "#007138",
+                    "on-error-container": "#ffdad6",
+                    "neon": "#00FF87",
+                    "tertiary-fixed-dim": "#e5c364",
+                    "surface-container-lowest": "#071009",
+                    "white-primary": "#F2F2F4",
+                    "tertiary-fixed": "#ffe08d",
+                    "neon-dim": "rgba(0, 255, 135, 0.12)",
+                    "surface-container-low": "#141e16",
+                    "primary-fixed": "#60ff98",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "on-secondary": "#2f3132"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "xs": "4px",
+                    "4xl": "128px",
+                    "3xl": "96px",
+                    "lg": "32px",
+                    "md": "16px",
+                    "xl": "48px",
+                    "2xl": "64px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "subheading": [
+                            "Manrope"
+                    ],
+                    "heading-sm": [
+                            "Manrope"
+                    ],
+                    "display-xl": [
+                            "Manrope"
+                    ],
+                    "label-caps": [
+                            "Azeret Mono"
+                    ],
+                    "mono-data": [
+                            "Azeret Mono"
+                    ],
+                    "body": [
+                            "Manrope"
+                    ],
+                    "display-lg": [
+                            "Manrope"
+                    ],
+                    "heading-md": [
+                            "Manrope"
+                    ]
+            },
+            "fontSize": {
+                    "subheading": [
+                            "22px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "letterSpacing": "-0.3px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "heading-sm": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.8px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-xl": [
+                            "160px",
+                            {
+                                    "lineHeight": "0.88",
+                                    "letterSpacing": "-6px",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "label-caps": [
+                            "11px",
+                            {
+                                    "lineHeight": "1",
+                                    "letterSpacing": "2px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "mono-data": [
+                            "13px",
+                            {
+                                    "lineHeight": "1.8",
+                                    "letterSpacing": "0",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.8",
+                                    "letterSpacing": "0",
+                                    "fontWeight": "300"
+                            }
+                    ],
+                    "display-lg": [
+                            "64px",
+                            {
+                                    "lineHeight": "0.9",
+                                    "letterSpacing": "-4px",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "heading-md": [
+                            "52px",
+                            {
+                                    "lineHeight": "1.05",
+                                    "letterSpacing": "-1.5px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        body {
+            background-color: #050508; /* Void */
+            color: #dae6d8; /* on-background */
+            position: relative;
+        }
+        /* Noise Overlay */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+        .glow-text {
+            text-shadow: 0 0 20px rgba(0, 255, 135, 0.4);
+        }
+    </style>
   </head>
-  <body>
+  <body class="antialiased min-h-screen flex flex-col">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <!-- Static links for crawlers that do not execute JavaScript -->

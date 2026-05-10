@@ -47,177 +47,239 @@ function highlightJson(obj) {
 
 function LandingPage({ onLogin, loading }) {
   return (
-    <div style={{ minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav className="glass" style={{
-        position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)',
-        width: '90%', maxWidth: 1200, zIndex: 1000,
-        padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <LogoMark size={28} />
-          <Wordmark size={18} />
-        </div>
-        <div style={{ display: 'flex', gap: 32, fontSize: 14, fontWeight: 500, color: 'var(--t2)' }}>
-          <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
-          <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How It Works</a>
-          <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
-        </div>
-        <button
-          className="btn btn-secondary"
-          onClick={onLogin}
-          disabled={loading}
-          style={{ padding: '8px 20px', fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="16" alt="" />
-          {loading ? 'Redirecting...' : 'Sign in with Google'}
-        </button>
-      </nav>
-
-      {/* Hero */}
-      <header className="hero container animate-fade-in">
-        <div style={{
-          display: 'inline-block', padding: '5px 14px', borderRadius: 100,
-          fontSize: 11, fontWeight: 500, fontFamily: "'Azeret Mono', monospace",
-          color: 'var(--acid)', marginBottom: 24,
-          border: '1px solid rgba(0, 255, 135, 0.3)',
-          background: 'rgba(0, 255, 135, 0.05)',
-          letterSpacing: '0.06em', textTransform: 'uppercase'
-        }}>
-          Introducing Subsrf v2.8 — Design Intelligence
-        </div>
-        <h1 className="gradient-text">Design Intelligence<br />for the AI Era</h1>
-        <p>Subsrf is the ultimate bridge for AI-driven design. Capture live UI components and instantly synthesize them into high-fidelity Knowledge Briefs for your favorite LLMs.</p>
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-          <button className="btn btn-primary" onClick={onLogin}>Get Started Free</button>
-          <button className="btn btn-secondary">Watch Demo</button>
-        </div>
-        <div className="hero-mockup">
-          <img src="/images/hero.png" alt="Subsrf Interface" style={{ width: '100%', display: 'block' }} />
-          <div className="glass" style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)', padding: '24px 40px', width: '80%', display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>99%</div>
-              <div style={{ fontSize: 12, color: 'var(--t2)' }}>Reconstruction Accuracy</div>
-            </div>
-            <div style={{ width: 1, height: 40, background: 'var(--border)' }} />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>2s</div>
-              <div style={{ fontSize: 12, color: 'var(--t2)' }}>Average Sync Time</div>
-            </div>
-            <div style={{ width: 1, height: 40, background: 'var(--border)' }} />
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>10k+</div>
-              <div style={{ fontSize: 12, color: 'var(--t2)' }}>Elements Synced Daily</div>
-            </div>
+    <>
+      {/* TopNavBar */}
+      <header className="fixed top-0 w-full z-50 border-b border-white-border flat no shadows bg-void" style={{ backgroundColor: '#050508' }}>
+        <div className="flex justify-between items-center max-w-[1080px] mx-auto px-lg h-16">
+          <div className="font-label-caps text-label-caps tracking-widest text-white-primary">
+            subsrf.dev
+          </div>
+          <nav className="hidden md:flex gap-lg">
+            <a className="font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform text-neon" href="#">Plugin</a>
+            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Extension</a>
+            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Pricing</a>
+            <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
+          </nav>
+          <div className="flex gap-md">
+            <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95" onClick={onLogin} disabled={loading}>
+              {loading ? 'Wait...' : 'Log In'}
+            </button>
+            <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={onLogin} disabled={loading}>
+              Get Started
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Features */}
-      <section id="features" className="container" style={{ padding: '100px 0' }}>
-        <div style={{ textAlign: 'center', marginBottom: 60 }}>
-          <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, fontWeight: 500, color: 'var(--acid)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>Capabilities</div>
-          <h2 style={{ fontSize: 40, marginBottom: 16 }}>Built for Modern Designers</h2>
-          <p style={{ color: 'var(--t2)', maxWidth: 500, margin: '0 auto' }}>Everything you need to turn inspiration into production-ready design assets.</p>
-        </div>
-        <div className="features-grid">
-          {[
-            { tag: 'AI Intelligence', title: 'Knowledge Briefs', desc: 'Automatically synthesize captured UI into structured JSON briefs optimized for Claude and GPT prompts.' },
-            { tag: 'Local-First', title: 'MCP Design Bridge', desc: 'Bring your own AI. Securely stream live UI data via the Model Context Protocol to your local environment.' },
-            { tag: 'Seamless Sync', title: 'Figma Pro Bridge', desc: 'One-click bi-directional sync that reconstructs production-ready layers directly on your Figma canvas.' },
-            { tag: 'Precision Tools', title: 'Canvas Image Editor', desc: 'Edit, crop, and annotate captures in a dedicated precision environment before syncing to your suite.' },
-            { tag: 'High Fidelity', title: 'Full-Page Capture', desc: 'Advanced scrolling capture engine that extracts entire pages with pixel-perfect style and image fidelity.' },
-            { tag: 'Extraction', title: 'Smart DOM Mapping', desc: 'Intelligently maps computed CSS and hierarchy to ensure design-token accuracy during reconstruction.' },
-          ].map((f, i) => (
-            <div key={i} className="feature-card glass">
-              <div className="feature-tag">{f.tag}</div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Main Canvas */}
+      <main className="flex-grow pt-3xl pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
+        {/* Hero Section */}
+        <section className="w-full flex flex-col items-center text-center mt-4xl gap-lg">
+          <h1 className="font-display-xl text-display-xl text-white-primary max-w-4xl tracking-tighter">
+            What lives beneath any interface.
+          </h1>
+          <p className="font-subheading text-subheading text-white-secondary max-w-2xl">
+            Subsrf reads computed state, extracts semantic structure, and pipes raw UI data directly to AI agents and Figma layers. Technical precision for the web's subsurface.
+          </p>
+          <div className="flex gap-md mt-md">
+            <button className="bg-neon text-void px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={onLogin} disabled={loading}>Get Started</button>
+            <button className="bg-transparent border border-white-border text-white-primary px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+              Watch Demo
+            </button>
+          </div>
+        </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="container" style={{ padding: '100px 0', display: 'flex', alignItems: 'center', gap: 60 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, fontWeight: 500, color: 'var(--acid)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>Architecture</div>
-          <h2 style={{ fontSize: 48, marginBottom: 24 }}>The Bridge Between<br /><span style={{ color: 'var(--acid)' }}>Dev & Design</span></h2>
-          <p style={{ fontSize: 18, color: 'var(--t2)', marginBottom: 32 }}>Subsrf uses a specialized MCP (Model Context Protocol) bridge to securely stream live UI data from your browser to your local Figma plugin and AI environment.</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {[
-              { t: 'Local-First Security', d: 'Your design data never leaves your machine. The bridge runs entirely on your local network.' },
-              { t: 'High-Fidelity Rendering', d: "Computed styles, SVGs, and images are reconstructed using Figma's native API." },
-              { t: 'Real-Time Sync', d: 'Changes in the browser reflect in Figma in under 2 seconds.' },
-            ].map((f, i) => (
-              <div key={i} style={{ display: 'flex', gap: 16 }}>
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(0,255,135,0.12)', border: '1px solid rgba(0,255,135,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, color: 'var(--acid)', fontWeight: 700 }}>✓</div>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{f.t}</div>
-                  <div style={{ fontSize: 14, color: 'var(--t2)' }}>{f.d}</div>
+        {/* Stats / Social Proof */}
+        <section className="w-full flex flex-col items-center gap-md">
+          <div className="w-full max-w-[1080px] aspect-video bg-deep border border-white-border rounded-lg relative overflow-hidden group shadow-[0_0_30px_rgba(0,255,135,0.05)]">
+            {/* Subtle Neon Glow Overlay */}
+            <div className="absolute inset-0 border border-neon/20 pointer-events-none group-hover:border-neon/40 transition-colors duration-500 rounded-lg"></div>
+            {/* Center Play Button */}
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <button className="w-20 h-20 bg-neon/10 backdrop-blur-sm border border-neon/30 rounded-full flex items-center justify-center text-neon group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(0,255,135,0.2)]">
+                <span className="material-symbols-outlined text-[40px] leading-none fill-1">play_arrow</span>
+              </button>
+            </div>
+            {/* Video Content Placeholder (Dark Gradient) */}
+            <div className="w-full h-full bg-gradient-to-br from-void via-surface-container-low to-void opacity-60"></div>
+          </div>
+          {/* Caption */}
+          <div className="font-mono-data text-label-caps text-neon/60 tracking-widest flex items-center gap-sm uppercase">
+            <span className="w-1.5 h-1.5 bg-neon rounded-full animate-pulse"></span>
+            SUBSURF_STUDIO_DEMO.MP4
+          </div>
+        </section>
+
+        {/* Features Bento Grid */}
+        <section className="w-full flex flex-col gap-2xl">
+          <div className="text-center">
+            <h2 className="font-heading-md text-heading-md text-white-primary">Capture Mechanisms</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+            {/* Feature Card 1 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md relative overflow-hidden">
+              <div className="flex items-center gap-sm mb-md">
+                <div className="w-2 h-2 bg-neon rounded-full"></div>
+                <span className="font-label-caps text-label-caps text-neon uppercase">Plugin</span>
+              </div>
+              <h3 className="font-heading-sm text-heading-sm text-white-primary">Figma Synchronization</h3>
+              <p className="font-body text-body text-white-secondary">
+                Captures exact UI data, including deeply nested computed styles, and synchronizes them directly to Figma layers. Preserves exact dimensional and typographic fidelity without manual transcription.
+              </p>
+              <div className="mt-auto pt-lg">
+                <div className="bg-deep border border-white-border p-md rounded-DEFAULT font-mono-data text-mono-data text-white-secondary text-sm overflow-x-auto">
+                  <span className="text-neon">const</span> node = figma.currentPage.selection[0];<br/>
+                  <span className="text-neon">await</span> subsrf.sync(node, {'{'} computed: true {'}'});
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div className="glass" style={{ padding: 20, borderRadius: 40 }}>
-            <img src="/images/bridge.png" alt="Subsrf Bridge" style={{ width: '100%', borderRadius: 24 }} />
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* Pricing */}
-      <section id="pricing" className="container" style={{ padding: '100px 0', textAlign: 'center' }}>
-        <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, fontWeight: 500, color: 'var(--acid)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 16 }}>Pricing</div>
-        <h2 style={{ fontSize: 40, marginBottom: 16 }}>Simple Pricing</h2>
-        <p style={{ color: 'var(--t2)', marginBottom: 60 }}>Start free. Upgrade when you're ready to go pro.</p>
-        <div style={{ display: 'flex', gap: 24, justifyContent: 'center', maxWidth: 800, margin: '0 auto' }}>
-          {/* Free */}
-          <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>FREE</div>
-            <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$0<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
-              {['Up to 5 elements per capture', 'Screenshot editor', 'Figma sync (basic)', 'AI Knowledge Briefs'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
-              ))}
-              {['MCP Bridge access', 'Full-page capture', 'Priority support'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14, opacity: 0.35 }}><span>✗</span>{f}</div>
-              ))}
+            {/* Feature Card 2 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md relative overflow-hidden">
+              <div className="flex items-center gap-sm mb-md">
+                <div className="w-2 h-2 bg-status-warn rounded-full"></div>
+                <span className="font-label-caps text-label-caps text-status-warn uppercase">Extension</span>
+              </div>
+              <h3 className="font-heading-sm text-heading-sm text-white-primary">Browser Extraction</h3>
+              <p className="font-body text-body text-white-secondary">Install the Subsrf extraction tool to begin capturing site metadata.</p>
+              <div className="mt-auto pt-lg">
+                <div className="bg-deep border border-white-border p-md rounded-DEFAULT font-mono-data text-mono-data text-white-secondary text-sm overflow-x-auto">
+                  &gt; subsrf capture --target "div.hero-container"<br/>
+                  [SUCCESS] 42 computed properties extracted.
+                </div>
+              </div>
+              <button className="mt-4 w-full bg-white-border border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-[11px] hover:border-neon transition-all active:scale-95">Download Extension</button>
             </div>
-            <button className="btn btn-secondary" onClick={onLogin} style={{ width: '100%' }}>Get Started</button>
           </div>
-          {/* Pro */}
-          <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left', border: '1px solid rgba(0,255,135,0.25)', background: 'rgba(0,255,135,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--acid)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>PRO</div>
-              <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", background: 'var(--acid)', color: 'var(--void)', padding: '3px 8px', borderRadius: 100, letterSpacing: '0.06em' }}>POPULAR</div>
-            </div>
-            <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$19<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
-              {['Unlimited elements per capture', 'Screenshot editor', 'Figma sync (advanced)', 'AI Knowledge Briefs', 'MCP Bridge access', 'Full-page capture', 'Priority support'].map((f, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
-              ))}
-            </div>
-            <button className="btn btn-primary" onClick={onLogin} style={{ width: '100%' }}>Upgrade to Pro</button>
+        </section>
+
+        {/* Pricing Tier */}
+        <section className="w-full flex flex-col gap-2xl">
+          <div className="text-center flex flex-col gap-xs">
+            <span className="font-label-caps text-label-caps text-neon uppercase tracking-widest">Integration Flow</span>
+            <h2 className="font-display-lg text-display-lg text-white-primary">Get Started</h2>
           </div>
-        </div>
-      </section>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
+            {/* Step 1 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md">
+              <span className="font-mono-data text-neon text-lg">01</span>
+              <h3 className="font-heading-sm text-[20px] text-white-primary">Create account and login</h3>
+              <p className="font-body text-sm text-white-secondary">Sign up to begin capturing UI metadata.</p>
+              <button onClick={onLogin} disabled={loading} className="mt-4 flex items-center justify-center gap-sm bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors">
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
+                </svg>
+                Google Login
+              </button>
+            </div>
+            {/* Step 2 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md">
+              <span className="font-mono-data text-neon text-lg">02</span>
+              <h3 className="font-heading-sm text-[20px] text-white-primary">Download extension</h3>
+              <p className="font-body text-sm text-white-secondary">For individual developers and designers who want AI-powered analysis.</p>
+            </div>
+            {/* Step 3 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md">
+              <span className="font-mono-data text-neon text-lg">03</span>
+              <h3 className="font-heading-sm text-[20px] text-white-primary">Figma Plugin</h3>
+              <p className="font-body text-sm text-white-secondary">For power users and teams who need the full AI-to-canvas pipeline.</p>
+              <span className="font-mono-data text-[10px] text-white-muted">*Only available on paid plans</span>
+            </div>
+            {/* Step 4 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md">
+              <span className="font-mono-data text-neon text-lg">04</span>
+              <h3 className="font-heading-sm text-[20px] text-white-primary">Connect Infrastructure</h3>
+              <p className="font-body text-sm text-white-secondary">Add Figma Rest API and MCP server to Claude or Gemini.</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="w-full flex flex-col gap-2xl pt-2xl">
+          <div className="text-center">
+            <h2 className="font-heading-md text-heading-md text-white-primary">Infrastructure Pricing</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+            {/* Tier 1 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-lg">
+              <div>
+                <div className="font-label-caps text-label-caps text-white-muted uppercase mb-xs">Free</div>
+                <div className="font-heading-sm text-heading-sm text-white-primary">$0<span className="font-body text-body text-white-secondary font-light">/mo</span></div>
+              </div>
+              <p className="font-body text-body text-white-secondary border-b border-white-border pb-md">
+                Basic element capture for individual developers.
+              </p>
+              <ul className="flex flex-col gap-sm font-mono-data text-mono-data text-white-secondary">
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Smart Click &amp; Region Tool</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Raw UI Brief (Prompt Mode)</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> CSS Export Mode</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Figma Sync (5 elements max)</li>
+              </ul>
+              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={onLogin}>Select Free</button>
+            </div>
+            {/* Tier 2 (Active/Neon) */}
+            <div className="bg-layer border border-neon shadow-[0_0_15px_rgba(0,255,135,0.1)] p-lg rounded-DEFAULT flex flex-col gap-lg relative transform scale-105 z-10">
+              <div className="absolute top-0 right-0 bg-neon text-void px-sm py-xs font-label-caps text-[10px] rounded-bl-DEFAULT">RECOMMENDED</div>
+              <div>
+                <div className="font-label-caps text-label-caps text-neon uppercase mb-xs">Starter</div>
+                <div className="font-heading-sm text-heading-sm text-white-primary">$9<span className="font-body text-body text-white-secondary font-light">/mo</span></div>
+              </div>
+              <p className="font-body text-body text-white-secondary border-b border-white-border pb-md">
+                Essential tooling for consistent UI data pipelines.
+              </p>
+              <ul className="flex flex-col gap-sm font-mono-data text-mono-data text-white-primary">
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Everything in Free</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Subsrf Studio Editor</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> AI Analysis (Build Prompt, Audit)</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 75 Credits / month</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync</li>
+              </ul>
+              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={onLogin}>Select Starter</button>
+            </div>
+            {/* Tier 3 */}
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-lg">
+              <div>
+                <div className="font-label-caps text-label-caps text-white-muted uppercase mb-xs">Pro</div>
+                <div className="font-heading-sm text-heading-sm text-white-primary">$19<span className="font-body text-body text-white-secondary font-light">/mo</span></div>
+              </div>
+              <p className="font-body text-body text-white-secondary border-b border-white-border pb-md">
+                Unrestricted access for professional teams.
+              </p>
+              <ul className="flex flex-col gap-sm font-mono-data text-mono-data text-white-secondary">
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Everything in Starter</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Full MCP Bridge Integration</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Claude ↔ Figma Live Control</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 300 Credits / month</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Full Page Capture</li>
+              </ul>
+              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={onLogin}>Select Pro</button>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="container" style={{ padding: '80px 0 40px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
-          <LogoMark size={24} />
-          <Wordmark size={16} />
-        </div>
-        <p style={{ color: 'var(--t2)', marginBottom: 32 }}>Engineered for designers who move fast.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 40, color: 'var(--t3)', fontSize: 14 }}>
-          <span>© 2026 Subsrf Intelligence Suite</span>
-          <a href="/privacy.html" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
-          <a href="/terms.html" style={{ color: 'inherit', textDecoration: 'none' }}>Terms</a>
+      <footer className="bg-void dark:bg-void w-full py-xl border-t border-white-border flat no shadows mt-auto">
+        <div className="flex flex-col md:flex-row justify-between items-center max-w-[1080px] mx-auto px-lg gap-md">
+          <div className="font-label-caps text-label-caps text-white-muted">
+            subsrf
+          </div>
+          <div className="flex gap-md font-mono-data text-mono-data text-white-muted">
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Terms</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Privacy</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Security</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">Status</a>
+            <a className="hover:text-white-primary transition-colors opacity-80 hover:opacity-100" href="#">GitHub</a>
+          </div>
+          <div className="font-mono-data text-mono-data text-neon dark:text-neon text-[10px]">
+            © 2026 SUBSRF INFRASTRUCTURE. ALL RIGHTS RESERVED.
+          </div>
         </div>
       </footer>
-    </div>
+    </>
   )
 }
 
