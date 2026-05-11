@@ -1,48 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <title>Subsrf Intelligence Dashboard</title>
+  <title>Subsrf</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --void: #050508;
-      --deep: #0C0C12;
-      --layer: #111118;
-      --surface: #18181F;
-      --lift: #202028;
-      --border: rgba(255, 255, 255, 0.06);
-      --border-md: rgba(255, 255, 255, 0.10);
-      --acid: #00FF87;
-      --acid-dim: rgba(0, 255, 135, 0.12);
-      --t1: #F2F2F4;
-      --t2: rgba(242, 242, 244, 0.55);
-      --t3: rgba(242, 242, 244, 0.28);
-      --t4: rgba(242, 242, 244, 0.12);
-      --ok: #39D98A;
-      --warn: #FFAB00;
-      --err: #FF4D4D;
-      /* aliases for inline styles */
-      --bg: var(--void);
-      --bg2: var(--layer);
-      --text: var(--t1);
-      --text-dim: var(--t2);
-      --accent: var(--acid);
-      --accent-soft: var(--acid-dim);
-      --success: var(--ok);
-      --danger: var(--err);
+      --void:      #050508;
+      --deep:      #0C0C12;
+      --layer:     #111118;
+      --surface:   #18181F;
+      --lift:      #202028;
+      --border:    rgba(242,242,244,0.08);
+      --border-md: rgba(242,242,244,0.12);
+      --neon:      #00FF87;
+      --neon-dim:  rgba(0,255,135,0.10);
+      --t1:        #F2F2F4;
+      --t2:        rgba(242,242,244,0.55);
+      --t3:        rgba(242,242,244,0.28);
+      --t4:        rgba(242,242,244,0.10);
+      --ok:        #39D98A;
+      --warn:      #FFAB00;
+      --err:       #FF4D4D;
+      /* popup.js alias compat */
+      --acid:         #00FF87;
+      --acid-dim:     rgba(0,255,135,0.10);
+      --text-dim:     rgba(242,242,244,0.55);
+      --accent:       #00FF87;
+      --accent-soft:  rgba(0,255,135,0.10);
+      --success:      #39D98A;
+      --danger:       #FF4D4D;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       width: 320px;
@@ -51,40 +44,57 @@
       font-family: 'Manrope', sans-serif;
       font-size: 14px;
       -webkit-font-smoothing: antialiased;
+      position: relative;
     }
 
-    /* --- Header --- */
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px; line-height: 1; vertical-align: middle;
+    }
+
+    /* ── Header ── */
     .header {
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 11px 14px;
+      display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1px solid var(--border);
+      background: var(--layer);
     }
 
     .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 8px;
     }
 
     .logo-icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 6px;
-      object-fit: cover;
-      display: block;
+      width: 24px; height: 24px; object-fit: cover; display: block; flex-shrink: 0;
     }
 
     .logo-wordmark {
       font-family: 'Azeret Mono', monospace;
-      font-weight: 600;
-      font-size: 14px;
-      letter-spacing: -0.5px;
-      color: var(--t1);
+      font-weight: 700; font-size: 13px; letter-spacing: -0.5px; color: var(--t1);
     }
 
-    /* --- Tabs --- */
+    #bridge-status-badge {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 3px 8px;
+      background: var(--t4); color: var(--t3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 5px;
+      transition: all 0.2s;
+    }
+
+    #bridge-badge-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--t3); flex-shrink: 0; display: inline-block;
+    }
+
+    /* ── Tabs ── */
     .tabs {
       display: flex;
       border-bottom: 1px solid var(--border);
@@ -92,234 +102,133 @@
     }
 
     .tab {
-      flex: 1;
-      padding: 10px 0;
+      flex: 1; padding: 9px 0;
       text-align: center;
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      font-weight: 400;
-      color: var(--t2);
-      cursor: pointer;
+      font-size: 9px; font-weight: 400;
+      color: var(--t3); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      letter-spacing: 1.5px; text-transform: uppercase;
       transition: color 0.15s, border-color 0.15s;
-      border-bottom: 1px solid transparent;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
     }
+    .tab:hover:not(.active) { color: var(--t1); }
+    .tab.active { color: var(--neon); border-bottom-color: var(--neon); }
 
-    .tab:hover:not(.active) {
-      color: var(--t1);
-    }
+    /* ── Views ── */
+    .view { display: none; padding: 14px; }
+    .view.active { display: block; }
 
-    .tab.active {
-      color: var(--acid);
-      border-bottom-color: var(--acid);
-    }
-
-    /* --- Views --- */
-    .view {
-      display: none;
-      padding: 14px;
-    }
-
-    .view.active {
-      display: block;
-    }
-
-    /* --- Shared components --- */
+    /* ── Shared ── */
     .section-label {
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      color: var(--t2);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
-      margin-top: 4px;
+      font-size: 9px; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 8px; margin-top: 4px;
     }
 
     .card {
       background: var(--layer);
       border: 1px solid var(--border);
-      border-radius: 10px;
       padding: 12px;
       margin-bottom: 12px;
     }
 
+    /* ── Buttons ── */
     .btn {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-      font-family: 'Manrope', sans-serif;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.15s;
+      width: 100%; padding: 10px;
+      border: none; font-family: 'Manrope', sans-serif;
+      font-weight: 700; cursor: pointer; font-size: 13px;
+      transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
-
-    .btn-primary {
-      background: var(--acid);
-      color: var(--void);
-    }
-
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-
+    .btn-primary { background: var(--neon); color: var(--void); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-ghost {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--t2);
+      background: rgba(255,255,255,0.05); color: var(--t2);
       border: 1px solid var(--border-md);
     }
+    .btn-ghost:hover { color: var(--t1); background: rgba(255,255,255,0.08); }
+    .btn-upgrade { background: var(--neon); color: var(--void); font-weight: 700; }
+    .btn-upgrade:hover { opacity: 0.9; }
 
-    .btn-ghost:hover {
-      color: var(--t1);
-    }
-
-    .btn-upgrade {
-      background: var(--acid);
-      color: var(--void);
-      font-weight: 700;
-    }
-
-    /* --- Capture view --- */
+    /* ── Mode grid buttons ── */
     .mode-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 12px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;
     }
 
     .mode-btn {
-      background: var(--layer);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 10px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.15s;
+      background: var(--layer); border: 1px solid var(--border);
+      padding: 11px 8px;
+      cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; gap: 4px; transition: all 0.15s;
       font-family: 'Manrope', sans-serif;
     }
+    .mode-btn:hover { border-color: var(--border-md); background: var(--surface); }
+    .mode-btn.active { background: var(--neon-dim); border-color: var(--neon); }
+    .mode-btn.locked { opacity: 0.5; cursor: not-allowed; }
+    .mode-btn.locked:hover { border-color: var(--border); background: var(--layer); }
 
-    .mode-btn:hover {
-      border-color: var(--border-md);
-      background: var(--surface);
+    .mode-btn .material-symbols-outlined { color: var(--t3); font-size: 18px; }
+    .mode-btn.active .material-symbols-outlined { color: var(--neon); }
+
+    .mode-btn .label { font-weight: 700; font-size: 11px; color: var(--t1); }
+    .mode-btn .sub { font-family: 'Azeret Mono', monospace; font-size: 8px; color: var(--t3); letter-spacing: 0.5px; }
+    .mode-btn.active .label { color: var(--neon); }
+    .mode-btn.active .sub { color: rgba(0,255,135,0.55); }
+
+    /* ── Drop zone ── */
+    #popup-drop-zone {
+      position: relative;
+      border: 1px dashed rgba(0,255,135,0.22);
+      background: rgba(0,255,135,0.02);
+      padding: 16px 12px; text-align: center;
+      cursor: pointer; transition: all 0.15s; margin-bottom: 12px;
     }
+    #popup-drop-zone:hover { border-color: rgba(0,255,135,0.4); background: rgba(0,255,135,0.04); }
+    #popup-drop-zone.locked { opacity: 0.45; cursor: not-allowed; }
 
-    .mode-btn.active {
-      background: var(--acid-dim);
-      border-color: var(--acid);
-    }
-
-    .mode-btn .label {
-      font-weight: 700;
-      font-size: 12px;
-      color: var(--t1);
-    }
-
-    .mode-btn .sub {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      color: var(--t3);
-      letter-spacing: 0.5px;
-    }
-
-    .mode-btn.active .label {
-      color: var(--acid);
-    }
-
-    .mode-btn.active .sub {
-      color: rgba(0, 255, 135, 0.55);
-    }
-
-    /* --- Status dots --- */
+    /* ── Status rows ── */
     .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      padding: 8px 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; padding: 7px 0;
       border-bottom: 1px solid var(--border);
     }
+    .status-row:last-child { border-bottom: none; }
 
-    .status-row:last-child {
-      border-bottom: none;
-    }
+    /* ── Dots ── */
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lift); }
+    .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 
-    .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--lift);
-    }
-
-    .dot.on {
-      background: var(--ok);
-      box-shadow: 0 0 6px var(--ok);
-    }
-
-    /* --- MCP lock overlay --- */
-    .lock-wrap {
-      position: relative;
-    }
-
-    .lock-blur {
-      filter: blur(3px);
-      pointer-events: none;
-      user-select: none;
-      opacity: 0.25;
-    }
-
+    /* ── MCP lock overlay ── */
+    .lock-wrap { position: relative; }
+    .lock-blur { filter: blur(3px); pointer-events: none; user-select: none; opacity: 0.25; }
     .lock-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      text-align: center;
-      padding: 12px;
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; text-align: center; padding: 12px;
     }
 
-    /* --- Account --- */
+    /* ── Tier badge ── */
     .tier-badge {
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      padding: 3px 8px;
-      border-radius: 4px;
-      white-space: nowrap;
-      text-transform: uppercase;
+      font-size: 9px; letter-spacing: 1.5px;
+      padding: 3px 8px; white-space: nowrap; text-transform: uppercase;
     }
-
-    .tier-free {
-      background: var(--layer);
-      color: var(--t3);
-      border: 1px solid var(--border);
-    }
-
-    .tier-pro {
-      background: var(--acid-dim);
-      color: var(--acid);
-      border: 1px solid rgba(0, 255, 135, 0.2);
-    }
+    .tier-free { background: var(--layer); color: var(--t3); border: 1px solid var(--border); }
+    .tier-pro  { background: var(--neon-dim); color: var(--neon); border: 1px solid rgba(0,255,135,0.2); }
+    .tier-starter { background: rgba(255,171,0,0.08); color: var(--warn); border: 1px solid rgba(255,171,0,0.25); }
   </style>
 </head>
-
 <body>
 
   <header class="header">
     <div class="logo-group">
-      <img src="icons/icon48.png" width="26" height="26" style="border-radius:6px; flex-shrink:0;" alt="Subsrf">
+      <img src="icons/icon48.png" class="logo-icon" alt="Subsrf">
       <div class="logo-wordmark">subsrf</div>
     </div>
-    <div id="bridge-status-badge"
-      style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1px; padding:3px 10px; border-radius:100px; background:rgba(242,242,244,0.04); color:var(--t3); border:1px solid rgba(255,255,255,0.08); text-transform:uppercase; display:flex; align-items:center; gap:5px;">
-      <span id="bridge-badge-dot"
-        style="width:5px;height:5px;border-radius:50%;background:var(--t3);flex-shrink:0;display:inline-block;"></span>
+    <div id="bridge-status-badge">
+      <span id="bridge-badge-dot"></span>
       <span id="bridge-badge-label">Offline</span>
     </div>
   </header>
@@ -335,10 +244,12 @@
     <div class="section-label">Select Mode</div>
     <div class="mode-grid">
       <div class="mode-btn" id="btn-click">
+        <span class="material-symbols-outlined">ads_click</span>
         <span class="label">Smart Click</span>
         <span class="sub">Pick Elements</span>
       </div>
       <div class="mode-btn" id="btn-area">
+        <span class="material-symbols-outlined">crop</span>
         <span class="label">Region</span>
         <span class="sub">Custom Area</span>
       </div>
@@ -347,121 +258,102 @@
     <div class="section-label">Screen Tools</div>
     <div class="mode-grid">
       <div class="mode-btn" id="btn-full-page">
+        <span class="material-symbols-outlined">expand</span>
         <span class="label">Full Page</span>
         <span class="sub">Auto Scroll</span>
       </div>
       <div class="mode-btn" id="btn-screenshot">
+        <span class="material-symbols-outlined">photo_camera</span>
         <span class="label">Screenshot</span>
         <span class="sub">Clean Shot</span>
       </div>
     </div>
 
-    <div class="card" style="text-align: center; padding: 14px;">
-      <div
-        style="font-family:'Azeret Mono',monospace; font-size: 28px; font-weight:400; color: var(--acid); line-height:1; text-shadow: 0 0 24px rgba(0,255,135,0.25);"
-        id="countText">0</div>
-      <div
-        style="font-family:'Azeret Mono',monospace; font-size: 9px; letter-spacing:1.5px; color: var(--t3); margin-top: 4px; text-transform:uppercase;">
-        Elements captured</div>
+    <div class="card" style="text-align:center; padding:14px;">
+      <div style="font-family:'Azeret Mono',monospace; font-size:28px; font-weight:400; color:var(--neon); line-height:1; text-shadow:0 0 24px rgba(0,255,135,0.2);" id="countText">0</div>
+      <div style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1.5px; color:var(--t3); margin-top:4px; text-transform:uppercase;">Elements captured</div>
     </div>
 
-    <div
-      style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; margin-top: 4px;">
-      <div class="section-label" style="margin: 0;">Inventory</div>
-      <button id="btn-clear-all"
-        style="background: none; border: none; font-family:'Azeret Mono',monospace; font-size: 9px; color: var(--t2); cursor: pointer; padding: 2px 6px; border-radius: 4px; letter-spacing:1.5px; text-transform: uppercase;">Clear All</button>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; margin-top:4px;">
+      <div class="section-label" style="margin:0;">Inventory</div>
+      <button id="btn-clear-all" style="background:none; border:none; font-family:'Azeret Mono',monospace; font-size:9px; color:var(--t3); cursor:pointer; padding:2px 6px; letter-spacing:1.5px; text-transform:uppercase;">Clear All</button>
     </div>
-    <div id="elements-list" class="card" style="padding: 0; max-height: 130px; overflow-y: auto; margin-bottom: 16px;">
-      <div style="padding: 18px; text-align: center; color: var(--text-dim); font-size: 12px;">No elements selected
-      </div>
+    <div id="elements-list" class="card" style="padding:0; max-height:120px; overflow-y:auto; margin-bottom:12px;">
+      <div style="padding:18px; text-align:center; color:var(--t2); font-size:12px;">No elements selected</div>
     </div>
 
-    <div id="credits-strip" style="display:none; align-items:center; justify-content:space-between; margin-bottom:10px; padding:8px 12px; background:var(--layer); border:1px solid var(--border); border-radius:8px;">
+    <div id="credits-strip" style="display:none; align-items:center; justify-content:space-between; margin-bottom:10px; padding:8px 12px; background:var(--layer); border:1px solid var(--border);">
       <span style="font-size:11px; color:var(--t2);">AI Credits</span>
-      <span id="header-credits" style="font-family:'Azeret Mono',monospace; font-size:11px; font-weight:700; color:var(--acid);">—</span>
+      <span id="header-credits" style="font-family:'Azeret Mono',monospace; font-size:11px; font-weight:700; color:var(--neon);">—</span>
     </div>
 
     <div class="section-label">Analyze Image</div>
-    <div id="popup-drop-zone" style="position:relative; border:1.5px dashed rgba(0,255,135,0.22); border-radius:10px; background:rgba(0,255,135,0.02); padding:16px 12px; text-align:center; cursor:pointer; transition:all 0.15s; margin-bottom:12px;">
+    <div id="popup-drop-zone">
       <input type="file" id="popup-image-input" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;">
-      <div id="popup-drop-hint" style="font-size:11px; color:rgba(242,242,244,0.4); line-height:1.7; pointer-events:none;">
-        <span style="color:var(--acid); font-weight:700;">Drop</span> a screenshot, Figma export or wireframe<br>
+      <div id="popup-drop-hint" style="font-size:11px; color:var(--t3); line-height:1.7; pointer-events:none;">
+        <span style="color:var(--neon); font-weight:700;">Drop</span> a screenshot, Figma export or wireframe<br>
         <span style="font-size:10px; opacity:0.6;">Opens in Studio for AI analysis</span>
       </div>
     </div>
-
   </div>
 
   <!-- ── MCP ── -->
   <div class="view" id="view-mcp">
 
-    <!-- PRO: shown when tier is pro -->
     <div id="mcp-pro" style="display:none;">
       <div class="section-label">Cloud Bridge</div>
-      <div class="card" style="padding: 0; overflow: hidden;">
-        <div class="status-row" style="padding: 10px 14px;">
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div class="status-row" style="padding:10px 14px;">
           <span>Railway Bridge</span>
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="bridge-status-text">OFFLINE</span>
+            <span style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--t3);" id="bridge-status-text">OFFLINE</span>
             <div class="dot" id="bridge-dot"></div>
           </div>
         </div>
-        <div class="status-row" style="padding: 10px 14px;">
+        <div class="status-row" style="padding:10px 14px;">
           <span>Figma Plugin</span>
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="figma-status-text">WAITING</span>
+            <span style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--t3);" id="figma-status-text">WAITING</span>
             <div class="dot" id="figma-dot"></div>
           </div>
         </div>
       </div>
 
       <div class="section-label">MCP Config</div>
-      <div class="card" style="padding: 12px;">
-        <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5;">Add this to your
-          Claude Desktop or Cursor <code>settings.json</code>:</div>
-        <div
-          style="background: var(--deep); color: var(--t2); padding: 10px 12px; border-radius: 6px; font-size: 10px; font-family: 'Azeret Mono',monospace; line-height: 1.8; overflow-x: auto; white-space: pre; border: 1px solid var(--border);"
-          id="mcp-config-block"></div>
-        <button class="btn btn-ghost" id="btn-copy-mcp" style="margin-top: 10px; font-size: 12px; padding: 8px;">Copy
-          Config</button>
+      <div class="card" style="padding:12px;">
+        <div style="font-size:11px; color:var(--t2); margin-bottom:10px; line-height:1.5;">Add this to your Claude Desktop or Cursor <code style="font-family:'Azeret Mono',monospace; color:var(--neon);">settings.json</code>:</div>
+        <div style="background:var(--deep); color:var(--t2); padding:10px 12px; font-size:10px; font-family:'Azeret Mono',monospace; line-height:1.8; overflow-x:auto; white-space:pre; border:1px solid var(--border);" id="mcp-config-block"></div>
+        <button class="btn btn-ghost" id="btn-copy-mcp" style="margin-top:10px; font-size:12px; padding:8px;">Copy Config</button>
       </div>
 
       <div class="section-label">Figma Integration (REST API)</div>
-      <div class="card" style="padding: 14px;">
-        <div class="status-row"
-          style="padding: 0 0 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px;">
+      <div class="card" style="padding:14px;">
+        <div class="status-row" style="padding:0 0 10px 0; border-bottom:1px solid var(--border); margin-bottom:10px;">
           <span>REST API Status</span>
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:10px; font-weight:700; color:var(--text-dim);" id="rest-status-text">NOT
-              CONFIGURED</span>
+            <span style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--t3);" id="rest-status-text">NOT CONFIGURED</span>
             <div class="dot" id="rest-dot"></div>
           </div>
         </div>
         <div id="rest-setup-ui">
-          <div style="font-size: 11px; color: var(--text-dim); margin-bottom: 10px; line-height: 1.5;">Required for
-            high-fidelity image exports and component analysis.</div>
-          <button class="btn btn-ghost" id="btn-show-rest-input" style="font-size: 12px; padding: 8px;">Configure
-            Token</button>
+          <div style="font-size:11px; color:var(--t2); margin-bottom:10px; line-height:1.5;">Required for high-fidelity image exports and component analysis.</div>
+          <button class="btn btn-ghost" id="btn-show-rest-input" style="font-size:12px; padding:8px;">Configure Token</button>
         </div>
         <div id="rest-input-ui" style="display:none;">
           <input type="password" id="figma-token-input" placeholder="figd_..."
-            style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; margin-bottom: 10px; outline: none; font-family: monospace;">
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-primary" id="btn-save-figma-token"
-              style="flex: 2; padding: 8px; font-size: 12px;">Save Token</button>
-            <button class="btn btn-ghost" id="btn-cancel-figma-token"
-              style="flex: 1; padding: 8px; font-size: 12px;">Cancel</button>
+            style="width:100%; padding:10px; border:1px solid var(--border); background:var(--deep); color:var(--t1); font-size:12px; margin-bottom:10px; outline:none; font-family:'Azeret Mono',monospace;">
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" id="btn-save-figma-token" style="flex:2; padding:8px; font-size:12px;">Save Token</button>
+            <button class="btn btn-ghost" id="btn-cancel-figma-token" style="flex:1; padding:8px; font-size:12px;">Cancel</button>
           </div>
-          <div style="margin-top: 10px; text-align: center;">
+          <div style="margin-top:10px; text-align:center;">
             <a href="https://www.figma.com/settings/account#personal-access-tokens" target="_blank"
-              style="font-size: 10px; color: var(--accent); text-decoration: none; font-weight: 600;">Get your token in
-              Figma Settings ↗</a>
+              style="font-size:10px; color:var(--neon); text-decoration:none; font-weight:600;">Get your token in Figma Settings ↗</a>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- FREE: lock overlay -->
     <div id="mcp-locked" style="display:none;">
       <div class="lock-wrap">
         <div class="lock-blur">
@@ -470,107 +362,82 @@
             <div class="status-row">
               <span>Railway Bridge</span>
               <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-size:10px; font-weight:700; color:var(--text-dim);">ONLINE</span>
+                <span style="font-family:'Azeret Mono',monospace; font-size:9px; text-transform:uppercase; color:var(--t3);">ONLINE</span>
                 <div class="dot on"></div>
               </div>
             </div>
             <div class="status-row">
               <span>Figma Plugin</span>
               <div style="display:flex; align-items:center; gap:6px;">
-                <span style="font-size:10px; font-weight:700; color:var(--text-dim);">ACTIVE</span>
+                <span style="font-family:'Azeret Mono',monospace; font-size:9px; text-transform:uppercase; color:var(--t3);">ACTIVE</span>
                 <div class="dot on"></div>
               </div>
             </div>
           </div>
           <div class="section-label">MCP Config</div>
           <div class="card">
-            <div
-              style="background: var(--deep); color: var(--t2); padding: 10px 12px; border-radius: 6px; font-size: 10px; font-family: 'Azeret Mono',monospace; line-height: 1.8; border: 1px solid var(--border);">
-              {"mcpServers":{"subsrf":{<br> "command":"npx",<br> "args":["-y","subsrf-intelligence"]<br>}}}</div>
+            <div style="background:var(--deep); color:var(--t2); padding:10px 12px; font-size:10px; font-family:'Azeret Mono',monospace; line-height:1.8; border:1px solid var(--border);">
+              {"mcpServers":{"subsrf":{<br>"command":"npx",<br>"args":["-y","subsrf-intelligence"]<br>}}}</div>
           </div>
         </div>
         <div class="lock-overlay">
-          <div style="font-size: 28px;">🔒</div>
-          <div style="font-weight: 800; font-size: 15px;">Pro Feature</div>
-          <div style="font-size: 11px; color: var(--text-dim); line-height: 1.5; max-width: 220px;">MCP Bridge connects
-            Subsrf to Claude and Cursor. Upgrade to unlock it.</div>
-          <button class="btn btn-upgrade" id="btn-upgrade-mcp" style="margin-top: 4px; padding: 10px;">Upgrade to Pro —
-            $19/mo</button>
+          <span class="material-symbols-outlined" style="font-size:28px; color:var(--t3);">lock</span>
+          <div style="font-weight:800; font-size:15px;">Pro Feature</div>
+          <div style="font-size:11px; color:var(--t2); line-height:1.5; max-width:220px;">MCP Bridge connects Subsrf to Claude and Cursor. Upgrade to unlock it.</div>
+          <button class="btn btn-upgrade" id="btn-upgrade-mcp" style="margin-top:4px; padding:10px;">Upgrade to Pro — $19/mo</button>
         </div>
       </div>
     </div>
 
-    <!-- Loading state (shown before tier is known) -->
-    <div id="mcp-loading" style="padding: 40px 0; text-align:center; color: var(--text-dim); font-size: 12px;">
-      Loading...</div>
+    <div id="mcp-loading" style="padding:40px 0; text-align:center; color:var(--t2); font-size:12px; font-family:'Azeret Mono',monospace; letter-spacing:1px;">Loading...</div>
   </div>
 
   <!-- ── Account ── -->
   <div class="view" id="view-account">
 
-    <!-- Signed-out state -->
     <div id="auth-signed-out">
-      <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 14px; line-height: 1.6;">Sign in to sync your
-        plan across the extension, Figma plugin, and web dashboard.</p>
-      <div id="auth-error"
-        style="display:none; font-family:'Azeret Mono',monospace; font-size:10px; color:var(--err); background:rgba(255,77,77,0.08); border:1px solid rgba(255,77,77,0.2); border-radius:6px; padding:8px 10px; margin-bottom:10px; line-height:1.6;">
-      </div>
-      <button class="btn btn-primary" id="btn-sign-in"
-        style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom: 0;">
+      <p style="font-size:12px; color:var(--t2); margin-bottom:14px; line-height:1.6;">Sign in to sync your plan across the extension, Figma plugin, and web dashboard.</p>
+      <div id="auth-error" style="display:none; font-family:'Azeret Mono',monospace; font-size:10px; color:var(--err); background:rgba(255,77,77,0.08); border:1px solid rgba(255,77,77,0.2); padding:8px 10px; margin-bottom:10px; line-height:1.6;"></div>
+      <button class="btn btn-primary" id="btn-sign-in" style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:0;">
         <svg width="15" height="15" viewBox="0 0 48 48" fill="none">
-          <path
-            d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"
-            fill="#FFC107" />
-          <path
-            d="M6.306 14.691l6.571 4.819C14.655 15.108 19.001 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"
-            fill="#FF3D00" />
-          <path
-            d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"
-            fill="#4CAF50" />
-          <path
-            d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"
-            fill="#1976D2" />
+          <path d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" fill="#FFC107"/>
+          <path d="M6.306 14.691l6.571 4.819C14.655 15.108 19.001 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" fill="#FF3D00"/>
+          <path d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" fill="#4CAF50"/>
+          <path d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" fill="#1976D2"/>
         </svg>
         Sign in with Google
       </button>
     </div>
 
-    <!-- Signed-in state -->
     <div id="auth-signed-in" style="display:none;">
       <div class="card" style="display:flex; align-items:center; gap:12px;">
-        <img id="auth-avatar" src="" width="40" height="40"
-          style="border-radius:50%; border:2px solid var(--border); display:none; flex-shrink:0;" />
+        <img id="auth-avatar" src="" width="40" height="40" style="border-radius:50%; border:2px solid var(--border); display:none; flex-shrink:0;" />
         <div style="flex:1; min-width:0;">
-          <div style="font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-            id="auth-name">—</div>
-          <div
-            style="font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-            id="auth-email">—</div>
+          <div style="font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="auth-name">—</div>
+          <div style="font-size:11px; color:var(--t2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="auth-email">—</div>
         </div>
         <span id="auth-tier-badge" class="tier-badge tier-free">FREE</span>
       </div>
 
-      <div class="card" style="padding: 12px 14px;">
-        <div class="status-row" style="padding: 6px 0;">
+      <div class="card" style="padding:12px 14px;">
+        <div class="status-row" style="padding:6px 0;">
           <span style="font-size:12px;">AI Credits</span>
-          <span id="acct-credits" style="font-family:'Azeret Mono',monospace; font-size:11px; font-weight:700; color: var(--t3);">—</span>
+          <span id="acct-credits" style="font-family:'Azeret Mono',monospace; font-size:11px; font-weight:700; color:var(--t3);">—</span>
         </div>
-        <div class="status-row" style="padding: 6px 0;">
+        <div class="status-row" style="padding:6px 0;">
           <span style="font-size:12px;">MCP Bridge</span>
-          <span id="acct-mcp-status" style="font-size:11px; font-weight:700; color: var(--danger);">Locked</span>
+          <span id="acct-mcp-status" style="font-size:11px; font-weight:700; color:var(--err);">Locked</span>
         </div>
-        <div class="status-row" style="padding: 6px 0;">
+        <div class="status-row" style="padding:6px 0;">
           <span style="font-size:12px;">Figma Sync</span>
-          <span style="font-size:11px; font-weight:700; color: var(--success);">Active</span>
+          <span id="acct-figma-sync" style="font-size:11px; font-weight:700; color:var(--ok);">Active</span>
         </div>
       </div>
 
-      <div id="acct-upgrade-cta"
-        style="display:none; background: var(--acid-dim); border: 1px solid rgba(0,255,135,0.2); border-radius:8px; padding:14px; margin-bottom:12px; text-align:center;">
+      <div id="acct-upgrade-cta" style="display:none; background:var(--neon-dim); border:1px solid rgba(0,255,135,0.2); padding:14px; margin-bottom:12px; text-align:center;">
         <div style="font-weight:700; font-size:13px; margin-bottom:6px; color:var(--t1);">Unlock MCP Bridge</div>
-        <div style="font-size:11px; color:var(--t3); margin-bottom:10px; line-height:1.5;">Connect to Claude Desktop
-          &amp; Cursor. Unlimited elements, priority support.</div>
-        <button class="btn btn-upgrade" id="btn-upgrade-account" style="padding: 9px;">Upgrade to Pro — $19/mo</button>
+        <div style="font-size:11px; color:var(--t3); margin-bottom:10px; line-height:1.5;">Connect to Claude Desktop &amp; Cursor. Unlimited elements, priority support.</div>
+        <button class="btn btn-upgrade" id="btn-upgrade-account" style="padding:9px;">Upgrade to Pro — $19/mo</button>
       </div>
 
       <button class="btn btn-ghost" id="btn-sign-out" style="font-size:12px; padding:9px;">Sign out</button>
@@ -580,5 +447,4 @@
 
   <script src="popup.js"></script>
 </body>
-
 </html>

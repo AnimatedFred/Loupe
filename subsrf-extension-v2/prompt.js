@@ -10,37 +10,43 @@ let figmaConnected = false;
 let smartEnriched = null;
 
 
-const outputEl    = document.getElementById('output');
+const outputEl = document.getElementById('output');
 const outputLabel = document.getElementById('output-label');
-const elListEl    = document.getElementById('el-list');
-const elCountEl   = document.getElementById('el-count');
-const pageCtxEl   = document.getElementById('page-context');
-const btnCopy     = document.getElementById('btn-copy');
-const togPrompt   = document.getElementById('tog-prompt');
-const togCss      = document.getElementById('tog-css');
-const toastEl     = document.getElementById('toast');
+const elListEl = document.getElementById('el-list');
+const elCountEl = document.getElementById('el-count');
+const pageCtxEl = document.getElementById('page-context');
+const btnCopy = document.getElementById('btn-copy');
+const togPrompt = document.getElementById('tog-prompt');
+const togCss = document.getElementById('tog-css');
+const toastEl = document.getElementById('toast');
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext']);
+  const stored = await chrome.storage.local.get(['selectedElements', 'lastPageContext', 'subsrf_session']);
   elements = stored.selectedElements || [];
-  context  = stored.lastPageContext  || {};
+  context = stored.lastPageContext || {};
+  session = stored.subsrf_session || null;
 
   pageCtxEl.textContent = context.title
     ? context.title
     : context.url
-    ? new URL(context.url).hostname
-    : 'No page context';
+      ? new URL(context.url).hostname
+      : 'No page context';
 
-  // Route through background so the JWT is auto-refreshed if expired;
-  // fall back to direct storage read if the service worker isn't awake yet
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
-    session = resp?.session || null;
-  } catch (_) {
-    const s = await chrome.storage.local.get('subsrf_session');
-    session = s.subsrf_session || null;
+  // Always fetch live tier + credits so the gate reflects the current account state,
+  // not whatever was cached in storage before the last login or plan change.
+  if (session?.accessToken) {
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/credits/balance', {
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        session = { ...session, tier: data.tier || session.tier, credits: data.balance ?? session.credits };
+        await chrome.storage.local.set({ subsrf_session: session });
+      }
+    } catch (_) { }
   }
 
   renderAiGate();
@@ -56,9 +62,9 @@ function renderAiGate() {
   const gate = document.getElementById('ai-gate');
   if (!gate) return;
 
-  const tier    = session?.tier || 'free';
+  const tier = session?.tier || 'free';
   const credits = session?.credits ?? 0;
-  const isPaid  = tier === 'starter' || tier === 'pro';
+  const isPaid = tier === 'starter' || tier === 'pro';
 
   if (!isPaid) {
     gate.innerHTML = `
@@ -76,8 +82,8 @@ function renderAiGate() {
   }
 
   const badgeClass = credits === 0 ? 'empty' : credits <= 10 ? 'low' : '';
-  const disabled   = credits < 1 || elements.length === 0;
-  const btnLabel   = credits === 0 ? 'No credits remaining' : 'Generate Smart Prompt (1 credit)';
+  const disabled = credits < 1 || elements.length === 0;
+  const btnLabel = credits === 0 ? 'No credits remaining' : 'Generate Smart Prompt (1 credit)';
 
   gate.innerHTML = `
     <div class="ai-engine-bar">
@@ -94,14 +100,7 @@ function renderAiGate() {
 }
 
 async function generateAiPrompt() {
-  let subsrf_session;
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'GET_AUTH_STATE' });
-    subsrf_session = resp?.session;
-  } catch (_) {
-    const s = await chrome.storage.local.get('subsrf_session');
-    subsrf_session = s.subsrf_session;
-  }
+  const { subsrf_session } = await chrome.storage.local.get('subsrf_session');
 
   if (!subsrf_session?.accessToken) {
     showToast('Sign in to use AI features');
@@ -112,7 +111,7 @@ async function generateAiPrompt() {
   const setBtn = (label, disabled = true) => { if (btn) { btn.textContent = label; btn.disabled = disabled; } };
 
   setBtn('Interpreting elements…');
-  outputLabel.textContent = 'subsrf-smart-brief.txt';
+  outputLabel.textContent = 'Prompt';
   outputEl.innerHTML = '<span style="color:rgba(0,255,135,0.55);">Interpreting UI elements…</span>';
 
   try {
@@ -122,10 +121,15 @@ async function generateAiPrompt() {
       body: JSON.stringify({ elements, context })
     });
 
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); }
+    catch { data = {}; }
 
     if (!res.ok) {
-      const msg = data.error === 'insufficient_credits' ? 'No credits remaining' : (data.error || 'Generation failed');
+      const msg = data.error === 'insufficient_credits'
+        ? 'No credits remaining'
+        : (data.error || data.message || `Server error ${res.status}`);
+      outputEl.textContent = `Error: ${msg}`;
       showToast(msg);
       setBtn('Generate Smart Prompt (1 credit)', false);
       return;
@@ -138,7 +142,7 @@ async function generateAiPrompt() {
 
     // Store enriched data and render the smart output
     smartEnriched = data.enriched;
-    outputLabel.textContent = 'subsrf-smart-brief.txt';
+    outputLabel.textContent = 'Smart Prompt';
     outputEl.innerHTML = buildSmartPromptHTML(smartEnriched, elements, context);
 
     setBtn('Regenerate (1 credit)', false);
@@ -146,14 +150,14 @@ async function generateAiPrompt() {
 
   } catch (e) {
     outputEl.textContent = `Error: ${e.message}`;
+    showToast(e.message || 'Generation failed');
     setBtn('Generate Smart Prompt (1 credit)', false);
-    showToast('Generation failed');
   }
 }
 
 // ── Smart Prompt Assembler ────────────────────────────────────────────────────
 
-const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 
 function buildSmartPromptLines(enriched, rawElements, ctx) {
   const hostname = ctx.url
@@ -170,9 +174,9 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
   const dt = enriched.designTokens || {};
 
   const colors = dt.colors || [];
-  const typo   = dt.typography || [];
+  const typo = dt.typography || [];
   const spacing = dt.spacing || [];
-  const radii  = dt.radii || [];
+  const radii = dt.radii || [];
   const shadows = dt.shadows || [];
 
   const hasTokens = colors.length || typo.length || spacing.length || radii.length || shadows.length;
@@ -184,8 +188,8 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
       lines.push('Colors');
       colors.forEach(c => {
         const swatch = c.value || c;
-        const role   = c.role  ? `  ${c.role}` : '';
-        const usage  = c.usage ? `  — ${c.usage}` : '';
+        const role = c.role ? `  ${c.role}` : '';
+        const usage = c.usage ? `  — ${c.usage}` : '';
         lines.push(`  ${swatch}${role}${usage}`);
       });
       lines.push('');
@@ -194,7 +198,7 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
     if (typo.length) {
       lines.push('Typography');
       typo.forEach(t => {
-        const lh   = t.lineHeight && t.lineHeight !== 'normal' ? `/lh ${t.lineHeight}` : '';
+        const lh = t.lineHeight && t.lineHeight !== 'normal' ? `/lh ${t.lineHeight}` : '';
         const desc = `  ${t.family || 'unknown'} ${t.weight || '400'} / ${t.size || '?'}${lh}`;
         const role = t.role ? `  — ${t.role}` : '';
         lines.push(`${desc}${role}`);
@@ -239,14 +243,14 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
       lines.push('');
 
       (comp.elementIndices || []).forEach(idx => {
-        const el  = elMap[idx];
+        const el = elMap[idx];
         const raw = rawElements[idx];
         if (!el && !raw) return;
         const label = el?.label || raw?.tagName || `Element ${idx + 1}`;
-        const role  = el?.semanticRole ? ` [${el.semanticRole}]` : '';
+        const role = el?.semanticRole ? ` [${el.semanticRole}]` : '';
         lines.push(`   └─ [${idx + 1}] ${label}${role}`);
-        if (el?.keyStyles)        lines.push(`      ${el.keyStyles}`);
-        if (el?.description)      lines.push(`      ${el.description}`);
+        if (el?.keyStyles) lines.push(`      ${el.keyStyles}`);
+        if (el?.description) lines.push(`      ${el.description}`);
         if (el?.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
       });
       lines.push('');
@@ -262,8 +266,8 @@ function buildSmartPromptLines(enriched, rawElements, ctx) {
         const el = elMap[idx];
         const role = el.semanticRole ? ` [${el.semanticRole}]` : '';
         lines.push(`   └─ [${idx + 1}] ${el.label}${role}`);
-        if (el.keyStyles)         lines.push(`      ${el.keyStyles}`);
-        if (el.description)       lines.push(`      ${el.description}`);
+        if (el.keyStyles) lines.push(`      ${el.keyStyles}`);
+        if (el.description) lines.push(`      ${el.description}`);
         if (el.accessibilityNote) lines.push(`      ⚠ ${el.accessibilityNote}`);
       });
       lines.push('');
@@ -319,8 +323,8 @@ function renderSidebar() {
       ? el.cls.split(' ').filter(Boolean).map(c => '.' + c).join('').slice(0, 24)
       : '';
     const txt = el.text ? `"${el.text.slice(0, 36)}${el.text.length > 36 ? '…' : ''}"` : '';
-    const w   = el.rect?.width  ? Math.round(el.rect.width)  : null;
-    const h   = el.rect?.height ? Math.round(el.rect.height) : null;
+    const w = el.rect?.width ? Math.round(el.rect.width) : null;
+    const h = el.rect?.height ? Math.round(el.rect.height) : null;
 
     return `
       <div class="el-card" data-index="${i}">
@@ -378,14 +382,14 @@ function renderOutput() {
 
   if (mode === 'prompt') {
     if (smartEnriched) {
-      outputLabel.textContent = 'subsrf-smart-brief.txt';
+      outputLabel.textContent = 'Prompt';
       outputEl.innerHTML = buildSmartPromptHTML(smartEnriched, elements, context);
     } else {
-      outputLabel.textContent = 'subsrf-brief.txt';
+      outputLabel.textContent = 'Prompt';
       outputEl.innerHTML = generatePromptHTML(elements, context);
     }
   } else {
-    outputLabel.textContent = 'subsrf-export.css';
+    outputLabel.textContent = 'subsrf-smart-brief.css';
     outputEl.innerHTML = generateCSSHTML(elements, context);
   }
 }
@@ -400,27 +404,27 @@ function elementTypeLabel(tagName) {
 
 function buildStylesString(el) {
   const s = el.styles || {};
-  const r = el.rect   || {};
+  const r = el.rect || {};
   const parts = [];
-  if (s.display)            parts.push(`display: ${s.display}`);
+  if (s.display) parts.push(`display: ${s.display}`);
   parts.push(`position: ${s.position || 'static'}`);
-  if (r.width)              parts.push(`width: ${Math.round(r.width)}px`);
-  if (r.height)             parts.push(`height: ${Math.round(r.height)}px`);
+  if (r.width) parts.push(`width: ${Math.round(r.width)}px`);
+  if (r.height) parts.push(`height: ${Math.round(r.height)}px`);
   const hasBg = s.backgroundColor && s.backgroundColor !== 'transparent' && s.backgroundColor !== 'rgba(0, 0, 0, 0)';
-  if (hasBg)                parts.push(`background-color: ${s.backgroundColor}`);
-  if (s.color)              parts.push(`color: ${s.color}`);
-  if (s.fontSize)           parts.push(`font-size: ${s.fontSize}`);
-  if (s.fontFamily)         parts.push(`font-family: ${s.fontFamily}`);
-  if (s.fontWeight)         parts.push(`font-weight: ${s.fontWeight}`);
+  if (hasBg) parts.push(`background-color: ${s.backgroundColor}`);
+  if (s.color) parts.push(`color: ${s.color}`);
+  if (s.fontSize) parts.push(`font-size: ${s.fontSize}`);
+  if (s.fontFamily) parts.push(`font-family: ${s.fontFamily}`);
+  if (s.fontWeight) parts.push(`font-weight: ${s.fontWeight}`);
   if (s.lineHeight && s.lineHeight !== 'normal') parts.push(`line-height: ${s.lineHeight}`);
-  if (s.textAlign && s.textAlign !== 'start')    parts.push(`text-align: ${s.textAlign}`);
-  if (s.borderTopColor)     parts.push(`border: ${s.borderTopColor}`);
+  if (s.textAlign && s.textAlign !== 'start') parts.push(`text-align: ${s.textAlign}`);
+  if (s.borderTopColor) parts.push(`border: ${s.borderTopColor}`);
   if (s.borderRadius && s.borderRadius !== '0px') parts.push(`border-radius: ${s.borderRadius}`);
-  if (s.boxShadow && s.boxShadow !== 'none')     parts.push(`box-shadow: ${s.boxShadow}`);
-  if (s.opacity && parseFloat(s.opacity) !== 1)  parts.push(`opacity: ${s.opacity}`);
-  if (s.flexDirection)      parts.push(`flex-direction: ${s.flexDirection}`);
-  if (s.justifyContent)     parts.push(`justify-content: ${s.justifyContent}`);
-  if (s.alignItems)         parts.push(`align-items: ${s.alignItems}`);
+  if (s.boxShadow && s.boxShadow !== 'none') parts.push(`box-shadow: ${s.boxShadow}`);
+  if (s.opacity && parseFloat(s.opacity) !== 1) parts.push(`opacity: ${s.opacity}`);
+  if (s.flexDirection) parts.push(`flex-direction: ${s.flexDirection}`);
+  if (s.justifyContent) parts.push(`justify-content: ${s.justifyContent}`);
+  if (s.alignItems) parts.push(`align-items: ${s.alignItems}`);
   if (s.gap && s.gap !== '0px' && s.gap !== 'normal') parts.push(`gap: ${s.gap}`);
   const pad = [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
   if (pad.some(v => v && v !== '0px')) parts.push(`padding: ${pad.join(' ')}`);
@@ -432,10 +436,10 @@ function buildStylesString(el) {
 function buildElementLines(el, i) {
   const r = el.rect || {};
   const typeLabel = elementTypeLabel(el.tagName);
-  const w  = r.width  ? Math.round(r.width)  : '?';
-  const h  = r.height ? Math.round(r.height) : '?';
-  const px = r.left   ? Math.round(r.left)   : 0;
-  const py = r.top    ? Math.round(r.top)    : 0;
+  const w = r.width ? Math.round(r.width) : '?';
+  const h = r.height ? Math.round(r.height) : '?';
+  const px = r.left ? Math.round(r.left) : 0;
+  const py = r.top ? Math.round(r.top) : 0;
 
   const lines = [];
   lines.push(`[${i + 1}] ${typeLabel}`);
@@ -453,8 +457,8 @@ function buildElementLines(el, i) {
   const attrs = el.attributes || {};
   const attrParts = [];
   if (attrs.href) attrParts.push(`href="${attrs.href}"`);
-  if (attrs.src)  attrParts.push(`src="${attrs.src}"`);
-  if (attrs.alt)  attrParts.push(`alt="${attrs.alt}"`);
+  if (attrs.src) attrParts.push(`src="${attrs.src}"`);
+  if (attrs.alt) attrParts.push(`alt="${attrs.alt}"`);
   if (attrParts.length > 0) {
     lines.push(`Attrs: ${attrParts.join(' ')}`);
     lines.push('');
@@ -515,7 +519,7 @@ function generatePrompt(els, ctx) {
 // ── CSS Generator ─────────────────────────────────────────────────────────────
 
 function generateCSSHTML(els, ctx) {
-  const now  = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  const now = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
   const host = ctx.url ? (() => { try { return new URL(ctx.url).hostname; } catch { return ctx.url; } })() : 'unknown';
 
   const header = [
@@ -539,7 +543,7 @@ function generateCSSHTML(els, ctx) {
 }
 
 function generateCSS(els, ctx) {
-  const now  = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  const now = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
   const host = ctx.url ? (() => { try { return new URL(ctx.url).hostname; } catch { return ctx.url; } })() : 'unknown';
   const out = [
     '/*',
@@ -558,7 +562,7 @@ function generateCSS(els, ctx) {
 
 function buildCSSLines(el, i) {
   const s = el.styles || {};
-  const r = el.rect   || {};
+  const r = el.rect || {};
   const cls = el.cls ? el.cls.split(' ').filter(Boolean)[0] : null;
   const selector = cls ? `.${cls}` : `.subsrf-element-${i + 1}`;
   const tagLabel = `${el.tagName}${cls ? '.' + cls : ''}`;
@@ -577,31 +581,31 @@ function buildCSSLines(el, i) {
   if (hasFontProps) {
     lines.push('  /* Typography */');
     if (s.fontFamily) lines.push(`  font-family: ${s.fontFamily};`);
-    if (s.fontSize)   lines.push(`  font-size: ${s.fontSize};`);
+    if (s.fontSize) lines.push(`  font-size: ${s.fontSize};`);
     if (s.fontWeight) lines.push(`  font-weight: ${s.fontWeight};`);
-    if (s.color)      lines.push(`  color: ${s.color};`);
+    if (s.color) lines.push(`  color: ${s.color};`);
     if (s.lineHeight && s.lineHeight !== 'normal') lines.push(`  line-height: ${s.lineHeight};`);
-    if (s.textAlign && s.textAlign !== 'start')    lines.push(`  text-align: ${s.textAlign};`);
+    if (s.textAlign && s.textAlign !== 'start') lines.push(`  text-align: ${s.textAlign};`);
     lines.push('');
   }
 
-  const hasBg  = s.backgroundColor && s.backgroundColor !== 'transparent' && s.backgroundColor !== 'rgba(0, 0, 0, 0)';
+  const hasBg = s.backgroundColor && s.backgroundColor !== 'transparent' && s.backgroundColor !== 'rgba(0, 0, 0, 0)';
   const hasBdr = s.borderTopWidth && parseInt(s.borderTopWidth) > 0;
-  const hasSh  = s.boxShadow && s.boxShadow !== 'none';
+  const hasSh = s.boxShadow && s.boxShadow !== 'none';
   const hasRad = s.borderRadius && s.borderRadius !== '0px';
-  const hasOp  = s.opacity && parseFloat(s.opacity) !== 1;
+  const hasOp = s.opacity && parseFloat(s.opacity) !== 1;
   if (hasBg || hasBdr || hasSh || hasRad || hasOp) {
     lines.push('  /* Background & Border */');
-    if (hasBg)  lines.push(`  background-color: ${s.backgroundColor};`);
+    if (hasBg) lines.push(`  background-color: ${s.backgroundColor};`);
     if (hasRad) lines.push(`  border-radius: ${s.borderRadius};`);
     if (hasBdr) lines.push(`  border: ${s.borderTopWidth} solid ${s.borderTopColor};`);
-    if (hasSh)  lines.push(`  box-shadow: ${s.boxShadow};`);
-    if (hasOp)  lines.push(`  opacity: ${s.opacity};`);
+    if (hasSh) lines.push(`  box-shadow: ${s.boxShadow};`);
+    if (hasOp) lines.push(`  opacity: ${s.opacity};`);
     lines.push('');
   }
 
   const pad = [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
-  const mar = [s.marginTop,  s.marginRight,  s.marginBottom,  s.marginLeft];
+  const mar = [s.marginTop, s.marginRight, s.marginBottom, s.marginLeft];
   const hasPad = pad.some(v => v && v !== '0px');
   const hasMar = mar.some(v => v && v !== '0px' && v !== 'auto');
   if (hasPad || hasMar) {
@@ -622,9 +626,9 @@ function buildCSSLines(el, i) {
     lines.push('  /* Layout */');
     lines.push(`  display: ${s.display};`);
     if (s.display === 'flex') {
-      if (s.flexDirection)  lines.push(`  flex-direction: ${s.flexDirection};`);
+      if (s.flexDirection) lines.push(`  flex-direction: ${s.flexDirection};`);
       if (s.justifyContent) lines.push(`  justify-content: ${s.justifyContent};`);
-      if (s.alignItems)     lines.push(`  align-items: ${s.alignItems};`);
+      if (s.alignItems) lines.push(`  align-items: ${s.alignItems};`);
       if (s.gap && s.gap !== '0px' && s.gap !== 'normal') lines.push(`  gap: ${s.gap};`);
     }
     lines.push('');
@@ -651,19 +655,19 @@ function showToast(msg, duration = 2200) {
 // ── Bridge Status ─────────────────────────────────────────────────────────────
 
 async function checkBridge() {
-  const chipMcp   = document.getElementById('chip-mcp');
-  const dotMcp    = document.getElementById('dot-mcp');
-  const lblMcp    = document.getElementById('lbl-mcp');
+  const chipMcp = document.getElementById('chip-mcp');
+  const dotMcp = document.getElementById('dot-mcp');
+  const lblMcp = document.getElementById('lbl-mcp');
   const chipFigma = document.getElementById('chip-figma');
-  const dotFigma  = document.getElementById('dot-figma');
-  const lblFigma  = document.getElementById('lbl-figma');
+  const dotFigma = document.getElementById('dot-figma');
+  const lblFigma = document.getElementById('lbl-figma');
 
   try {
     const res = await fetch('https://api.subsrf.dev/api/state');
     if (!res.ok) throw new Error('not ok');
     const data = await res.json();
 
-    bridgeOnline   = true;
+    bridgeOnline = true;
     figmaConnected = !!data.figmaConnected;
 
     dotMcp.classList.add('on');
@@ -680,7 +684,7 @@ async function checkBridge() {
       chipFigma.classList.remove('online');
     }
   } catch {
-    bridgeOnline   = false;
+    bridgeOnline = false;
     figmaConnected = false;
     dotMcp.classList.remove('on');
     lblMcp.textContent = 'MCP OFFLINE';

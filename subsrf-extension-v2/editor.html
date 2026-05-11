@@ -3,262 +3,405 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subsrf Studio — Design Your Brief</title>
+  <title>Subsrf Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #00FF87;
-      --primary-hover: #00e87a;
-      --bg: #050508;
-      --panel: #111118;
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #F2F2F4;
-      --text-muted: rgba(242, 242, 244, 0.55);
+      --neon:     #00FF87;
+      --neon-dim: rgba(0,255,135,0.10);
+      --void:     #050508;
+      --deep:     #0C0C12;
+      --layer:    #111118;
+      --surface:  #18181F;
+      --border:   rgba(242,242,244,0.08);
+      --border-md:rgba(242,242,244,0.12);
+      --t1:       #F2F2F4;
+      --t2:       rgba(242,242,244,0.55);
+      --t3:       rgba(242,242,244,0.28);
+      --t4:       rgba(242,242,244,0.12);
+      --ok:       #39D98A;
+      --warn:     #FFAB00;
+      --err:      #FF4D4D;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Manrope', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--void);
+      color: var(--t1);
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    header {
-      height: 64px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      z-index: 100;
+    /* ── Noise texture ─────────────────────────────────────────────── */
+    .noise-overlay {
+      position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
-    .logo { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    /* ── Header ────────────────────────────────────────────────────── */
+    header {
+      height: 64px; flex-shrink: 0;
+      background: var(--void);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; gap: 16px; z-index: 100;
+    }
 
+    .logo {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .logo-wordmark {
+      font-family: 'Azeret Mono', monospace; font-size: 13px; font-weight: 600;
+      letter-spacing: -0.3px; color: var(--t1);
+    }
+    .logo-sub {
+      font-family: 'Azeret Mono', monospace; font-size: 13px; color: var(--t3);
+    }
+
+    /* ── Toolbar ───────────────────────────────────────────────────── */
     .toolbar-center {
-      display: flex;
-      gap: 4px;
-      background: rgba(5, 5, 8, 0.5);
-      padding: 4px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 2px;
+      flex: 1; justify-content: center; max-width: 740px;
     }
 
     .tool-btn {
-      background: transparent; border: none; color: var(--text-muted); padding: 8px 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; transition: all 0.2s;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      border: none;
+      background: transparent; color: var(--t2);
+      cursor: pointer; transition: all 0.15s;
     }
-    .tool-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-    .tool-btn.active { background: var(--primary); color: #050508; }
+    .tool-btn:hover { background: var(--t4); color: var(--t1); }
+    .tool-btn.active { background: var(--neon); color: var(--void); }
 
-    .prop-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: 12px;
-      padding-left: 12px;
-      border-left: 1px solid var(--border);
-    }
-
-    #color-picker {
-      width: 28px; height: 28px; padding: 0; border: none; background: none; cursor: pointer; border-radius: 6px; overflow: hidden;
+    .toolbar-sep {
+      width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0;
     }
 
     .icon-btn {
-      background: rgba(255,255,255,0.06); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border: none;
+      background: transparent; color: var(--t2);
+      cursor: pointer; transition: all 0.15s;
     }
-    .icon-btn:hover { background: rgba(255,255,255,0.1); }
-    .icon-btn.active { background: var(--primary); color: #050508; }
+    .icon-btn:hover { background: var(--t4); color: var(--t1); }
+    .icon-btn.active { background: var(--neon); color: var(--void); }
 
-    .zoom-controls {
-      display: flex; align-items: center; gap: 12px; margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--border);
-    }
-    .zoom-btn {
-      background: rgba(255,255,255,0.06); border: none; color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    #color-picker {
+      width: 28px; height: 28px; padding: 0; border: none;
+      background: none; cursor: pointer; overflow: hidden;
     }
 
-    .actions { display: flex; gap: 12px; }
-    .btn { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; font-family: 'Manrope', sans-serif; }
-    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text); }
-    .btn-primary { background: var(--primary); color: #050508; }
+    .zoom-display {
+      font-family: 'Azeret Mono', monospace; font-size: 11px; min-width: 38px;
+      text-align: center; color: var(--t2);
+    }
 
+    .actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .btn {
+      padding: 8px 16px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: 'Manrope', sans-serif; transition: all 0.15s;
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.05); color: var(--t1);
+      border: 1px solid var(--border-md);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.09); }
+    .btn-primary { background: var(--neon); color: var(--void); border: none; }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* ── Emoji tray ────────────────────────────────────────────────── */
+    .emoji-tray {
+      height: 0; overflow: hidden; background: var(--layer);
+      border-bottom: 1px solid var(--border);
+      transition: height 0.3s cubic-bezier(0.4,0,0.2,1);
+      z-index: 90; flex-shrink: 0;
+    }
+    .emoji-tray.open { height: 280px; }
+    .emoji-tray-content { padding: 20px 24px; display: flex; gap: 32px; max-width: 1600px; margin: 0 auto; }
+    .emoji-cat { display: flex; flex-direction: column; gap: 8px; }
+    .emoji-cat span { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--t2); letter-spacing: 0.05em; font-family: 'Azeret Mono', monospace; }
+    .emoji-list { display: grid; grid-template-columns: repeat(6,1fr); gap: 2px; }
+    .tray-emoji, .tray-cursor {
+      background: transparent; border: 1px solid transparent; font-size: 20px;
+      padding: 4px; cursor: pointer; transition: all 0.15s;
+    }
+    .tray-emoji:hover, .tray-cursor:hover { background: rgba(255,255,255,0.06); border-color: var(--border); transform: scale(1.12); }
+
+    /* ── Editor layout ─────────────────────────────────────────────── */
     .editor-layout { flex: 1; display: flex; overflow: hidden; }
 
+    /* ── Canvas area ───────────────────────────────────────────────── */
     main {
-      flex: 1; background: #000; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 80px 40px; position: relative;
+      flex: 1; overflow: auto;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 80px 40px; position: relative;
+      background: var(--deep);
+    }
+    .canvas-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: radial-gradient(rgba(242,242,244,0.09) 1px, transparent 1px);
+      background-size: 24px 24px;
     }
 
-    aside { width: 280px; background: var(--panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.2s ease; }
-    aside.wide { width: 400px; }
-    .panel-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px; letter-spacing: 0.05em; }
-
-    /* Aside tabs */
-    .aside-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .aside-tab { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-muted); font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
-    .aside-tab:hover { color: var(--text); }
-    .aside-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
-
-    /* Layers panel */
-    #panel-layers { flex: 1; overflow-y: auto; padding: 16px; }
-
-    /* Analysis panel */
-    #panel-analysis { flex: 1; overflow-y: auto; padding: 14px; display: none; flex-direction: column; gap: 10px; }
-    .analysis-modes { display: flex; flex-wrap: wrap; gap: 5px; }
-    .analysis-mode-btn {
-      padding: 5px 10px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1);
-      background: transparent; color: rgba(242,242,244,0.55); font-family: 'Manrope', sans-serif;
-      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    #canvas-container {
+      position: relative; z-index: 10;
+      transform-origin: top center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px var(--border);
     }
-    .analysis-mode-btn:hover { border-color: rgba(0,255,135,0.35); color: var(--text); }
-    .analysis-mode-btn.active { background: rgba(0,255,135,0.1); border-color: rgba(0,255,135,0.4); color: var(--primary); }
-    .ref-drop { border: 1px dashed rgba(0,255,135,0.22); border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; font-size: 11px; color: rgba(242,242,244,0.4); position: relative; transition: all 0.15s; }
-    .ref-drop:hover { border-color: rgba(0,255,135,0.45); }
-    .ref-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .ref-drop img { max-width: 100%; border-radius: 6px; display: block; }
-    .analysis-result { font-family: 'Azeret Mono', monospace; font-size: 10.5px; line-height: 1.75; color: rgba(242,242,244,0.65); white-space: pre-wrap; word-break: break-word; background: rgba(5,5,8,0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px; }
-    .analysis-credit-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 7px; }
-    .analysis-credit-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(242,242,244,0.4); }
-    .analysis-credit-badge { font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0,255,135,0.1); border: 1px solid rgba(0,255,135,0.25); color: #00FF87; }
-    .analysis-credit-badge.low { background: rgba(255,77,77,0.1); border-color: rgba(255,77,77,0.3); color: #FF4D4D; }
-    .analysis-credit-badge.empty { background: rgba(242,242,244,0.04); border-color: rgba(242,242,244,0.08); color: rgba(242,242,244,0.28); }
-    .btn-analyze { background: var(--primary); color: #050508; border: none; border-radius: 8px; padding: 9px 14px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.15s; }
-    .btn-analyze:hover { background: var(--primary-hover); }
-    .btn-analyze:disabled { opacity: 0.38; cursor: not-allowed; }
-
-    #layer-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-    .layer-item {
-      display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(5,5,8,0.4); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
-    }
-    .layer-item:hover { border-color: rgba(0, 255, 135, 0.4); }
-    .layer-item.active { background: rgba(0, 255, 135, 0.06); border-color: var(--primary); }
-
-    .layer-info { display: flex; align-items: center; gap: 10px; pointer-events: none; }
-    .layer-thumb { width: 12px; height: 12px; border-radius: 2px; }
-    .layer-name { font-weight: 500; }
-
-    .layer-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 4px; z-index: 100; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-    .layer-btn:hover { color: #ff4444; background: #ff444420; }
-
-    #canvas-container { position: relative; box-shadow: 0 30px 100px rgba(0,0,0,0.8); transform-origin: top center; }
     canvas { display: block; }
     #draw-layer { position: absolute; top: 0; left: 0; cursor: crosshair; }
     #draw-layer.mode-select { cursor: default; }
 
+    /* ── Sidebar ───────────────────────────────────────────────────── */
+    aside {
+      width: 300px; flex-shrink: 0;
+      background: var(--void);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden; transition: width 0.2s ease; z-index: 10;
+    }
+    aside.wide { width: 400px; }
+
+    /* Tabs */
+    .aside-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .aside-tab {
+      flex: 1; padding: 12px 0; border: none; background: transparent;
+      font-family: 'Azeret Mono', monospace; font-size: 9px; font-weight: 400;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: var(--t2); cursor: pointer; transition: all 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+    .aside-tab:hover { color: var(--t1); }
+    .aside-tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+
+    /* ── Layers panel ──────────────────────────────────────────────── */
+    #panel-layers { flex: 1; overflow-y: auto; padding: 14px; }
+    #layer-list { display: flex; flex-direction: column; }
+
+    .layer-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; background: rgba(5,5,8,0.4);
+      border: 1px solid var(--border);
+      font-size: 13px; cursor: pointer; transition: all 0.15s; margin-bottom: 6px;
+    }
+    .layer-item:hover { border-color: rgba(0,255,135,0.35); }
+    .layer-item.active { background: var(--neon-dim); border-color: var(--neon); }
+    .layer-info { display: flex; align-items: center; gap: 10px; pointer-events: none; }
+    .layer-thumb { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    .layer-name { font-weight: 600; color: var(--t1); }
+    .layer-btn {
+      background: transparent; border: none; color: var(--t3); cursor: pointer;
+      padding: 4px 6px; font-size: 12px;
+      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .layer-btn:hover { color: var(--err); background: rgba(255,77,77,0.12); }
+
+    /* ── Analysis panel ────────────────────────────────────────────── */
+    #panel-analysis {
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: none; flex-direction: column; gap: 8px;
+    }
+
+    /* Mode action cards */
+    .analysis-mode-btn {
+      width: 100%; text-align: left; padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: var(--layer); cursor: pointer;
+      position: relative; overflow: hidden;
+      transition: border-color 0.15s; display: block;
+    }
+    .analysis-mode-btn::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%; background: var(--neon);
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .analysis-mode-btn:hover { border-color: rgba(0,255,135,0.4); }
+    .analysis-mode-btn:hover::before { opacity: 1; }
+    .analysis-mode-btn.active { border-color: var(--neon); background: var(--neon-dim); }
+    .analysis-mode-btn.active::before { opacity: 1; }
+
+    .mode-card-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;
+    }
+    .mode-card-name {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 700; color: var(--t1); font-family: 'Manrope', sans-serif;
+    }
+    .mode-card-cr {
+      font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
+    }
+    .mode-card-desc {
+      font-size: 11px; color: var(--t2); line-height: 1.5; font-family: 'Manrope', sans-serif;
+    }
+
+    /* Analyze button */
+    .btn-analyze {
+      background: var(--neon); color: var(--void); border: none;
+      padding: 10px 14px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; width: 100%; transition: opacity 0.15s;
+    }
+    .btn-analyze:hover { opacity: 0.9; }
+    .btn-analyze:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Analysis result */
+    #analysis-result { margin-top: 4px; }
+    .analysis-result {
+      font-family: 'Azeret Mono', monospace; font-size: 10.5px; line-height: 1.75;
+      color: rgba(242,242,244,0.65); white-space: pre-wrap; word-break: break-word;
+      background: rgba(5,5,8,0.6); border: 1px solid var(--border);
+      padding: 12px;
+    }
+    .analysis-actions {
+      display: flex; gap: 0; flex-shrink: 0;
+      border-top: 1px solid var(--border);
+    }
+    .analysis-action-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 11px 10px; border: none; border-right: 1px solid var(--border);
+      background: var(--layer); color: var(--t2);
+      font-family: 'Azeret Mono', monospace; font-size: 10px;
+      letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .analysis-action-btn:last-child { border-right: none; }
+    .analysis-action-btn .material-symbols-outlined { font-size: 14px; }
+    .analysis-action-btn:hover { background: var(--deep); color: var(--t1); }
+    .analysis-action-btn.primary {
+      background: rgba(0,255,135,0.1); color: var(--neon); font-weight: 700;
+    }
+    .analysis-action-btn.primary:hover { background: rgba(0,255,135,0.18); }
+
+    /* ── Sidebar footer ────────────────────────────────────────────── */
+    .sidebar-footer {
+      padding: 11px 16px; border-top: 1px solid var(--border); background: var(--layer);
+      display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+    }
+    .sidebar-footer-label {
+      font-family: 'Azeret Mono', monospace; font-size: 9px; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--t3);
+    }
+    #sidebar-balance {
+      font-family: 'Azeret Mono', monospace; font-size: 12px; font-weight: 700;
+      color: var(--neon); display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Toast ─────────────────────────────────────────────────────── */
     #toast-notification {
-      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--panel); border: 1px solid var(--primary); padding: 12px 24px; border-radius: 12px; display: flex; align-items: center; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 2000; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none;
+      position: fixed; bottom: 40px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--layer); border: 1px solid var(--neon);
+      padding: 12px 24px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 2000; transition: transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+      pointer-events: none;
     }
     #toast-notification.show { transform: translateX(-50%) translateY(0); }
 
+    /* ── Text overlay ──────────────────────────────────────────────── */
     #text-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); display: none; z-index: 1000; align-items: center; justify-content: center;
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: none; z-index: 1000; align-items: center; justify-content: center;
     }
-    .text-box { background: var(--panel); padding: 24px; border-radius: 16px; border: 1px solid var(--border); width: 400px; }
-    .text-box input { width: 100%; background: #050508; border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 16px; font-family: 'Manrope', sans-serif; }
-
-    .emoji-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 24px;
+    .text-box {
+      background: var(--layer); padding: 24px;
+      border: 1px solid var(--border-md); width: 400px;
     }
-    .emoji-item {
-      background: rgba(5,5,8,0.4);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .text-box input {
+      width: 100%; background: var(--void); border: 1px solid var(--border);
+      color: var(--t1); padding: 12px; margin-bottom: 12px;
+      font-size: 16px; font-family: 'Manrope', sans-serif; outline: none;
     }
-    .emoji-item:hover {
-      background: rgba(0, 255, 135, 0.06);
-      border-color: var(--primary);
-      transform: scale(1.1);
-    }
-
-    .emoji-tray {
-      height: 0;
-      overflow: hidden;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 90;
-    }
-    .emoji-tray.open { height: 280px; }
-    
-    .emoji-tray-content {
-      padding: 20px 24px;
-      display: flex;
-      gap: 32px;
-      max-width: 1600px;
-      margin: 0 auto;
-    }
-    .emoji-cat { display: flex; flex-direction: column; gap: 8px; }
-    .emoji-cat span { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
-    .emoji-list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
-    .tray-emoji {
-      background: transparent; border: 1px solid transparent; font-size: 20px; padding: 4px; cursor: pointer; border-radius: 6px; transition: all 0.2s;
-    }
-    .tray-emoji:hover { background: #ffffff10; border-color: var(--border); transform: scale(1.15); }
+    .text-box input:focus { border-color: rgba(0,255,135,0.35); }
   </style>
 </head>
 <body>
+  <div class="noise-overlay"></div>
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
   <header>
     <div class="logo">
-      <img src="icons/icon48.png" width="24" height="24" style="border-radius:6px;" alt="Subsrf">
-      Subsrf Studio
+      <img src="icons/icon48.png" width="24" height="24" style="border-radius:6px; flex-shrink:0;" alt="Subsrf">
+      <span class="logo-wordmark">subsrf</span>
+      <span class="logo-sub">studio</span>
     </div>
+
     <div class="toolbar-center">
-      <button class="tool-btn active" id="tool-select"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg></button>
-      <button class="tool-btn" id="tool-rect"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg></button>
-      <button class="tool-btn" id="tool-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></button>
-      <button class="tool-btn" id="tool-star"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
-      <button class="tool-btn" id="tool-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
-      <button class="tool-btn" id="tool-text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
-      <button class="tool-btn" id="tool-emoji"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
-      <button class="tool-btn" id="tool-pen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+      <!-- Selection / drawing tools -->
+      <button class="tool-btn active" id="tool-select" title="Select">
+        <span class="material-symbols-outlined" style="font-size:20px;">near_me</span>
+      </button>
+      <button class="tool-btn" id="tool-rect" title="Rectangle">
+        <span class="material-symbols-outlined" style="font-size:20px;">check_box_outline_blank</span>
+      </button>
+      <button class="tool-btn" id="tool-circle" title="Circle">
+        <span class="material-symbols-outlined" style="font-size:20px;">radio_button_unchecked</span>
+      </button>
+      <button class="tool-btn" id="tool-star" title="Star">
+        <span class="material-symbols-outlined" style="font-size:20px;">star</span>
+      </button>
+      <button class="tool-btn" id="tool-arrow" title="Arrow">
+        <span class="material-symbols-outlined" style="font-size:20px;">arrow_forward</span>
+      </button>
+      <button class="tool-btn" id="tool-text" title="Text">
+        <span class="material-symbols-outlined" style="font-size:20px;">title</span>
+      </button>
+      <button class="tool-btn" id="tool-emoji" title="Emoji">
+        <span class="material-symbols-outlined" style="font-size:20px;">mood</span>
+      </button>
+      <button class="tool-btn" id="tool-pen" title="Draw">
+        <span class="material-symbols-outlined" style="font-size:20px;">edit</span>
+      </button>
 
-      <div class="prop-controls">
-        <input type="color" id="color-picker" value="#00FF87">
-        <button class="icon-btn" id="btn-fill" title="Toggle Fill">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/></svg>
-        </button>
-        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
-        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="4"/></svg>
-        <input type="range" id="stroke-size" min="1" max="24" value="4" title="Stroke Size" style="width: 56px; accent-color: #00FF87; cursor: pointer; vertical-align: middle;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: var(--text-muted); flex-shrink: 0;"><circle cx="12" cy="12" r="8"/></svg>
-        <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
-        <button class="icon-btn" id="btn-bring-front" title="Bring to Front">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-        </button>
-        <button class="icon-btn" id="btn-send-back" title="Send to Back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-        </button>
-      </div>
+      <div class="toolbar-sep"></div>
 
-      <div class="zoom-controls">
-        <button class="zoom-btn" id="zoom-out">−</button>
-        <span id="zoom-level" style="font-size: 11px; min-width: 34px; text-align: center;">100%</span>
-        <button class="zoom-btn" id="zoom-in">+</button>
-      </div>
+      <!-- Color + fill -->
+      <input type="color" id="color-picker" value="#00FF87" title="Color">
+      <button class="icon-btn" id="btn-fill" title="Toggle Fill">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Stroke weight -->
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3);flex-shrink:0;"><circle cx="12" cy="12" r="4"/></svg>
+      <input type="range" id="stroke-size" min="1" max="24" value="4" title="Stroke Size" style="width:52px; accent-color:#00FF87; cursor:pointer;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3);flex-shrink:0;"><circle cx="12" cy="12" r="8"/></svg>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Layer order -->
+      <button class="icon-btn" id="btn-bring-front" title="Bring to Front">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-send-back" title="Send to Back">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      </button>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Zoom -->
+      <button class="icon-btn" id="zoom-out" style="font-size:18px; font-weight:300;">−</button>
+      <span id="zoom-level" class="zoom-display">100%</span>
+      <button class="icon-btn" id="zoom-in" style="font-size:18px; font-weight:300;">+</button>
     </div>
+
     <div class="actions">
       <button class="btn btn-secondary" id="btn-copy">Copy</button>
       <button class="btn btn-primary" id="btn-download">Download</button>
     </div>
   </header>
 
+  <!-- ── Emoji tray ───────────────────────────────────────────────── -->
   <div id="emoji-tray" class="emoji-tray">
     <div class="emoji-tray-content">
       <div class="emoji-cat">
@@ -274,7 +417,7 @@
         <div class="emoji-list">
           <button class="tray-emoji">😀</button><button class="tray-emoji">😍</button><button class="tray-emoji">🤔</button><button class="tray-emoji">😎</button><button class="tray-emoji">😱</button><button class="tray-emoji">😂</button>
           <button class="tray-emoji">🤩</button><button class="tray-emoji">🤯</button><button class="tray-emoji">🥳</button><button class="tray-emoji">🙌</button><button class="tray-emoji">🎉</button><button class="tray-emoji">🔥</button>
-          <button class="tray-emoji">👍</button><button class="tray-emoji">👎</button><button class="tray-emoji">👏</button><button class="tray-emoji">🤝</button><button class="tray-emoji">❤️</button><button class="tray-emoji">🔥</button>
+          <button class="tray-emoji">👍</button><button class="tray-emoji">👎</button><button class="tray-emoji">👏</button><button class="tray-emoji">🤝</button><button class="tray-emoji">❤️</button><button class="tray-emoji">🌟</button>
         </div>
       </div>
       <div class="emoji-cat">
@@ -295,7 +438,7 @@
       </div>
       <div class="emoji-cat">
         <span>Cursors</span>
-        <div class="emoji-list">
+        <div class="emoji-list" style="grid-template-columns: repeat(4,1fr);">
           <button class="tray-cursor" data-cursor="default">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="white" stroke="black"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
           </button>
@@ -313,13 +456,19 @@
     </div>
   </div>
 
+  <!-- ── Editor layout ────────────────────────────────────────────── -->
   <div class="editor-layout">
+
+    <!-- Canvas viewport -->
     <main id="editor-viewport">
+      <div class="canvas-grid"></div>
       <div id="canvas-container">
         <canvas id="main-canvas"></canvas>
         <canvas id="draw-layer"></canvas>
       </div>
     </main>
+
+    <!-- Right sidebar -->
     <aside>
       <div class="aside-tabs">
         <button class="aside-tab active" id="tab-layers">Layers</button>
@@ -333,35 +482,83 @@
 
       <!-- AI Analysis panel -->
       <div id="panel-analysis">
-        <div class="analysis-modes">
-          <button class="analysis-mode-btn active" data-mode="build_prompt">Build Prompt</button>
-          <button class="analysis-mode-btn" data-mode="describe">Describe UI</button>
-          <button class="analysis-mode-btn" data-mode="accessibility">Accessibility</button>
-        </div>
 
-        <div class="analysis-credit-row">
-          <span class="analysis-credit-label">Credits</span>
-          <span class="analysis-credit-badge" id="analysis-credit-badge">—</span>
-        </div>
+        <!-- Mode action cards -->
+        <button class="analysis-mode-btn active" data-mode="build_prompt">
+          <div class="mode-card-header">
+            <span class="mode-card-name">
+              <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">code_blocks</span>
+              Build Prompt
+            </span>
+            <span class="mode-card-cr">1 CR</span>
+          </div>
+          <p class="mode-card-desc">Generate a UI component prompt based on the capture.</p>
+        </button>
 
+        <button class="analysis-mode-btn" data-mode="describe">
+          <div class="mode-card-header">
+            <span class="mode-card-name">
+              <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">description</span>
+              Describe UI
+            </span>
+            <span class="mode-card-cr">1 CR</span>
+          </div>
+          <p class="mode-card-desc">Extract design tokens and component structure.</p>
+        </button>
+
+        <button class="analysis-mode-btn" data-mode="accessibility">
+          <div class="mode-card-header">
+            <span class="mode-card-name">
+              <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">accessibility_new</span>
+              A11y Audit
+            </span>
+            <span class="mode-card-cr">1 CR</span>
+          </div>
+          <p class="mode-card-desc">Analyze contrast ratios and semantic structure.</p>
+        </button>
+
+        <!-- Analyze button -->
         <button class="btn-analyze" id="btn-analyze">Analyze (1 credit)</button>
 
+        <!-- Result -->
         <div id="analysis-result" style="display:none;">
           <pre class="analysis-result" id="analysis-output"></pre>
         </div>
+
+      </div>
+
+      <!-- Analysis action buttons (sticky above footer) -->
+      <div class="analysis-actions" id="analysis-actions" style="display:none;">
+        <button class="analysis-action-btn primary" id="btn-copy-analysis">
+          <span class="material-symbols-outlined">content_copy</span>Copy
+        </button>
+        <button class="analysis-action-btn" id="btn-new-analysis">
+          <span class="material-symbols-outlined">refresh</span>New Analysis
+        </button>
+      </div>
+
+      <!-- Sidebar footer -->
+      <div class="sidebar-footer">
+        <span class="sidebar-footer-label">Balance</span>
+        <span id="sidebar-balance">
+          <span class="material-symbols-outlined" style="font-size:14px; color:var(--neon);">database</span>
+          <span id="sidebar-balance-text">— CR</span>
+        </span>
       </div>
     </aside>
   </div>
 
+  <!-- ── Toast ────────────────────────────────────────────────────── -->
   <div id="toast-notification">
-    <div style="width: 8px; height: 8px; background: var(--primary); border-radius: 50%;"></div>
-    <span id="toast-message">Copied to clipboard!</span>
+    <div style="width:8px; height:8px; background:var(--neon); border-radius:50%;"></div>
+    <span id="toast-message" style="font-size:13px;">Copied to clipboard!</span>
   </div>
 
+  <!-- ── Text overlay ─────────────────────────────────────────────── -->
   <div id="text-overlay">
     <div class="text-box">
-      <input type="text" id="text-input" placeholder="Type your note...">
-      <button class="btn btn-primary" id="btn-text-save" style="width: 100%">Add Note</button>
+      <input type="text" id="text-input" placeholder="Type your note…">
+      <button id="btn-text-save" style="width:100%; background:var(--neon); color:var(--void); border:none; padding:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Manrope',sans-serif;">Add Note</button>
     </div>
   </div>
 

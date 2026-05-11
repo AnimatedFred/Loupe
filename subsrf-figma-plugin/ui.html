@@ -1,36 +1,33 @@
 <!DOCTYPE html>
-
 <head>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --void: #050508;
-      --deep: #0C0C12;
-      --layer: #111118;
-      --surface: #18181F;
-      --lift: #202028;
-      --border: rgba(255, 255, 255, 0.06);
-      --border-md: rgba(255, 255, 255, 0.10);
-      --acid: #00FF87;
-      --acid-dim: rgba(0, 255, 135, 0.12);
-      --t1: #F2F2F4;
-      --t2: rgba(242, 242, 244, 0.55);
-      --t3: rgba(242, 242, 244, 0.28);
-      --t4: rgba(242, 242, 244, 0.12);
-      --ok: #39D98A;
-      --warn: #FFAB00;
-      --err: #FF4D4D;
+      --void:      #050508;
+      --deep:      #0C0C12;
+      --layer:     #111118;
+      --surface:   #18181F;
+      --lift:      #202028;
+      --border:    rgba(242,242,244,0.08);
+      --border-md: rgba(242,242,244,0.12);
+      --neon:      #00FF87;
+      --neon-dim:  rgba(0,255,135,0.10);
+      --t1:        #F2F2F4;
+      --t2:        rgba(242,242,244,0.55);
+      --t3:        rgba(242,242,244,0.28);
+      --t4:        rgba(242,242,244,0.10);
+      --ok:        #39D98A;
+      --warn:      #FFAB00;
+      --err:       #FF4D4D;
+      /* compat aliases */
+      --acid:     #00FF87;
+      --acid-dim: rgba(0,255,135,0.10);
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Manrope', sans-serif;
@@ -40,361 +37,209 @@
       overflow: hidden;
       width: 100%;
       -webkit-font-smoothing: antialiased;
+      position: relative;
     }
 
+    body::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+      font-size: 16px; line-height: 1; vertical-align: middle;
+    }
+
+    /* ── Label ── */
     .title {
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      font-weight: 400;
-      margin-bottom: 16px;
-      color: var(--t2);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 9px; font-weight: 400;
+      margin-bottom: 16px; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 2px;
+      display: flex; align-items: center; gap: 8px;
     }
 
-
-
+    /* ── Cards ── */
     .card {
       background: var(--layer);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      padding: 12px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 12px;
       transition: border-color 0.15s;
     }
-
-    .card.active {
-      border-color: var(--acid);
-      background: var(--acid-dim);
-    }
+    .card.active { border-color: var(--neon); background: var(--neon-dim); }
 
     .icon-box {
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
-      background: var(--deep);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 30px; height: 30px;
+      background: var(--deep); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
 
-    .card-info {
-      flex: 1;
-    }
+    .card-info { flex: 1; }
 
     .card-label {
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1px;
-      color: var(--t3);
-      margin-bottom: 3px;
-      text-transform: uppercase;
+      font-size: 9px; letter-spacing: 1px; color: var(--t3);
+      margin-bottom: 3px; text-transform: uppercase;
     }
 
-    .card-value {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--t1);
-    }
+    .card-value { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .card.active .card-value { color: var(--neon); }
 
-    .card.active .card-value {
-      color: var(--acid);
-    }
-
+    /* ── Dots ── */
     .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--lift);
-      flex-shrink: 0;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--lift); flex-shrink: 0;
     }
-
-    .dot.on {
-      background: var(--ok);
-      box-shadow: 0 0 6px var(--ok);
-    }
-
+    .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
     .dot.pulse {
-      background: var(--acid);
+      background: var(--neon);
       animation: pulse 1.5s infinite;
     }
-
     @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6);
-      }
-
-      70% {
-        box-shadow: 0 0 0 8px rgba(0, 255, 135, 0);
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0);
-      }
+      0%   { box-shadow: 0 0 0 0 rgba(0,255,135,0.6); }
+      70%  { box-shadow: 0 0 0 8px rgba(0,255,135,0); }
+      100% { box-shadow: 0 0 0 0 rgba(0,255,135,0); }
     }
 
+    /* ── Buttons ── */
     button {
-      width: 100%;
-      background: var(--acid);
-      color: var(--void);
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      font-family: 'Manrope', sans-serif;
-      font-weight: 700;
-      margin-top: 10px;
-      cursor: pointer;
-      font-size: 13px;
+      width: 100%; background: var(--neon); color: var(--void);
+      border: none; padding: 10px;
+      font-family: 'Manrope', sans-serif; font-weight: 700;
+      margin-top: 10px; cursor: pointer; font-size: 13px;
       transition: opacity 0.15s;
     }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
 
     button.secondary {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--t2);
-      border: 1px solid var(--border-md);
-      margin-top: 8px;
+      background: rgba(255,255,255,0.05);
+      color: var(--t2); border: 1px solid var(--border-md); margin-top: 8px;
     }
+    button.secondary:hover { color: var(--t1); background: rgba(255,255,255,0.08); }
 
+    /* ── Activity feed ── */
     .feed {
-      background: var(--deep);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      height: 96px;
-      margin-top: 12px;
-      padding: 10px 12px;
-      font-family: 'Azeret Mono', monospace;
-      font-size: 11px;
-      font-weight: 300;
-      line-height: 1.8;
-      overflow-y: auto;
+      background: var(--deep); border: 1px solid var(--border);
+      height: 96px; margin-top: 12px; padding: 10px 12px;
+      font-family: 'Azeret Mono', monospace; font-size: 11px;
+      font-weight: 300; line-height: 1.8; overflow-y: auto;
     }
 
     .feed-title {
       font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      color: var(--t3);
-      text-transform: uppercase;
-      margin-bottom: 8px;
+      font-size: 9px; letter-spacing: 1.5px; color: var(--t3);
+      text-transform: uppercase; margin-bottom: 8px;
     }
 
     .feed-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5px;
-      padding-bottom: 5px;
+      display: flex; justify-content: space-between;
+      margin-bottom: 5px; padding-bottom: 5px;
       border-bottom: 1px solid var(--border);
     }
-
-    .feed-row:last-child {
-      border-bottom: none;
-    }
+    .feed-row:last-child { border-bottom: none; }
 
     .feed-time {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
+      font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
     }
 
-    /* Sign-in screen */
+    /* ── Sign-in screen ── */
     #view-signin {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 280px;
-      text-align: center;
-      gap: 8px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 280px; text-align: center; gap: 8px;
     }
 
-    #view-signin .logo {
-      margin-bottom: 8px;
-    }
-
-    #view-signin h2 {
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
-    #view-signin p {
-      font-size: 12px;
-      color: var(--t3);
-      line-height: 1.6;
-      font-weight: 300;
-    }
-
-    #view-signin button {
-      margin-top: 16px;
-    }
+    #view-signin .logo { margin-bottom: 8px; }
+    #view-signin h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    #view-signin p { font-size: 12px; color: var(--t3); line-height: 1.6; font-weight: 300; }
+    #view-signin button { margin-top: 16px; }
 
     #signin-status {
       font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
-      margin-top: 8px;
-      min-height: 16px;
-      letter-spacing: 0.5px;
+      font-size: 10px; color: var(--t3);
+      margin-top: 8px; min-height: 16px; letter-spacing: 0.5px;
     }
 
-    #view-main {
-      display: none;
-    }
+    #view-main { display: none; }
 
+    /* ── Minimize button ── */
     .minimize-btn {
-      background: var(--layer);
-      border: 1px solid var(--border);
-      width: 24px;
-      height: 24px;
-      padding: 0;
-      margin: 0;
-      cursor: pointer;
-      color: var(--t2);
-      font-size: 13px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      flex-shrink: 0;
-      transition: color 0.15s, background 0.15s, border-color 0.15s;
+      background: var(--layer); border: 1px solid var(--border);
+      width: 24px; height: 24px; padding: 0; margin: 0;
+      cursor: pointer; color: var(--t2); font-size: 13px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .minimize-btn:hover { background: var(--surface); border-color: var(--border-md); color: var(--t1); }
+
+    /* ── Tier badge ── */
+    #tierBadge {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px; letter-spacing: 1.5px; padding: 3px 8px;
+      background: rgba(255,255,255,0.05); color: var(--t3);
+      border: 1px solid var(--border); text-transform: uppercase;
     }
 
-    .minimize-btn:hover {
-      background: var(--surface);
-      border-color: var(--border-md);
-      color: var(--t1);
-    }
-
-    /* Compact toolbar */
-    body.compact {
-      padding: 0;
-    }
+    /* ── Compact toolbar ── */
+    body.compact { padding: 0; }
 
     #toolbar {
-      display: none;
-      height: 48px;
-      padding: 0;
-      align-items: center;
-      gap: 0;
-      cursor: pointer;
-      background: var(--void);
-      border-bottom: 1px solid var(--border);
+      display: none; height: 48px; padding: 0;
+      align-items: center; gap: 0; cursor: pointer;
+      background: var(--void); border-bottom: 1px solid var(--border);
     }
 
-    .toolbar-chips {
-      display: flex;
-      flex: 1;
-      height: 100%;
-    }
+    .toolbar-chips { display: flex; flex: 1; height: 100%; }
 
     .toolbar-chip {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex: 1;
-      height: 100%;
-      background: transparent;
-      border: none;
-      border-right: 1px solid var(--border);
-      padding: 0 14px;
-      transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      flex: 1; height: 100%; background: transparent; border: none;
+      border-right: 1px solid var(--border); padding: 0 14px; transition: background 0.15s;
     }
-
-    .chip-icon {
-      flex-shrink: 0;
-    }
-
+    .chip-icon { flex-shrink: 0; }
     .chip-status {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.4px;
-      color: var(--t2);
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      transition: color 0.15s;
+      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 0.4px;
+      color: var(--t2); flex: 1; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; transition: color 0.15s;
     }
-
-    .toolbar-chip.active .chip-status {
-      color: var(--acid);
-    }
-
-    .toolbar-chip:last-child {
-      border-right: none;
-    }
-
-    #toolbar:hover .toolbar-chip:not(.active) {
-      background: var(--layer);
-    }
+    .toolbar-chip.active .chip-status { color: var(--neon); }
+    .toolbar-chip:last-child { border-right: none; }
+    #toolbar:hover .toolbar-chip:not(.active) { background: var(--layer); }
 
     .toolbar-expand {
-      flex-shrink: 0;
-      width: 40px;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--t3);
-      font-size: 13px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      margin: 0;
-      padding: 0;
-      transition: color 0.15s;
+      flex-shrink: 0; width: 40px; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--t3); font-size: 13px;
+      border: none; background: transparent; cursor: pointer;
+      margin: 0; padding: 0; transition: color 0.15s;
     }
-
-    .toolbar-expand:hover {
-      color: var(--t1);
-    }
+    .toolbar-expand:hover { color: var(--t1); }
 
     #view-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 280px;
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 1px;
-      color: var(--t3);
+      display: flex; align-items: center; justify-content: center;
+      min-height: 280px; font-family: 'Azeret Mono', monospace;
+      font-size: 10px; letter-spacing: 1px; color: var(--t3);
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Loading (fallback only) -->
+  <!-- Loading -->
   <div id="view-loading" style="display:none">Loading...</div>
 
   <!-- Sign-in -->
   <div id="view-signin">
     <div class="logo">
       <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
-        <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="1.5" fill="none" />
-        <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none" />
+        <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="1.5" fill="none" />
+        <rect x="2" y="22" width="32" height="10" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none" />
         <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5" />
-        <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round"
-          stroke-linejoin="round" fill="none" />
+        <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
       </svg>
     </div>
     <h2>subsrf</h2>
@@ -407,13 +252,13 @@
   <!-- Main UI -->
   <div id="view-main">
 
-    <!-- Compact toolbar (shown when minimized) — click anywhere to expand -->
+    <!-- Compact toolbar -->
     <div id="toolbar" onclick="setMinimized(false)">
       <div class="toolbar-chips">
         <span class="toolbar-chip" id="toolbarExtChip">
           <svg class="chip-icon" width="16" height="16" viewBox="0 0 36 36" fill="none">
-            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="2" fill="none"/>
-            <rect x="2" y="22" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="2" fill="none" opacity="0.4"/>
+            <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="2" fill="none"/>
+            <rect x="2" y="22" width="32" height="10" stroke="#00FF87" stroke-width="2" fill="none" opacity="0.4"/>
             <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
           </svg>
           <span class="chip-status" id="toolbarExtLabel">Waiting...</span>
@@ -438,21 +283,17 @@
           <div class="title" style="margin-bottom:0;">Subsrf Bridge</div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
-          <span id="tierBadge"
-            style="font-family:'Azeret Mono',monospace; font-size:9px; letter-spacing:1.5px; padding:3px 8px; border-radius:4px; background:rgba(255,255,255,0.05); color:rgba(242,242,244,0.28); border:1px solid rgba(255,255,255,0.06); text-transform:uppercase;">FREE</span>
-          <button class="secondary" id="btnSignOut"
-            style="width:auto; padding:3px 8px; font-size:10px; margin-top:0;">Sign out</button>
+          <span id="tierBadge">FREE</span>
+          <button class="secondary" id="btnSignOut" style="width:auto; padding:3px 8px; font-size:10px; margin-top:0;">Sign out</button>
         </div>
       </div>
 
       <div class="card" id="extCard">
         <div class="icon-box">
           <svg width="16" height="16" viewBox="0 0 36 36" fill="none">
-            <rect x="2" y="8" width="32" height="10" rx="2" stroke="#00FF87" stroke-width="2" fill="none" />
-            <rect x="2" y="22" width="32" height="10" rx="2" stroke="rgba(0,255,135,0.35)" stroke-width="2"
-              fill="none" />
-            <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" fill="none" />
+            <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="2" fill="none" />
+            <rect x="2" y="22" width="32" height="10" stroke="rgba(0,255,135,0.35)" stroke-width="2" fill="none" />
+            <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
           </svg>
         </div>
         <div class="card-info">
@@ -466,8 +307,7 @@
         <div class="icon-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="4" stroke="#00FF87" stroke-width="1.5" />
-            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="rgba(0,255,135,0.4)" stroke-width="1.5"
-              stroke-linecap="round" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="rgba(0,255,135,0.4)" stroke-width="1.5" stroke-linecap="round" />
           </svg>
         </div>
         <div class="card-info">
@@ -481,7 +321,7 @@
 
       <div class="feed">
         <div class="feed-title">Activity Feed</div>
-        <div id="feedList" style="color: var(--t3);">Waiting for activity...</div>
+        <div id="feedList" style="color:var(--t3);">Waiting for activity...</div>
       </div>
     </div>
 
@@ -489,7 +329,7 @@
 
   <script>
     const BRIDGE = 'https://api.subsrf.dev';
-    let session = null; // { accessToken, tier, email }
+    let session = null;
     let lastData = null;
     let lastProcessedAiId = 0;
     let lastProcessedSyncId = '';
@@ -497,7 +337,6 @@
     let pollInterval = null;
     let oauthPollInterval = null;
 
-    // ── Storage helpers (via code.js) ─────────────────────────────────────────
     const storageCallbacks = {};
 
     function storageGet(key) {
@@ -515,7 +354,6 @@
       parent.postMessage({ pluginMessage: { type: 'DEL_STORAGE', key } }, '*');
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────────
     function showView(name) {
       document.getElementById('view-loading').style.display = name === 'loading' ? 'flex' : 'none';
       document.getElementById('view-signin').style.display = name === 'signin' ? 'flex' : 'none';
@@ -536,23 +374,22 @@
       const badge = document.getElementById('tierBadge');
       if (tier === 'pro') {
         badge.textContent = 'PRO';
-        badge.style.background = 'rgba(0,255,135,0.12)';
+        badge.style.background = 'rgba(0,255,135,0.10)';
         badge.style.color = '#00FF87';
         badge.style.border = '1px solid rgba(0,255,135,0.2)';
       } else if (tier === 'starter') {
         badge.textContent = 'STARTER';
-        badge.style.background = 'rgba(255,171,0,0.12)';
+        badge.style.background = 'rgba(255,171,0,0.08)';
         badge.style.color = '#FFAB00';
         badge.style.border = '1px solid rgba(255,171,0,0.25)';
       } else {
         badge.textContent = 'FREE';
         badge.style.background = 'rgba(255,255,255,0.05)';
         badge.style.color = 'rgba(242,242,244,0.28)';
-        badge.style.border = '1px solid rgba(255,255,255,0.06)';
+        badge.style.border = '1px solid rgba(242,242,244,0.08)';
       }
     }
 
-    // ── Bridge polling ────────────────────────────────────────────────────────
     async function checkState() {
       try {
         const headers = { 'Content-Type': 'application/json' };
@@ -568,13 +405,11 @@
         const isPaidTier = tier === 'pro' || tier === 'starter';
         applyTierBadge(tier);
 
-        // Keep local session tier in sync
         if (session && session.tier !== tier) {
           session.tier = tier;
           storageSet('subsrf_session', session);
         }
 
-        // Sync button
         const syncBtn = document.getElementById('syncBtn');
         if (!isPaidTier) {
           syncBtn.disabled = false;
@@ -595,7 +430,6 @@
           };
         }
 
-        // Extension status
         if (isPaidTier && data.elements && data.elements.length > 0) {
           document.getElementById('extDot').className = 'dot on';
           document.getElementById('extStatus').textContent = 'Syncing ' + data.elements.length + ' elements';
@@ -617,7 +451,6 @@
           syncBtn.disabled = true;
         }
 
-        // AI commands
         if (data.aiMessage) {
           document.getElementById('aiDot').className = 'dot pulse';
           document.getElementById('aiStatus').textContent = 'Command Ready';
@@ -633,7 +466,6 @@
           document.getElementById('aiCard').classList.remove('active');
         }
 
-        // Figma queries
         if (data.pendingQuery && data.pendingQuery.id > lastProcessedQueryId) {
           lastProcessedQueryId = data.pendingQuery.id;
           addLog('AI query #' + data.pendingQuery.id, 'ai');
@@ -649,9 +481,6 @@
       }
     }
 
-    // Exchanges the stored refresh token for a new access token via Railway.
-    // Updates session in-place and persists to figma.clientStorage.
-    // Returns true on success, false if the refresh token is gone/invalid (forces sign-out).
     async function refreshSession() {
       if (!session || !session.refreshToken) return false;
       try {
@@ -674,9 +503,7 @@
         if (data.email) session.email = data.email;
         storageSet('subsrf_session', session);
         return true;
-      } catch (e) {
-        return false;
-      }
+      } catch (e) { return false; }
     }
 
     function startPolling() {
@@ -685,7 +512,6 @@
       pollInterval = setInterval(checkState, 2000);
     }
 
-    // ── OAuth flow ────────────────────────────────────────────────────────────
     function startOAuth() {
       var state = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
       document.getElementById('btnSignIn').disabled = true;
@@ -693,11 +519,10 @@
       document.getElementById('signin-status').textContent = 'Opening browser...';
 
       window.open(BRIDGE + '/auth/figma/start?state=' + state, '_blank');
-
       document.getElementById('signin-status').textContent = 'Waiting for sign-in...';
 
       var attempts = 0;
-      var maxAttempts = 90; // 3 minutes
+      var maxAttempts = 90;
       oauthPollInterval = setInterval(async function () {
         attempts++;
         if (attempts > maxAttempts) {
@@ -709,7 +534,7 @@
         }
         try {
           var res = await fetch(BRIDGE + '/api/auth/figma/session?state=' + state);
-          if (res.status === 404) return; // still pending
+          if (res.status === 404) return;
           if (!res.ok) {
             clearInterval(oauthPollInterval);
             document.getElementById('signin-status').textContent = 'Sign-in failed. Try again.';
@@ -731,7 +556,7 @@
           applyTierBadge(session.tier);
           startPolling();
           addLog('Signed in as ' + session.email);
-        } catch (e) { /* network hiccup, retry */ }
+        } catch (e) { }
       }, 2000);
     }
 
@@ -749,7 +574,6 @@
       showView('signin');
     }
 
-    // ── Minimize / expand ─────────────────────────────────────────────────────
     let isMinimized = false;
     const FULL_HEIGHT = 500;
     const MINI_HEIGHT = 48;
@@ -773,24 +597,18 @@
     }
 
     document.getElementById('btnMinimize').onclick = function () { setMinimized(true); };
-
-    // ── Boot ──────────────────────────────────────────────────────────────────
     document.getElementById('btnSignIn').onclick = startOAuth;
     document.getElementById('btnSignInCancel').onclick = cancelOAuth;
     document.getElementById('btnSignOut').onclick = signOut;
 
-    // Show sign-in immediately so the plugin is never stuck on "Loading..."
-    // If a stored session exists the STORAGE_VALUE handler will promote to main.
     showView('signin');
     storageGet('subsrf_session');
 
-    // Fallback: if code.js never responds within 4 seconds, stay on sign-in
     setTimeout(function () {
       var loading = document.getElementById('view-loading');
       if (loading && loading.style.display !== 'none') showView('signin');
     }, 4000);
 
-    // ── Messages from code.js ─────────────────────────────────────────────────
     window.onmessage = async function (event) {
       var msg = event.data.pluginMessage;
       if (!msg) return;
@@ -806,14 +624,9 @@
             session = msg.value;
             var now = Date.now();
             var expiresAt = session.expiresAt || 0;
-            // If token is expired or expiring within 5 min, refresh before starting
             if (expiresAt > 0 && now > expiresAt - 5 * 60 * 1000) {
               refreshSession().then(function (ok) {
-                if (session) {
-                  showView('main');
-                  applyTierBadge(session.tier || 'free');
-                  startPolling();
-                }
+                if (session) { showView('main'); applyTierBadge(session.tier || 'free'); startPolling(); }
               });
             } else {
               showView('main');
@@ -854,5 +667,4 @@
     };
   </script>
 </body>
-
 </html>

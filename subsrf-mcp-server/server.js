@@ -322,17 +322,38 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 
   if (event.type === 'customer.subscription.updated') {
     const sub = event.data.object;
+    // Only act on active subscriptions — ignore past_due, canceled, etc.
+    if (sub.status !== 'active') return res.json({ received: true });
+
     const newPriceId = sub.items?.data?.[0]?.price?.id;
     const proPriceId = process.env.STRIPE_PRICE_ID_PRO;
     const starterPriceId = process.env.STRIPE_PRICE_ID_STARTER;
-    const tier = newPriceId === proPriceId ? 'pro' : newPriceId === starterPriceId ? 'starter' : null;
-    if (tier && sub.customer && supabase) {
-      const tierCredits = { pro: 300, starter: 75 }[tier];
+    const newTier = newPriceId === proPriceId ? 'pro' : newPriceId === starterPriceId ? 'starter' : null;
+    if (newTier && sub.customer && supabase) {
+      // Fetch current profile to make a smart credit decision instead of blindly resetting
+      const { data: profile } = await supabase
+        .from('profiles').select('tier, credits').eq('stripe_customer_id', sub.customer).single();
+
+      const currentTier = profile?.tier || 'free';
+      const currentCredits = profile?.credits ?? 0;
+      const tierRank = { free: 0, starter: 1, pro: 2 };
+      const newTierMax = { pro: 300, starter: 75 }[newTier];
+
+      let newCredits;
+      if (tierRank[newTier] > tierRank[currentTier]) {
+        // Upgrade — grant the full new tier credit allocation
+        newCredits = newTierMax;
+      } else {
+        // Downgrade (fires at period end via portal/schedule) — cap at new tier max
+        // but don't add credits; the monthly reset at next period start handles the top-up
+        newCredits = Math.min(currentCredits, newTierMax);
+      }
+
       const { error } = await supabase.from('profiles')
-        .update({ tier, credits: tierCredits, stripe_subscription_id: sub.id })
+        .update({ tier: newTier, credits: newCredits, stripe_subscription_id: sub.id })
         .eq('stripe_customer_id', sub.customer);
       if (error) console.error('[Subsrf Stripe] Plan update failed:', error.message);
-      else console.error(`[Subsrf Stripe] Updated customer ${sub.customer} to ${tier}`);
+      else console.error(`[Subsrf Stripe] ${currentTier} → ${newTier} for customer ${sub.customer} (credits: ${currentCredits} → ${newCredits})`);
     }
   }
 
@@ -611,7 +632,8 @@ app.post('/api/credits/refund', async (req, res) => {
 
 // Creates a Stripe Checkout session and returns the redirect URL.
 // Body: { tier: 'starter' | 'pro' }
-// The user's Supabase ID and chosen tier are stored in session metadata for the webhook.
+// If the user already has an active subscription, returns a Customer Portal URL instead
+// so plan changes go through the portal (which handles scheduling and proration correctly).
 app.post('/api/stripe/create-checkout-session', async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -622,14 +644,47 @@ app.post('/api/stripe/create-checkout-session', async (req, res) => {
   }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  const appUrl = process.env.APP_URL || 'https://subsrf.dev';
+
+  // If user already has an active paid subscription, redirect to portal for plan changes.
+  // This prevents duplicate subscriptions and lets Stripe handle proration/scheduling.
+  if (supabase) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id, stripe_subscription_id, tier')
+      .eq('id', auth.user.id).single();
+
+    if (profile?.stripe_subscription_id && ['starter', 'pro'].includes(profile?.tier)) {
+      try {
+        const portalParams = new URLSearchParams({
+          customer: profile.stripe_customer_id,
+          return_url: `${appUrl}/?plan_change=done`,
+        });
+        const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: portalParams.toString(),
+        });
+        const portalData = await portalRes.json();
+        if (portalRes.ok) {
+          console.error(`[Subsrf Stripe] Redirecting ${auth.user.email} to portal for plan change`);
+          return res.json({ url: portalData.url, via: 'portal' });
+        }
+      } catch (e) {
+        console.error('[Subsrf Stripe] Portal redirect failed, falling through to checkout:', e.message);
+      }
+    }
+  }
+
   const priceId = requestedTier === 'pro'
     ? process.env.STRIPE_PRICE_ID_PRO
     : process.env.STRIPE_PRICE_ID_STARTER;
-  if (!stripeKey || !priceId) {
-    return res.status(500).json({ error: `Stripe not configured (set STRIPE_SECRET_KEY and STRIPE_PRICE_ID_${requestedTier.toUpperCase()})` });
+  if (!priceId) {
+    return res.status(500).json({ error: `STRIPE_PRICE_ID_${requestedTier.toUpperCase()} not set` });
   }
 
-  const appUrl = process.env.APP_URL || 'https://subsrf.dev';
   try {
     const params = new URLSearchParams({
       mode: 'subscription',
@@ -694,6 +749,102 @@ app.post('/api/stripe/create-portal-session', async (req, res) => {
     res.json({ url: data.url });
   } catch (e) {
     console.error('[Subsrf Stripe] Portal session failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Mid-cycle plan change with correct proration.
+// Upgrade (Starter → Pro): charges only the prorated difference for the remaining days.
+// Downgrade (Pro → Starter): redirects to Customer Portal, which schedules the
+//   change at period end — the user keeps their paid tier until the cycle resets.
+app.post('/api/stripe/change-plan', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const newTier = req.body?.tier;
+  if (!['starter', 'pro'].includes(newTier)) {
+    return res.status(400).json({ error: 'tier must be starter or pro' });
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const priceId = newTier === 'pro' ? process.env.STRIPE_PRICE_ID_PRO : process.env.STRIPE_PRICE_ID_STARTER;
+  if (!stripeKey || !priceId) return res.status(500).json({ error: 'Stripe not configured' });
+
+  if (!supabase) return res.status(503).json({ error: 'SUPABASE_SERVICE_KEY required' });
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('stripe_customer_id, stripe_subscription_id, tier')
+    .eq('id', auth.user.id).single();
+
+  const currentTier = profile?.tier || 'free';
+  const subscriptionId = profile?.stripe_subscription_id;
+
+  if (!subscriptionId) {
+    return res.status(400).json({ error: 'no_subscription', message: 'No active subscription. Use create-checkout-session to subscribe.' });
+  }
+  if (currentTier === newTier) {
+    return res.json({ ok: true, message: 'Already on this plan' });
+  }
+
+  const tierRank = { free: 0, starter: 1, pro: 2 };
+  const isUpgrade = tierRank[newTier] > tierRank[currentTier];
+  const appUrl = process.env.APP_URL || 'https://subsrf.dev';
+
+  try {
+    if (isUpgrade) {
+      // Fetch subscription to get the item ID for the update
+      const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
+        headers: { Authorization: `Bearer ${stripeKey}` },
+      });
+      const sub = await subRes.json();
+      if (!subRes.ok) throw new Error(sub.error?.message || `Stripe error ${subRes.status}`);
+
+      const itemId = sub.items?.data?.[0]?.id;
+      if (!itemId) throw new Error('No subscription item found');
+
+      // Update immediately — Stripe creates a prorated invoice for the remaining days
+      const params = new URLSearchParams({
+        [`items[0][id]`]: itemId,
+        [`items[0][price]`]: priceId,
+        proration_behavior: 'create_prorated_invoice',
+      });
+      const updateRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+      });
+      const updated = await updateRes.json();
+      if (!updateRes.ok) throw new Error(updated.error?.message || `Stripe error ${updateRes.status}`);
+
+      // Apply immediately in Supabase — webhook will reconcile if it arrives later
+      const newCredits = { pro: 300, starter: 75 }[newTier];
+      await supabase.from('profiles')
+        .update({ tier: newTier, credits: newCredits })
+        .eq('id', auth.user.id);
+
+      console.error(`[Subsrf Stripe] Upgraded ${auth.user.email}: ${currentTier} → ${newTier} (prorated, credits: ${newCredits})`);
+      res.json({ ok: true, type: 'upgraded', tier: newTier });
+    } else {
+      // Downgrade — use the Customer Portal so Stripe schedules it for period end.
+      // The user stays on their current paid tier; no charge or refund is issued now.
+      const portalParams = new URLSearchParams({
+        customer: profile.stripe_customer_id,
+        return_url: `${appUrl}/?plan_change=scheduled`,
+      });
+      const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: portalParams.toString(),
+      });
+      const portalData = await portalRes.json();
+      if (!portalRes.ok) throw new Error(portalData.error?.message || `Stripe error ${portalRes.status}`);
+
+      console.error(`[Subsrf Stripe] Downgrade portal for ${auth.user.email}: ${currentTier} → ${newTier} (scheduled at period end)`);
+      res.json({ ok: true, type: 'downgrade_portal', url: portalData.url, currentTier, scheduledTier: newTier });
+    }
+  } catch (e) {
+    console.error('[Subsrf Stripe] change-plan failed:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
@@ -1011,7 +1162,7 @@ Rules:
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: 'claude-sonnet-4-6',
           max_tokens: 3500,
           system: systemPrompt,
           messages: [{ role: 'user', content: userContent }]
@@ -1290,9 +1441,9 @@ app.get("/api/state", async (req, res) => {
     }
   }
 
-  // Only expose elements to paid users — free users can't use Figma sync
+  // Free: up to 5 elements. Starter/Pro: unlimited.
   const isPaidTier = lastTier === 'pro' || lastTier === 'starter';
-  const elementsVisible = isPaidTier ? lastElements : [];
+  const elementsVisible = isPaidTier ? lastElements : lastElements.slice(0, 5);
   res.json({
     page: lastContext,
     count: elementsVisible.length,

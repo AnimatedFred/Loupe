@@ -14,6 +14,14 @@
   let regionOverlay = null;
   let dragStart = null;
   let isDragging = false;
+  let cachedTier = 'free';
+
+  // Load tier from storage — avoids waking the service worker
+  chrome.storage.local.get('subsrf_session', (data) => {
+    cachedTier = data.subsrf_session?.tier || 'free';
+  });
+
+  const FREE_ELEMENT_LIMIT = 10;
 
   console.log('[Subsrf] Capture Engine v2.8 Online.');
 
@@ -27,39 +35,36 @@
         position: fixed !important;
         bottom: 32px; left: 50%;
         transform: translateX(-50%) translateY(20px);
-        background: #0C0C12 !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        border-radius: 16px !important;
-        padding: 8px !important;
-        display: flex !important; align-items: center !important; gap: 8px !important;
+        background: #111118 !important;
+        border: 1px solid rgba(242,242,244,0.08) !important;
+        padding: 4px !important;
+        display: flex !important; align-items: center !important; gap: 2px !important;
         z-index: 2147483647 !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,255,135,0.08) !important;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
         opacity: 0; pointer-events: none;
-        transition: all 0.4s cubic-bezier(0.16,1,0.3,1) !important;
+        transition: opacity 0.25s ease, transform 0.25s ease !important;
       }
       .uipb-toolbar.show { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; pointer-events: auto !important; }
       .uipb-toolbar-btn {
         background: transparent !important; color: rgba(242,242,244,0.55) !important;
-        border: none !important; padding: 10px 16px !important; border-radius: 10px !important;
-        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 13px !important;
+        border: none !important; padding: 8px 14px !important;
+        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 12px !important;
         font-weight: 600 !important; cursor: pointer !important;
-        display: flex !important; align-items: center !important; gap: 8px !important;
-        transition: all 0.2s ease !important; white-space: nowrap !important;
+        display: flex !important; align-items: center !important; gap: 6px !important;
+        transition: background 0.15s, color 0.15s !important; white-space: nowrap !important;
       }
       .uipb-toolbar-btn:hover { background: rgba(242,242,244,0.06) !important; color: #F2F2F4 !important; }
       .uipb-toolbar-btn.primary { background: #00FF87 !important; color: #050508 !important; }
-      .uipb-toolbar-btn.primary:hover { background: #00e87a !important; box-shadow: 0 4px 12px rgba(0,255,135,0.25) !important; }
-      .uipb-toolbar-btn.secondary { background: transparent !important; color: #00FF87 !important; border: 1px solid rgba(0,255,135,0.35) !important; }
-      .uipb-toolbar-btn.secondary:hover { background: rgba(0,255,135,0.08) !important; border-color: rgba(0,255,135,0.6) !important; }
-      .uipb-toolbar-btn.secondary:disabled { color: rgba(0,255,135,0.3) !important; border-color: rgba(0,255,135,0.12) !important; }
-      .uipb-toolbar-divider { width: 1px !important; height: 20px !important; background: rgba(242,242,244,0.08) !important; margin: 0 4px !important; }
-      .uipb-toolbar-info { color: rgba(242,242,244,0.55) !important; font-family: 'Azeret Mono', monospace !important; font-size: 12px !important; margin-left: 8px !important; margin-right: 12px !important; }
-      .uipb-highlight-box { position: absolute !important; border: 2px solid #00FF87 !important; background: rgba(0,255,135,0.06) !important; pointer-events: none !important; z-index: 2147483646 !important; box-sizing: border-box !important; border-radius: 4px !important; }
-      .uipb-badge { position: absolute !important; background: #0C0C12 !important; color: #00FF87 !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; font-weight: 700 !important; padding: 2px 6px !important; border-radius: 4px !important; z-index: 2147483647 !important; pointer-events: none !important; border: 1px solid rgba(0,255,135,0.35) !important; box-shadow: 0 4px 12px rgba(0,255,135,0.15) !important; transform: translate(-50%,-50%) !important; }
-      .uipb-region-overlay { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.06) !important; pointer-events: none !important; z-index: 2147483645 !important; box-sizing: border-box !important; }
-      #uipb-toast { position: fixed; bottom: 24px; right: 24px; background: #0C0C12; color: #F2F2F4; font-family: 'Manrope', -apple-system, sans-serif; font-size: 13px; font-weight: 700; padding: 12px 20px; border-radius: 12px; z-index: 2147483647; opacity: 0; transform: translateY(8px); transition: all 0.3s cubic-bezier(0.16,1,0.3,1); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; }
+      .uipb-toolbar-btn.primary:hover { opacity: 0.9 !important; }
+      .uipb-toolbar-btn.secondary { background: transparent !important; color: #00FF87 !important; border: none !important; }
+      .uipb-toolbar-btn.secondary:hover { background: rgba(0,255,135,0.08) !important; }
+      .uipb-toolbar-btn.secondary:disabled { color: rgba(0,255,135,0.3) !important; }
+      .uipb-toolbar-divider { width: 1px !important; height: 20px !important; background: rgba(242,242,244,0.08) !important; margin: 0 4px !important; flex-shrink: 0 !important; }
+      .uipb-toolbar-info { color: rgba(242,242,244,0.28) !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; margin-left: 8px !important; margin-right: 4px !important; }
+      .uipb-highlight-box { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.05) !important; pointer-events: none !important; z-index: 2147483646 !important; box-sizing: border-box !important; }
+      .uipb-badge { position: absolute !important; background: #111118 !important; color: #00FF87 !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; font-weight: 700 !important; padding: 2px 6px !important; z-index: 2147483647 !important; pointer-events: none !important; border: 1px solid rgba(0,255,135,0.35) !important; transform: translate(-50%,-50%) !important; }
+      .uipb-region-overlay { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.05) !important; pointer-events: none !important; z-index: 2147483645 !important; box-sizing: border-box !important; }
+      #uipb-toast { position: fixed; bottom: 24px; right: 24px; background: #111118; color: #F2F2F4; font-family: 'Azeret Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 10px 16px; z-index: 2147483647; opacity: 0; transform: translateY(8px); transition: all 0.25s ease; border: 1px solid rgba(242,242,244,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; }
       #uipb-toast.show { opacity: 1; transform: translateY(0); }
     `;
     document.head.appendChild(s);
@@ -116,6 +121,10 @@
   function addHighlight(el) {
     if (!el || el === document.body || el === document.documentElement) return;
     if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
+    if (cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT) {
+      showToast(`Free plan limited to ${FREE_ELEMENT_LIMIT} elements — upgrade to Starter`);
+      return;
+    }
 
     const rect = el.getBoundingClientRect();
     const box = document.createElement('div');
@@ -238,16 +247,20 @@
       <div class="uipb-toolbar-divider"></div>
       <button class="uipb-toolbar-btn" id="uipb-clear-all" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Clear All</button>
       <button class="uipb-toolbar-btn secondary" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled' : ''}>Show AI Prompt</button>
-      <button class="uipb-toolbar-btn secondary" id="uipb-audit" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Accessibility Audit</button>
+      <button class="uipb-toolbar-btn secondary" id="uipb-audit" ${(highlightedElements.length === 0 || cachedTier === 'free') ? 'disabled' : ''} style="${(highlightedElements.length === 0 || cachedTier === 'free') ? 'opacity:0.35;cursor:not-allowed;' : ''}">${cachedTier === 'free' ? 'Accessibility Audit 🔒' : 'Accessibility Audit'}</button>
       <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
     `;
 
-    document.getElementById('uipb-btn-click').onclick = (e) => { e.stopPropagation(); currentMode = 'click'; updateToolbar(); };
-    document.getElementById('uipb-btn-area').onclick = (e) => { e.stopPropagation(); currentMode = 'region'; updateToolbar(); };
-    document.getElementById('uipb-btn-screenshot').onclick = (e) => { e.stopPropagation(); currentMode = 'screenshot'; updateToolbar(); };
-    document.getElementById('uipb-exit').onclick = (e) => { e.stopPropagation(); exitSelection(); };
+    const btnClick = toolbar.querySelector('#uipb-btn-click');
+    const btnArea  = toolbar.querySelector('#uipb-btn-area');
+    const btnShot  = toolbar.querySelector('#uipb-btn-screenshot');
+    const btnExit  = toolbar.querySelector('#uipb-exit');
+    if (btnClick) btnClick.onclick = (e) => { e.stopPropagation(); currentMode = 'click'; updateToolbar(); };
+    if (btnArea)  btnArea.onclick  = (e) => { e.stopPropagation(); currentMode = 'region'; updateToolbar(); };
+    if (btnShot)  btnShot.onclick  = (e) => { e.stopPropagation(); currentMode = 'screenshot'; updateToolbar(); };
+    if (btnExit)  btnExit.onclick  = (e) => { e.stopPropagation(); exitSelection(); };
 
-    const clearAllBtn = document.getElementById('uipb-clear-all');
+    const clearAllBtn = toolbar.querySelector('#uipb-clear-all');
     if (clearAllBtn && highlightedElements.length > 0) {
       clearAllBtn.onclick = (e) => {
         e.stopPropagation();
@@ -258,13 +271,13 @@
       };
     }
 
-    const prevBtn = document.getElementById('uipb-preview');
+    const prevBtn = toolbar.querySelector('#uipb-preview');
     if (prevBtn && highlightedElements.length > 0) {
       prevBtn.onclick = (e) => { e.stopPropagation(); showPreviewModal(); };
     }
 
-    const auditBtn = document.getElementById('uipb-audit');
-    if (auditBtn && highlightedElements.length > 0) {
+    const auditBtn = toolbar.querySelector('#uipb-audit');
+    if (auditBtn && highlightedElements.length > 0 && cachedTier !== 'free') {
       auditBtn.onclick = (e) => {
         e.stopPropagation();
         const bbox = getSelectionBoundingBox();
@@ -356,7 +369,10 @@
             if (!highlightedElements.find(h => h.element === el)) addHighlight(el);
           }
         });
-        showToast(`${highlightedElements.length} elements selected`);
+        const hitCap = cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT;
+        showToast(hitCap
+          ? `${FREE_ELEMENT_LIMIT} elements selected (Free limit — upgrade to Starter for unlimited)`
+          : `${highlightedElements.length} elements selected`);
 
       } else if (currentMode === 'screenshot') {
         // Area screenshot — hide UI, capture region, open editor

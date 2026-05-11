@@ -508,43 +508,56 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     case 'CAPTURE_REGION': {
       console.log('[Subsrf Background] Initializing Region Capture...', msg.rect);
-      throttleCapture((dataUrl) => {
-        if (dataUrl) {
-          chrome.storage.local.set({
-            lastCapture: dataUrl,
-            lastCaptureRect: msg.rect,
-            lastCaptureViewportWidth: msg.viewportWidth,
-            lastCaptureTime: Date.now()
-          }, () => {
-             chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
-          });
-        }
-      });
+      (async () => {
+        const session = await getAuthState();
+        if (!session?.tier || session.tier === 'free') return;
+        throttleCapture((dataUrl) => {
+          if (dataUrl) {
+            chrome.storage.local.set({
+              lastCapture: dataUrl,
+              lastCaptureRect: msg.rect,
+              lastCaptureViewportWidth: msg.viewportWidth,
+              lastCaptureTime: Date.now()
+            }, () => {
+               chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
+            });
+          }
+        });
+      })();
       break;
     }
 
     case 'CAPTURE_ACCESSIBILITY_AUDIT': {
       console.log('[Subsrf Background] Initializing Accessibility Audit Capture...', msg.rect);
-      throttleCapture((dataUrl) => {
-        if (dataUrl) {
-          chrome.storage.local.set({
-            lastCapture: dataUrl,
-            lastCaptureRect: msg.rect,
-            lastCaptureViewportWidth: msg.viewportWidth,
-            lastCaptureTime: Date.now(),
-            openAnalysisTab: { mode: 'accessibility', autoRun: true }
-          }, () => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
-          });
-        }
-      });
+      (async () => {
+        const session = await getAuthState();
+        if (!session?.tier || session.tier === 'free') return;
+        throttleCapture((dataUrl) => {
+          if (dataUrl) {
+            chrome.storage.local.set({
+              lastCapture: dataUrl,
+              lastCaptureRect: msg.rect,
+              lastCaptureViewportWidth: msg.viewportWidth,
+              lastCaptureTime: Date.now(),
+              openAnalysisTab: { mode: 'accessibility', autoRun: true }
+            }, () => {
+              chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
+            });
+          }
+        });
+      })();
       break;
     }
 
     case 'TRIGGER_FULL_PAGE_CAPTURE': {
       console.log('[Subsrf Background] Initializing Full Page Scroll Capture...');
       const tabId = sender.tab?.id;
-      if (tabId) captureFullPage(tabId).catch(e => console.error('[Subsrf] captureFullPage error:', e));
+      if (!tabId) break;
+      (async () => {
+        const session = await getAuthState();
+        if (!session?.tier || session.tier === 'free') return;
+        captureFullPage(tabId).catch(e => console.error('[Subsrf] captureFullPage error:', e));
+      })();
       break;
     }
   }

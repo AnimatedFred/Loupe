@@ -23,19 +23,51 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnFullPage = document.getElementById('btn-full-page');
   const btnScreenshot = document.getElementById('btn-screenshot');
   const countText = document.getElementById('countText');
+  let currentSession = null;
 
   btnClick.onclick = () => ensureAndExecute((id) => setMode(id, 'click'));
   btnArea.onclick = () => ensureAndExecute((id) => setMode(id, 'region'));
 
-  btnFullPage.onclick = () => ensureAndExecute((id) => {
-    chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
-    setTimeout(() => window.close(), 100);
-  });
+  btnFullPage.onclick = () => {
+    const tier = (currentSession?.tier || 'free').toLowerCase();
+    if (!currentSession || tier === 'free') {
+      showUpgradeHint('Full Page capture requires Starter or Pro.');
+      return;
+    }
+    if (tier === 'starter') {
+      const today = new Date().toISOString().slice(0, 10);
+      chrome.storage.local.get('fullPageCaptureLog', (data) => {
+        const log = data.fullPageCaptureLog || {};
+        const count = log.date === today ? (log.count || 0) : 0;
+        if (count >= 5) {
+          showUpgradeHint('Daily Full Page limit reached (5/day on Starter). Upgrade to Pro for unlimited.');
+          return;
+        }
+        chrome.storage.local.set({ fullPageCaptureLog: { date: today, count: count + 1 } });
+        ensureAndExecute((id) => {
+          chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
+          setTimeout(() => window.close(), 100);
+        });
+      });
+      return;
+    }
+    ensureAndExecute((id) => {
+      chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
+      setTimeout(() => window.close(), 100);
+    });
+  };
 
-  btnScreenshot.onclick = () => ensureAndExecute((id) => {
-    setMode(id, 'screenshot');
-    setTimeout(() => window.close(), 100);
-  });
+  btnScreenshot.onclick = () => {
+    const tier = (currentSession?.tier || 'free').toLowerCase();
+    if (!currentSession || tier === 'free') {
+      showUpgradeHint('Screenshot requires Starter or Pro.');
+      return;
+    }
+    ensureAndExecute((id) => {
+      setMode(id, 'screenshot');
+      setTimeout(() => window.close(), 100);
+    });
+  };
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
@@ -66,10 +98,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderAuthState(session) {
+    currentSession = session;
     if (!session) {
       authSignedOut.style.display = '';
       authSignedIn.style.display  = 'none';
-        renderMcpTab(false);
+      renderMcpTab(false);
+      btnScreenshot.classList.add('locked');
+      btnFullPage.classList.add('locked');
+      document.getElementById('popup-drop-zone')?.classList.add('locked');
       return;
     }
     authSignedOut.style.display = 'none';
@@ -129,7 +165,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const upgradeCta = document.getElementById('acct-upgrade-cta');
     if (upgradeCta) upgradeCta.style.display = isPaid ? 'none' : '';
 
-    renderMcpTab(isPaid);
+    btnScreenshot.classList.toggle('locked', !isPaid);
+    btnFullPage.classList.toggle('locked', !isPaid);
+    document.getElementById('popup-drop-zone')?.classList.toggle('locked', !isPaid);
+
+    const figmaSyncEl = document.getElementById('acct-figma-sync');
+    if (figmaSyncEl) {
+      figmaSyncEl.textContent = isPaid ? 'Unlimited' : '5 elements (Free)';
+      figmaSyncEl.style.color = isPaid ? 'var(--success)' : 'var(--t3)';
+    }
+
+    renderMcpTab(isPro);
   }
 
   async function loadAuthState() {
@@ -476,7 +522,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const popupDropZone  = document.getElementById('popup-drop-zone');
   const popupImgInput  = document.getElementById('popup-image-input');
 
+  function showUpgradeHint(msg) {
+    let hint = document.getElementById('upgrade-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'upgrade-hint';
+      hint.style.cssText = 'background:rgba(255,171,0,0.08); border:1px solid rgba(255,171,0,0.2); border-radius:8px; padding:10px 12px; font-size:11px; color:var(--warn); line-height:1.5; margin-bottom:10px; text-align:center;';
+      const captureView = document.getElementById('view-capture');
+      captureView.insertBefore(hint, captureView.firstChild);
+    }
+    hint.innerHTML = `${msg} <a href="https://www.subsrf.dev/#pricing" target="_blank" style="color:var(--acid); font-weight:700; text-decoration:none;">Upgrade ↗</a>`;
+    clearTimeout(hint._timer);
+    hint._timer = setTimeout(() => hint.remove(), 5000);
+  }
+
   async function openImageInStudio(file) {
+    const tier = (currentSession?.tier || 'free').toLowerCase();
+    if (tier !== 'starter' && tier !== 'pro') {
+      showUpgradeHint('Image Studio requires Starter or Pro.');
+      return;
+    }
     if (!file || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = async (e) => {

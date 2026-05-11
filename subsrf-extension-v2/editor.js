@@ -608,12 +608,19 @@ function activateAnalysisTab(config) {
 
 async function refreshCreditBadge() {
   const badge = document.getElementById('analysis-credit-badge');
-  if (!badge) return;
+  const balanceText = document.getElementById('sidebar-balance-text');
   const s = await chrome.storage.local.get('subsrf_session');
   const credits = s.subsrf_session?.credits ?? null;
-  if (credits === null) { badge.textContent = '—'; badge.className = 'analysis-credit-badge'; return; }
-  badge.textContent = `${credits} credit${credits !== 1 ? 's' : ''}`;
-  badge.className = 'analysis-credit-badge' + (credits === 0 ? ' empty' : credits <= 3 ? ' low' : '');
+  if (badge) {
+    if (credits === null) { badge.textContent = '—'; badge.className = 'analysis-credit-badge'; }
+    else {
+      badge.textContent = `${credits} credit${credits !== 1 ? 's' : ''}`;
+      badge.className = 'analysis-credit-badge' + (credits === 0 ? ' empty' : credits <= 3 ? ' low' : '');
+    }
+  }
+  if (balanceText) {
+    balanceText.textContent = credits === null ? '— credits' : `${credits} credit${credits !== 1 ? 's' : ''} remaining`;
+  }
 }
 
 function setupAnalysisPanel() {
@@ -640,20 +647,72 @@ function setupAnalysisPanel() {
       editorVisionMode = btn.dataset.mode;
       document.querySelectorAll('.analysis-mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      // Switching mode: show cards again and reset result
+      showAnalysisModeCards();
     });
   });
 
   document.getElementById('btn-analyze').addEventListener('click', runEditorAnalysis);
+
+  document.getElementById('btn-copy-analysis').addEventListener('click', () => {
+    const text = document.getElementById('analysis-output')?.textContent || '';
+    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+  });
+
+  document.getElementById('btn-new-analysis').addEventListener('click', showAnalysisModeCards);
 }
 
 function getEditorImageBase64() {
+  const MAX_BYTES = 4 * 1024 * 1024; // 4MB target, safely under Anthropic's 5MB limit
+  const MAX_DIM = 2048;
+
+  let w = mainCanvas.width;
+  let h = mainCanvas.height;
+
+  // Scale down if either dimension exceeds MAX_DIM
+  if (w > MAX_DIM || h > MAX_DIM) {
+    const scale = Math.min(MAX_DIM / w, MAX_DIM / h);
+    w = Math.round(w * scale);
+    h = Math.round(h * scale);
+  }
+
   const composite = document.createElement('canvas');
-  composite.width  = mainCanvas.width;
-  composite.height = mainCanvas.height;
+  composite.width  = w;
+  composite.height = h;
   const ctx = composite.getContext('2d');
-  ctx.drawImage(mainCanvas, 0, 0);
-  ctx.drawImage(drawCanvas, 0, 0);
-  return composite.toDataURL('image/png').split(',')[1];
+  ctx.drawImage(mainCanvas, 0, 0, w, h);
+  ctx.drawImage(drawCanvas, 0, 0, w, h);
+
+  // Try JPEG at decreasing quality until under limit
+  const qualities = [0.85, 0.7, 0.55, 0.4];
+  for (const q of qualities) {
+    const dataUrl = composite.toDataURL('image/jpeg', q);
+    const b64 = dataUrl.split(',')[1];
+    if (b64.length * 0.75 <= MAX_BYTES) return b64; // base64 → bytes: len * 0.75
+  }
+
+  // Last resort: lowest quality
+  return composite.toDataURL('image/jpeg', 0.25).split(',')[1];
+}
+
+function showAnalysisModeCards() {
+  document.querySelectorAll('.analysis-mode-btn').forEach(b => b.style.display = '');
+  const resultEl = document.getElementById('analysis-result');
+  if (resultEl) resultEl.style.display = 'none';
+  const actions = document.getElementById('analysis-actions');
+  if (actions) actions.style.display = 'none';
+  const btn = document.getElementById('btn-analyze');
+  if (btn) { btn.style.display = ''; btn.textContent = 'Analyze (1 credit)'; btn.disabled = false; }
+}
+
+function showAnalysisResult() {
+  document.querySelectorAll('.analysis-mode-btn').forEach(b => b.style.display = 'none');
+  const btn = document.getElementById('btn-analyze');
+  if (btn) btn.style.display = 'none';
+  const resultEl = document.getElementById('analysis-result');
+  if (resultEl) resultEl.style.display = '';
+  const actions = document.getElementById('analysis-actions');
+  if (actions) actions.style.display = 'flex';
 }
 
 async function runEditorAnalysis() {
@@ -685,7 +744,7 @@ async function runEditorAnalysis() {
   try {
     const body = {
       image:    getEditorImageBase64(),
-      mimeType: 'image/png',
+      mimeType: 'image/jpeg',
       mode:     editorVisionMode,
     };
 
@@ -717,6 +776,7 @@ async function runEditorAnalysis() {
     const lines = buildEditorVisionText(data.result, data.mode);
     if (outputEl) outputEl.textContent = lines;
     if (resultEl) resultEl.style.display = '';
+    showAnalysisResult();
     showToast('Analysis complete');
 
   } catch (e) {

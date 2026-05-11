@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Subsrf — Prompt Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Azeret+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --bg:      #050508;
-      --panel:   #111118;
-      --border:  rgba(255, 255, 255, 0.08);
-      --accent:  #00FF87;
-      --accent2: #00e87a;
-      --text:    #F2F2F4;
-      --muted:   rgba(242, 242, 244, 0.55);
-      --success: #39D98A;
+      --neon: #00FF87;
+      --neon-dim: rgba(0, 255, 135, 0.10);
+      --void: #050508;
+      --deep: #0C0C12;
+      --layer: #111118;
+      --border: rgba(242, 242, 244, 0.08);
+      --border-md: rgba(242, 242, 244, 0.12);
+      --t1: #F2F2F4;
+      --t2: rgba(242, 242, 244, 0.55);
+      --t3: rgba(242, 242, 244, 0.28);
+      --t4: rgba(242, 242, 244, 0.10);
+      --ok: #39D98A;
+      --warn: #FFAB00;
+      --err: #FF4D4D;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Manrope', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--void);
+      color: var(--t1);
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -31,455 +46,473 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Single header bar (Subsrf Studio style) ── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--void);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--layer);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Header ── */
     header {
       height: 64px;
-      background: var(--panel);
+      flex-shrink: 0;
+      background: var(--layer);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      padding: 0 20px;
-      flex-shrink: 0;
-      z-index: 10;
+      justify-content: space-between;
+      padding: 0 32px;
     }
 
-    /* Left third */
     .hd-left {
-      flex: 1;
       display: flex;
       align-items: center;
-      gap: 10px;
-      min-width: 0;
+      gap: 24px;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .hd-title {
+      font-size: 22px;
       font-weight: 700;
-      font-size: 15px;
-      white-space: nowrap;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: var(--t1);
     }
 
-    .logo-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .hd-sep {
-      width: 1px;
-      height: 20px;
-      background: var(--border);
-      flex-shrink: 0;
-    }
-
-    .page-context {
-      font-size: 12px;
-      color: var(--muted);
+    #page-context {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+      max-width: 280px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      margin-top: 3px;
     }
 
-    /* Center */
-    .hd-center {
-      flex-shrink: 0;
-    }
-
-    .toggle-group {
-      display: flex;
-      background: rgba(5, 5, 8, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 3px;
-      gap: 2px;
-    }
-
-    .tog {
-      padding: 6px 18px;
-      border-radius: 7px;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: 'Manrope', sans-serif;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .tog.active {
-      background: var(--accent);
-      color: #050508;
-    }
-
-    /* Right third */
-    .hd-right {
-      flex: 1;
+    .hd-chips {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
     }
 
     .status-chip {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       padding: 4px 10px;
-      border-radius: 100px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      background: #ffffff08;
       border: 1px solid var(--border);
-      color: var(--muted);
-      transition: all 0.3s;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--t3);
       white-space: nowrap;
     }
 
     .status-chip.online {
-      background: rgba(57, 217, 138, 0.1);
       border-color: rgba(57, 217, 138, 0.3);
-      color: var(--success);
+      color: var(--ok);
     }
 
     .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: #475569;
+      background: var(--t4);
       flex-shrink: 0;
-      transition: all 0.3s;
     }
 
     .status-dot.on {
-      background: var(--success);
-      box-shadow: 0 0 6px var(--success);
+      background: var(--ok);
     }
 
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: 'Manrope', sans-serif;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-ghost {
-      background: rgba(255,255,255,0.08);
-      color: var(--text);
-    }
-
-    .btn-ghost:hover { background: rgba(255,255,255,0.12); }
-
-    .btn-accent {
-      background: var(--accent);
-      color: #050508;
-    }
-
-    .btn-accent:hover { background: var(--accent2); }
-    .btn-accent:disabled { opacity: 0.38; cursor: not-allowed; }
-    .btn-accent:disabled:hover { background: var(--accent); }
-
-    /* ── Body layout ── */
-    .layout {
+    .hd-right {
       display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--neon);
+      color: var(--void);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-copy:hover {
+      opacity: 0.85;
+    }
+
+    .btn-copy .material-symbols-outlined {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* ── 3-pane workspace ── */
+    .workspace {
       flex: 1;
+      display: flex;
       overflow: hidden;
     }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      width: 256px;
+    /* ── Left pane ── */
+    .pane-left {
+      width: 288px;
       flex-shrink: 0;
-      background: #111118;
-      border-right: 1px solid rgba(255,255,255,0.06);
+      background: var(--layer);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
-    .sidebar-hd {
-      padding: 16px 16px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+    .pane-left-hd {
+      padding: 24px 24px 20px;
+      border-bottom: 1px solid var(--border);
     }
 
-    .label {
+    .label-caps {
+      font-family: 'Azeret Mono', monospace;
       font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      color: rgba(242, 242, 244, 0.4);
+      color: var(--t3);
     }
 
     .big-count {
-      font-size: 26px;
+      font-size: 52px;
       font-weight: 800;
-      color: var(--accent);
-      line-height: 1.1;
-      margin-top: 2px;
+      letter-spacing: -3px;
+      color: var(--neon);
+      line-height: 1;
+      margin-top: 6px;
     }
 
     .el-list {
       flex: 1;
       overflow-y: auto;
-      padding: 4px 0;
     }
-
-    .el-list::-webkit-scrollbar { width: 3px; }
-    .el-list::-webkit-scrollbar-thumb { background: rgba(242,242,244,0.12); border-radius: 2px; }
 
     .el-card {
-      padding: 10px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      cursor: pointer;
-      transition: background 0.12s;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
       border-left: 2px solid transparent;
+      cursor: pointer;
+      transition: background 0.1s;
     }
 
-    .el-card:hover { background: rgba(255,255,255,0.03); }
-    .el-card.active { background: rgba(0, 255, 135, 0.06); border-left-color: var(--accent); }
+    .el-card:hover {
+      background: rgba(242, 242, 244, 0.03);
+    }
+
+    .el-card.active {
+      background: var(--neon-dim);
+      border-left-color: var(--neon);
+    }
 
     .el-top {
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .el-num {
       font-family: 'Azeret Mono', monospace;
       font-size: 9px;
-      background: rgba(0, 255, 135, 0.1);
-      color: #00FF87;
+      background: var(--neon-dim);
+      color: var(--neon);
       border: 1px solid rgba(0, 255, 135, 0.25);
       padding: 2px 5px;
-      border-radius: 3px;
       flex-shrink: 0;
     }
 
-    .el-tag { font-weight: 700; font-size: 12px; color: #F2F2F4; }
+    .el-tag {
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--t1);
+    }
 
     .el-cls {
       font-family: 'Azeret Mono', monospace;
       font-size: 10px;
-      color: rgba(242, 242, 244, 0.55);
+      color: var(--t2);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 130px;
-    }
-
-    .el-txt {
-      font-size: 11px;
-      color: rgba(242, 242, 244, 0.55);
-      font-style: italic;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-bottom: 4px;
+      max-width: 120px;
     }
 
     .el-dim {
-      font-size: 9px;
-      color: rgba(242, 242, 244, 0.35);
       font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      color: var(--t3);
       margin-left: auto;
       flex-shrink: 0;
     }
 
-    /* ── Main ── */
-    .main {
+    .el-txt {
+      font-size: 11px;
+      color: var(--t2);
+      font-style: italic;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Center pane ── */
+    .pane-center {
       flex: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background: #0C0C12;
+      background: var(--deep);
     }
 
-    /* ── Output ── */
-    .output-wrap {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
+    .tabs-bar {
+      display: flex;
+      align-items: stretch;
+      background: var(--layer);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
-    .output-wrap::-webkit-scrollbar { width: 6px; }
-    .output-wrap::-webkit-scrollbar-track { background: transparent; }
-    .output-wrap::-webkit-scrollbar-thumb { background: rgba(242,242,244,0.12); border-radius: 3px; }
-
-    .output-box {
-      background: #0C0C12;
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-
-    .output-box-hd {
-      padding: 9px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+    .tab {
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #111118;
+      padding: 12px 16px;
+      border-right: 1px solid var(--border);
+      border-bottom: 2px solid transparent;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 12px;
+      color: var(--t3);
+      cursor: pointer;
+      transition: color 0.12s;
+      background: transparent;
+      border-top: none;
+      border-left: none;
     }
 
-    .mac-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
+    .tab:hover {
+      color: var(--t2);
+    }
+
+    .tab.active {
+      color: var(--t1);
+      border-bottom-color: var(--neon);
+      background: var(--deep);
+    }
+
+    .tab .material-symbols-outlined {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .output-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .output-filename {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--t3);
+      margin-bottom: 8px;
+    }
+
+    .output-box {
+      background: var(--deep);
+      border: 1px solid var(--border);
+      overflow: hidden;
     }
 
     pre.output {
       font-family: 'Azeret Mono', monospace;
       font-size: 12px;
       line-height: 1.8;
-      color: rgba(242, 242, 244, 0.6);
-      padding: 20px 22px;
+      color: var(--t2);
+      padding: 20px 24px;
       white-space: pre-wrap;
       word-break: break-word;
       margin: 0;
-      background: #0C0C12;
+      min-height: 200px;
     }
 
-    /* Element section highlighting */
     .el-section {
       display: block;
-      border-radius: 4px;
-      transition: background 0.25s;
+      transition: background 0.2s;
     }
 
     .el-section.hl {
       background: rgba(0, 255, 135, 0.05);
       outline: 1px solid rgba(0, 255, 135, 0.3);
       outline-offset: 1px;
-      border-radius: 4px;
     }
 
-    /* ── AI Gate ── */
-    #ai-gate {
+    /* ── Right pane ── */
+    .pane-right {
+      width: 288px;
       flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
+      background: var(--layer);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
+    #ai-gate {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* Paid: column layout in right pane */
     .ai-engine-bar {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
-      background: rgba(0, 255, 135, 0.04);
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+      flex: 1;
     }
 
     .ai-engine-label {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #00FF87;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--t3);
     }
 
     .credit-badge {
       font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
       padding: 3px 8px;
-      border-radius: 4px;
-      background: rgba(0, 255, 135, 0.1);
+      background: var(--neon-dim);
       border: 1px solid rgba(0, 255, 135, 0.25);
-      color: #00FF87;
+      color: var(--neon);
     }
 
     .credit-badge.low {
-      background: rgba(255, 77, 77, 0.1);
-      border-color: rgba(255, 77, 77, 0.3);
-      color: #FF4D4D;
+      background: rgba(255, 171, 0, 0.08);
+      border-color: rgba(255, 171, 0, 0.3);
+      color: var(--warn);
     }
 
     .credit-badge.empty {
-      background: rgba(242, 242, 244, 0.04);
-      border-color: rgba(242, 242, 244, 0.08);
-      color: rgba(242, 242, 244, 0.28);
+      background: var(--t4);
+      border-color: var(--border);
+      color: var(--t3);
     }
 
     .btn-generate {
-      background: #00FF87;
-      color: #050508;
-      font-family: 'Manrope', sans-serif;
-      font-size: 13px;
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--neon);
+      color: var(--void);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 12px;
       font-weight: 700;
-      padding: 8px 18px;
       border: none;
-      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-
-    .btn-generate:hover { background: #00e87a; box-shadow: 0 4px 12px rgba(0,255,135,0.25); }
-    .btn-generate:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-
-    .upgrade-banner {
-      padding: 12px 20px;
-      background: rgba(242, 242, 244, 0.02);
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 6px;
+      transition: opacity 0.15s;
+    }
+
+    .btn-generate:hover {
+      opacity: 0.85;
+    }
+
+    .btn-generate:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* Free: upgrade panel */
+    .upgrade-banner {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
       gap: 16px;
+      flex: 1;
     }
 
     .upgrade-text {
       font-size: 12px;
-      color: rgba(242, 242, 244, 0.55);
-      line-height: 1.5;
+      color: var(--t2);
+      line-height: 1.65;
     }
 
     .upgrade-text strong {
-      color: #F2F2F4;
+      color: var(--t1);
       font-weight: 700;
     }
 
     .btn-upgrade-sm {
+      width: 100%;
+      padding: 11px 16px;
       background: transparent;
       border: 1px solid rgba(0, 255, 135, 0.35);
-      color: #00FF87;
+      color: var(--neon);
       font-family: 'Manrope', sans-serif;
       font-size: 12px;
       font-weight: 700;
-      padding: 7px 14px;
-      border-radius: 8px;
       cursor: pointer;
-      white-space: nowrap;
       transition: all 0.15s;
-      flex-shrink: 0;
     }
 
-    .btn-upgrade-sm:hover { background: rgba(0, 255, 135, 0.08); border-color: rgba(0, 255, 135, 0.6); }
+    .btn-upgrade-sm:hover {
+      background: var(--neon-dim);
+      border-color: rgba(0, 255, 135, 0.6);
+    }
 
     /* ── Toast ── */
     .toast {
       position: fixed;
       bottom: 20px;
       right: 20px;
-      background: #111118;
-      border: 1px solid rgba(255,255,255,0.08);
-      color: #F2F2F4;
-      padding: 9px 15px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
+      background: var(--layer);
+      border: 1px solid var(--border);
+      color: var(--t1);
+      padding: 9px 16px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 11px;
       opacity: 0;
       transform: translateY(6px);
       transition: all 0.2s;
@@ -487,79 +520,82 @@
       z-index: 100;
     }
 
-    .toast.show { opacity: 1; transform: translateY(0); }
-
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
+
 <body>
 
   <header>
-    <!-- Left: logo + page context -->
     <div class="hd-left">
-      <div class="logo">
-        <img src="icons/icon48.png" width="24" height="24" style="border-radius:6px;" alt="Subsrf">
-        Prompt Studio
+      <div>
+        <div class="hd-title">Prompt Studio</div>
+        <div id="page-context">Loading...</div>
       </div>
-      <div class="hd-sep"></div>
-      <div class="page-context" id="page-context">Loading...</div>
-    </div>
-
-    <!-- Center: mode toggle -->
-    <div class="hd-center">
-      <div class="toggle-group">
-        <button class="tog active" id="tog-prompt">Prompt</button>
-        <button class="tog" id="tog-css">CSS</button>
+      <div class="hd-chips">
+        <div class="status-chip" id="chip-mcp">
+          <div class="status-dot" id="dot-mcp"></div>
+          <span id="lbl-mcp">MCP OFFLINE</span>
+        </div>
+        <div class="status-chip" id="chip-figma">
+          <div class="status-dot" id="dot-figma"></div>
+          <span id="lbl-figma">FIGMA WAITING</span>
+        </div>
       </div>
     </div>
-
-    <!-- Right: status + actions -->
     <div class="hd-right">
-      <div class="status-chip" id="chip-mcp">
-        <div class="status-dot" id="dot-mcp"></div>
-        <span id="lbl-mcp">MCP OFFLINE</span>
-      </div>
-      <div class="status-chip" id="chip-figma">
-        <div class="status-dot" id="dot-figma"></div>
-        <span id="lbl-figma">FIGMA WAITING</span>
-      </div>
-      <div class="hd-sep"></div>
-      <button class="btn btn-ghost" id="btn-copy">Copy</button>
+      <button class="btn-copy" id="btn-copy">
+        <span class="material-symbols-outlined">content_copy</span>
+        Copy Output
+      </button>
     </div>
   </header>
 
-  <div class="layout">
+  <div class="workspace">
 
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-hd">
-        <div class="label">Selected Elements</div>
+    <!-- Left pane: Elements -->
+    <aside class="pane-left">
+      <div class="pane-left-hd">
+        <div class="label-caps">Selected Elements</div>
         <div class="big-count" id="el-count">0</div>
       </div>
       <div class="el-list" id="el-list">
-        <div style="padding:28px 14px; text-align:center; font-size:11px; color:var(--muted);">No elements selected</div>
+        <div style="padding:32px 16px; text-align:center; font-size:11px; color:var(--t3);">No elements selected</div>
       </div>
     </aside>
 
-    <!-- Main output -->
-    <main class="main">
-      <div id="ai-gate"></div>
+    <!-- Center pane: Output -->
+    <section class="pane-center">
+      <div class="tabs-bar">
+        <button class="tab active" id="tog-prompt">
+          <span class="material-symbols-outlined">description</span>
+          Prompt
+        </button>
+        <button class="tab" id="tog-css">
+          <span class="material-symbols-outlined">code</span>
+          CSS
+        </button>
+      </div>
       <div class="output-wrap">
+        <div class="output-filename" id="output-label">Prompt</div>
         <div class="output-box" id="output-box">
-          <div class="output-box-hd">
-            <div class="mac-dot" style="background:#ef4444;"></div>
-            <div class="mac-dot" style="background:#f59e0b;"></div>
-            <div class="mac-dot" style="background:#10b981;"></div>
-            <span style="font-size:11px; color:rgba(242,242,244,0.4); margin-left:8px; font-family:'Azeret Mono',monospace;" id="output-label">subsrf-brief.txt</span>
-          </div>
           <pre class="output" id="output">Loading...</pre>
         </div>
-
       </div>
-    </main>
+    </section>
+
+    <!-- Right pane: AI Controls -->
+    <aside class="pane-right">
+      <div id="ai-gate"></div>
+    </aside>
 
   </div>
 
   <div class="toast" id="toast"></div>
   <script src="prompt.js"></script>
 </body>
+
 </html>

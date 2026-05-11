@@ -48,7 +48,7 @@ function highlightJson(obj) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-export function TopNavBar({ onLogin, loading }) {
+export function TopNavBar({ onLogin, loading, session, tier, onLogout }) {
   const scrollToGetStarted = (e) => {
     e.preventDefault();
     if (window.location.hash === '#extension') {
@@ -75,18 +75,43 @@ export function TopNavBar({ onLogin, loading }) {
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
         </nav>
         <div className="flex gap-md">
-          <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center justify-center gap-sm" onClick={onLogin} disabled={loading}>
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
-            </svg>
-            {loading ? 'Wait...' : 'Login with Google'}
-          </button>
-          <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>
-            Get Started
-          </button>
+          {session ? (
+            <div className="flex items-center gap-lg">
+              <div className="flex items-center gap-md">
+                <div className="w-8 h-8 rounded-full bg-deep border border-white-border flex items-center justify-center overflow-hidden">
+                  {session.user?.user_metadata?.avatar_url ? (
+                    <img src={session.user.user_metadata.avatar_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="material-symbols-outlined text-white-secondary text-[18px]" data-icon="person">person</span>
+                  )}
+                </div>
+                <div className="flex flex-col items-start">
+                  <div className="flex items-center gap-sm">
+                    <span className="font-mono-data text-xs text-white-secondary">{session.user.email}</span>
+                    <span className={`px-1.5 py-0.5 border rounded-sm font-label-caps text-[9px] flex items-center gap-1 ${tier === 'pro' ? 'border-neon/30 text-neon' : 'border-white-border text-white-muted'}`}>
+                      <span className={`w-1 h-1 rounded-full ${tier === 'pro' ? 'bg-neon' : 'bg-white-muted'}`}></span> {tier === 'pro' ? 'PRO' : 'FREE'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={onLogout} className="px-md py-sm rounded-DEFAULT border border-white-border text-white-primary hover:bg-white-border transition-all font-body text-body text-sm active:scale-95">Sign Out</button>
+            </div>
+          ) : (
+            <>
+              <button className="bg-transparent border border-white-border text-white-primary px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center justify-center gap-sm" onClick={onLogin} disabled={loading}>
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor"></path>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"></path>
+                </svg>
+                {loading ? 'Wait...' : 'Login with Google'}
+              </button>
+              <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>
+                Get Started
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -428,149 +453,169 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   ]
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column' }}>
-      {/* Top bar */}
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(5, 5, 8, 0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
-        padding: '0 32px', height: 64,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <LogoMark size={26} />
-          <Wordmark size={16} />
-          <span style={{ fontSize: 11, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', marginLeft: 6, letterSpacing: '0.06em' }}>dashboard</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Tier badge */}
-          <div style={{
-            padding: '4px 12px', borderRadius: 100, fontSize: 10, fontWeight: 700,
-            fontFamily: "'Azeret Mono', monospace", letterSpacing: '0.06em',
-            background: isPro ? 'rgba(0,255,135,0.1)' : 'rgba(242,242,244,0.04)',
-            color: isPro ? 'var(--acid)' : 'var(--t3)',
-            border: `1px solid ${isPro ? 'rgba(0,255,135,0.25)' : 'rgba(242,242,244,0.08)'}`
-          }}>
-            {isPro ? 'PRO' : 'FREE'}
+    <>
+      <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
+      <TopNavBar session={session} tier={tier} onLogout={onLogout} />
+
+      {/* Main Content Canvas */}
+      <main className="flex-grow pt-[100px] pb-3xl px-lg w-full max-w-[1080px] mx-auto flex flex-col gap-xl">
+        {/* Header Section */}
+        <header className="flex flex-col gap-sm border-b border-white-border pb-lg">
+          <h1 className="font-heading-md text-heading-md text-white-primary tracking-tight">Dashboard</h1>
+          <p className="font-mono-data text-mono-data text-white-secondary">USER_ID: {user.id.slice(0,18).toUpperCase()} | SESSION_ACTIVE</p>
+        </header>
+
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-lg">
+          {/* Profile Summary (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0),rgba(255,255,255,0)_50%,rgba(0,0,0,0.1)_50%,rgba(0,0,0,0.1))] bg-[length:100%_4px] opacity-20 pointer-events-none"></div>
+            <div className="flex items-center gap-md relative z-10">
+              <div className="w-12 h-12 rounded-full bg-deep border border-white-border flex items-center justify-center overflow-hidden">
+                {avatar ? (
+                  <img src={avatar} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <span className="material-symbols-outlined text-white-secondary" data-icon="person">person</span>
+                )}
+              </div>
+              <div>
+                <h2 className="font-subheading text-subheading text-white-primary truncate max-w-[180px]">{displayName}</h2>
+                <p className="font-mono-data text-[11px] text-white-secondary truncate max-w-[180px]">{user.email}</p>
+              </div>
+            </div>
+            <div className="mt-auto pt-md border-t border-white-border flex justify-between items-center relative z-10">
+              <span className="font-label-caps text-label-caps text-white-muted">AUTH_PROVIDER</span>
+              <span className="font-mono-data text-mono-data text-white-primary flex items-center gap-sm">
+                <span className="w-2 h-2 rounded-full bg-status-ok"></span> Google
+              </span>
+            </div>
           </div>
-          {/* Avatar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {avatar
-              ? <img src={avatar} width={32} height={32} style={{ borderRadius: '50%', border: '2px solid var(--border)' }} alt="" />
-              : <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--layer)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, color: 'var(--acid)' }}>{initial}</div>
-            }
-            <span style={{ fontSize: 14, color: 'var(--t2)' }}>{displayName}</span>
-          </div>
-          <button
-            onClick={onLogout}
-            style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--t2)', padding: '6px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-main)' }}
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
 
-      <div style={{ display: 'flex', flex: 1 }}>
-        {/* Sidebar */}
-        <aside style={{
-          width: 220, flexShrink: 0,
-          borderRight: '1px solid var(--border)',
-          padding: '32px 16px',
-          background: 'rgba(12, 12, 18, 0.5)'
-        }}>
-          {navItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              style={{
-                width: '100%', padding: '11px 16px', borderRadius: 10, border: 'none',
-                background: tab === item.id ? 'rgba(0,255,135,0.07)' : 'transparent',
-                color: tab === item.id ? 'var(--acid)' : 'var(--t2)',
-                textAlign: 'left', fontWeight: 600, fontSize: 14, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4,
-                borderLeft: tab === item.id ? '2px solid var(--acid)' : '2px solid transparent',
-                transition: 'all 0.15s', fontFamily: 'var(--font-main)'
-              }}
-            >
-              <span>{item.icon}</span> {item.label}
-            </button>
-          ))}
-        </aside>
-
-        {/* Main content */}
-        <main style={{ flex: 1, padding: '48px 56px', maxWidth: 900 }}>
-
-          {/* ── MCP Settings ── */}
-          {tab === 'mcp' && (
-            <div className="animate-fade-in">
-              <h1 style={{ fontSize: 28, marginBottom: 8 }}>MCP Settings</h1>
-              <p style={{ color: 'var(--t2)', marginBottom: 40 }}>
-                Connect Subsrf to Claude, Cursor, or any MCP-compatible AI using the config below.
+          {/* Tier Management (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative">
+            <div className="flex justify-between items-start">
+              <span className="font-label-caps text-label-caps text-white-muted">CURRENT PLAN</span>
+              <span className={`px-sm py-xs border rounded DEFAULT font-mono-data text-mono-data flex items-center gap-sm ${isPro ? 'border-neon/30 text-neon' : 'border-white-border text-white-muted'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isPro ? 'bg-neon' : 'bg-white-muted'}`}></span> {isPro ? 'PRO' : 'FREE'}
+              </span>
+            </div>
+            <div>
+              <h2 className="font-heading-sm text-heading-sm text-white-primary">{isPro ? 'Pro Tier' : 'Free Tier'}</h2>
+              <p className="font-mono-data text-mono-data text-white-secondary mt-sm">
+                {isPro ? 'Unlimited deep scans & full API access.' : 'Basic element capture for individual developers.'}
               </p>
+            </div>
+            <div className="mt-auto pt-md flex gap-sm">
+              <button 
+                className="flex-1 py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
+                onClick={handleManageBilling}
+                disabled={portalLoading || !hasStripeBilling}
+              >
+                {portalLoading ? 'Wait...' : 'Manage'}
+              </button>
+              {!isPro && (
+                <button 
+                  className="flex-1 py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
+                  onClick={() => handleUpgrade('pro')}
+                  disabled={upgrading === 'pro'}
+                >
+                  {upgrading === 'pro' ? 'Wait...' : 'Upgrade'}
+                </button>
+              )}
+            </div>
+          </div>
 
-              {isPro ? (
-                <div>
-                  {/* Config block */}
-                  <div className="glass" style={{ padding: 32, marginBottom: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                      <div>
-                        <div style={{ fontWeight: 700, marginBottom: 4 }}>MCP Configuration</div>
-                        <div style={{ fontSize: 13, color: 'var(--t2)' }}>Add this to your Claude Desktop or Cursor settings</div>
+          {/* Credit Balance (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-deep border border-neon rounded-lg p-lg flex flex-col gap-md shadow-[0_0_20px_rgba(0,255,135,0.06)] relative">
+            <div className="absolute inset-0 bg-neon/10 opacity-20 pointer-events-none rounded-lg"></div>
+            <div className="flex justify-between items-start z-10">
+              <span className="font-label-caps text-label-caps text-neon">COMPUTE CREDITS</span>
+              <span className="material-symbols-outlined text-neon" data-icon="database">database</span>
+            </div>
+            <div className="z-10 flex items-baseline gap-sm">
+              <span className="font-display-lg text-display-lg text-white-primary">{isPro ? '300' : '0'}</span>
+              <span className="font-mono-data text-mono-data text-white-secondary">CR</span>
+            </div>
+          </div>
+
+          {/* Settings Section (Spans full 12 columns) */}
+          <div className="md:col-span-12 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-lg mt-xl">
+            <header className="flex justify-between items-center border-b border-white-border pb-md">
+              <h2 className="font-subheading text-subheading text-white-primary">System Settings</h2>
+            </header>
+
+            <div className="flex flex-col md:flex-row gap-lg">
+              {/* Tabs Navigation (Left Column) */}
+              <div className="md:w-1/4 flex flex-col gap-sm border-r border-white-border pr-md">
+                <button 
+                  onClick={() => setTab('mcp')}
+                  className={`text-left px-md py-sm rounded-DEFAULT font-body text-body transition-colors border-l-2 ${tab === 'mcp' ? 'bg-surface-dim border-neon text-neon' : 'border-transparent text-white-secondary hover:text-white-primary hover:bg-surface-dim'}`}
+                >
+                  MCP Configuration
+                </button>
+                <button 
+                  onClick={() => setTab('figma')}
+                  className={`text-left px-md py-sm rounded-DEFAULT font-body text-body transition-colors border-l-2 ${tab === 'figma' ? 'bg-surface-dim border-neon text-neon' : 'border-transparent text-white-secondary hover:text-white-primary hover:bg-surface-dim'}`}
+                >
+                  Figma REST API
+                </button>
+              </div>
+
+              {/* Tab Content (Right Column) */}
+              <div className="md:w-3/4 flex flex-col gap-md">
+                {tab === 'mcp' && (
+                  <div className="animate-fade-in relative">
+                    {!isPro && (
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-sm bg-void/50 rounded-lg border border-white-border">
+                        <span className="text-[32px] mb-2">🔒</span>
+                        <div className="font-heading-sm text-lg text-white-primary mb-2">Pro Feature</div>
+                        <div className="font-body text-sm text-white-secondary text-center max-w-sm mb-4">
+                          MCP Bridge access is available on the Pro plan. Upgrade to connect Subsrf to Claude and Cursor.
+                        </div>
+                        <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={() => handleUpgrade('pro')}>
+                          Upgrade to Pro
+                        </button>
                       </div>
-                      <button
-                        onClick={handleCopy}
-                        className="btn btn-secondary"
-                        style={{ padding: '8px 18px', fontSize: 13 }}
-                      >
-                        {copied ? '✓ Copied' : 'Copy JSON'}
+                    )}
+                    <div className="flex justify-between items-center mb-md">
+                      <h3 className="font-body text-body text-white-primary font-medium">Model Context Protocol (MCP)</h3>
+                      <span className="px-sm py-xs border border-white-border rounded-DEFAULT font-mono-data text-mono-data text-white-primary flex items-center gap-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-status-ok"></span> CONNECTED
+                      </span>
+                    </div>
+                    <p className="font-mono-data text-mono-data text-white-secondary mb-md">Configure your local MCP server to interface with Subsrf infrastructure.</p>
+                    
+                    {/* Code Block */}
+                    <div className="bg-deep border border-white-border rounded-lg p-md overflow-x-auto">
+                      <pre className="font-mono-data text-mono-data text-[13px] leading-relaxed" dangerouslySetInnerHTML={{ __html: highlightJson(mcpConfig) }} />
+                    </div>
+
+                    <div className="flex justify-end mt-sm">
+                      <button onClick={handleCopy} className="px-md py-sm rounded-DEFAULT border border-white-border text-white-primary hover:bg-white-border transition-colors font-mono-data text-mono-data text-xs flex items-center gap-sm">
+                        <span className="material-symbols-outlined text-[16px]" data-icon={copied ? 'check' : 'content_copy'}>{copied ? 'check' : 'content_copy'}</span> 
+                        {copied ? 'Copied!' : 'Copy JSON'}
                       </button>
                     </div>
-                    <div style={{ background: '#0C0C12', padding: '20px 24px', borderRadius: 8, fontFamily: "'Azeret Mono', monospace", fontSize: 13, border: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto' }}>
-                      <pre style={{ margin: 0, color: 'rgba(242,242,244,0.28)', lineHeight: 1.8 }}
-                        dangerouslySetInnerHTML={{ __html: highlightJson(mcpConfig) }}
-                      />
-                    </div>
                   </div>
+                )}
 
-                  {/* Endpoint status */}
-                  <div className="glass" style={{ padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                    <div>
-                      <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://api.subsrf.dev</div>
-                    </div>
-                    <div style={{ padding: '5px 12px', background: 'rgba(57,217,138,0.08)', color: 'var(--ok)', borderRadius: 100, fontSize: 11, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", border: '1px solid rgba(57,217,138,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--ok)', display: 'inline-block' }} />
-                      ONLINE
-                    </div>
-                  </div>
-
-                  {/* Figma REST API Token */}
-                  <div className="glass" style={{ padding: 32 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                      <div>
-                        <div style={{ fontWeight: 700, marginBottom: 4 }}>Figma REST API Token</div>
-                        <div style={{ fontSize: 13, color: 'var(--t2)' }}>Required for high-fidelity image exports and component analysis.</div>
-                      </div>
-                      <div style={{
-                        padding: '5px 12px', borderRadius: 100, fontSize: 11, fontWeight: 600,
-                        fontFamily: "'Azeret Mono', monospace",
-                        background: figmaPat ? 'rgba(57,217,138,0.08)' : 'rgba(242,242,244,0.04)',
-                        color: figmaPat ? 'var(--ok)' : 'var(--t3)',
-                        border: `1px solid ${figmaPat ? 'rgba(57,217,138,0.2)' : 'rgba(242,242,244,0.08)'}`,
-                        display: 'flex', alignItems: 'center', gap: 6
-                      }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: figmaPat ? 'var(--ok)' : 'var(--t3)', display: 'inline-block' }} />
-                        {figmaPat ? 'ACTIVE' : 'NOT SET'}
+                {tab === 'figma' && (
+                  <div className="animate-fade-in">
+                    <div className="flex justify-between items-center mb-md">
+                      <h3 className="font-body text-body text-white-primary font-medium">Figma REST API Token</h3>
+                      <div className={`px-sm py-xs border rounded-DEFAULT font-mono-data text-mono-data flex items-center gap-sm ${figmaPat ? 'border-status-ok/30 text-status-ok' : 'border-white-border text-white-muted'}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${figmaPat ? 'bg-status-ok' : 'bg-white-muted'}`}></span> {figmaPat ? 'ACTIVE' : 'NOT SET'}
                       </div>
                     </div>
-
+                    <p className="font-mono-data text-mono-data text-white-secondary mb-lg">Required for high-fidelity image exports and component analysis.</p>
+                    
                     {patStatus === 'saved' && (
-                      <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--ok)' }}>
-                        Token saved successfully. The MCP config above has been updated.
+                      <div className="mb-md p-sm bg-status-ok/10 border border-status-ok/20 rounded-DEFAULT font-mono-data text-mono-data text-status-ok">
+                        Token saved successfully. The MCP config has been updated.
                       </div>
                     )}
                     {patStatus === 'error' && (
-                      <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(255,77,77,0.08)', border: '1px solid rgba(255,77,77,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--err)' }}>
+                      <div className="mb-md p-sm bg-status-err/10 border border-status-err/20 rounded-DEFAULT font-mono-data text-mono-data text-status-err">
                         Failed to save token. Please try again.
                       </div>
                     )}
@@ -578,40 +623,31 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                     {!showPatInput ? (
                       <button
                         onClick={() => { setShowPatInput(true); setPatInput('') }}
-                        className="btn btn-secondary"
-                        style={{ padding: '9px 20px', fontSize: 13 }}
+                        className="bg-transparent border border-white-border text-white-primary px-lg py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors"
                       >
                         {figmaPat ? 'Update Token' : 'Configure Token'}
                       </button>
                     ) : (
-                      <div>
+                      <div className="flex flex-col gap-md">
                         <input
                           type="password"
                           value={patInput}
                           onChange={e => setPatInput(e.target.value)}
                           placeholder="figd_..."
                           onKeyDown={e => e.key === 'Enter' && savePat()}
-                          style={{
-                            width: '100%', padding: '10px 14px',
-                            background: 'rgba(242,242,244,0.03)',
-                            border: '1px solid var(--border)', borderRadius: 8,
-                            color: 'var(--t1)', fontSize: 13, fontFamily: "'Azeret Mono', monospace",
-                            marginBottom: 12, outline: 'none'
-                          }}
+                          className="w-full p-sm bg-white-border/5 border border-white-border rounded-DEFAULT text-white-primary font-mono-data text-mono-data outline-none focus:border-neon transition-colors"
                         />
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <div className="flex items-center gap-md mt-sm">
                           <button
                             onClick={savePat}
                             disabled={patSaving || !patInput.trim()}
-                            className="btn btn-primary"
-                            style={{ padding: '9px 20px', fontSize: 13 }}
+                            className="bg-neon text-void px-lg py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity disabled:opacity-50"
                           >
                             {patSaving ? 'Saving...' : 'Save Token'}
                           </button>
                           <button
                             onClick={() => { setShowPatInput(false); setPatInput('') }}
-                            className="btn btn-secondary"
-                            style={{ padding: '9px 16px', fontSize: 13 }}
+                            className="bg-transparent border border-white-border text-white-primary px-lg py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors"
                           >
                             Cancel
                           </button>
@@ -619,7 +655,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                             href="https://www.figma.com/settings/account#personal-access-tokens"
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ marginLeft: 8, fontSize: 12, color: 'var(--acid)', textDecoration: 'none', fontWeight: 600 }}
+                            className="ml-auto font-mono-data text-xs text-neon hover:underline"
                           >
                             Get token in Figma Settings ↗
                           </a>
@@ -627,195 +663,15 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                       </div>
                     )}
                   </div>
-                </div>
-              ) : (
-                /* Locked state for free tier */
-                <div style={{ position: 'relative' }}>
-                  <div style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none', opacity: 0.5 }}>
-                    <div className="glass" style={{ padding: 32, marginBottom: 24 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, marginBottom: 4 }}>MCP Configuration</div>
-                          <div style={{ fontSize: 13, color: 'var(--t2)' }}>Add this to your Claude Desktop or Cursor settings</div>
-                        </div>
-                        <div className="btn btn-secondary" style={{ padding: '8px 18px', fontSize: 13 }}>Copy JSON</div>
-                      </div>
-                      <div style={{ background: '#0C0C12', padding: '20px 24px', borderRadius: 8, fontFamily: "'Azeret Mono', monospace", fontSize: 13, border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <pre style={{ margin: 0, color: 'rgba(242,242,244,0.28)', lineHeight: 1.8 }}
-                          dangerouslySetInnerHTML={{ __html: highlightJson(mcpConfig) }}
-                        />
-                      </div>
-                    </div>
-                    <div className="glass" style={{ padding: 24 }}>
-                      <div style={{ fontWeight: 600, marginBottom: 4 }}>Cloud Bridge Endpoint</div>
-                      <div style={{ fontSize: 13, color: 'var(--t2)', fontFamily: "'Azeret Mono', monospace" }}>https://api.subsrf.dev</div>
-                    </div>
-                  </div>
-                  {/* Lock overlay */}
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 16
-                  }}>
-                    <div style={{ fontSize: 48 }}>🔒</div>
-                    <div style={{ fontWeight: 700, fontSize: 20 }}>Pro Feature</div>
-                    <div style={{ color: 'var(--t2)', fontSize: 14, textAlign: 'center', maxWidth: 320 }}>
-                      MCP Bridge access is available on the Pro plan. Upgrade to connect Subsrf to Claude and Cursor.
-                    </div>
-                    <button className="btn btn-primary" onClick={() => setTab('upgrade')} style={{ marginTop: 8 }}>
-                      Upgrade to Pro — $19/mo
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Account ── */}
-          {tab === 'account' && (
-            <div className="animate-fade-in">
-              <h1 style={{ fontSize: 28, marginBottom: 8 }}>Account</h1>
-              <p style={{ color: 'var(--t2)', marginBottom: 40 }}>Your profile and plan details.</p>
-
-              <div className="glass" style={{ padding: 32, marginBottom: 24 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 32 }}>
-                  {avatar
-                    ? <img src={avatar} width={64} height={64} style={{ borderRadius: '50%', border: '2px solid rgba(0,255,135,0.3)' }} alt="" />
-                    : <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--layer)', border: '1px solid rgba(0,255,135,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 24, color: 'var(--acid)' }}>{initial}</div>
-                  }
-                  <div>
-                    <div style={{ fontSize: 20, fontWeight: 700 }}>{displayName}</div>
-                    <div style={{ fontSize: 14, color: 'var(--t2)' }}>{user.email}</div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div style={{ background: 'var(--layer)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Current Plan</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: isPro ? 'var(--acid)' : 'var(--t1)' }}>
-                      {isPro ? 'Pro' : 'Free'}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--layer)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>MCP Access</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: isPro ? 'var(--ok)' : 'var(--err)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: isPro ? 'var(--ok)' : 'var(--err)', display: 'inline-block' }} />
-                      {isPro ? 'Active' : 'Locked'}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--layer)', padding: 20, borderRadius: 12, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Figma REST API</div>
-                    <div style={{ fontSize: 18, fontWeight: 700, color: figmaPat ? 'var(--ok)' : 'var(--t3)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: figmaPat ? 'var(--ok)' : 'var(--t3)', display: 'inline-block' }} />
-                      {figmaPat ? 'Active' : 'Not set'}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
-
-              {!isPro && (
-                <div className="glass" style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderColor: 'rgba(0,255,135,0.2)', background: 'rgba(0,255,135,0.03)' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, marginBottom: 4 }}>Unlock the full Subsrf experience</div>
-                    <div style={{ fontSize: 13, color: 'var(--t2)' }}>Upgrade to Pro for MCP access, unlimited captures, and more.</div>
-                  </div>
-                  <button className="btn btn-primary" onClick={() => setTab('upgrade')} style={{ whiteSpace: 'nowrap', marginLeft: 24 }}>
-                    Upgrade — $19/mo
-                  </button>
-                </div>
-              )}
             </div>
-          )}
+          </div>
+        </div>
+      </main>
 
-          {/* ── Upgrade ── */}
-          {tab === 'upgrade' && (
-            <div className="animate-fade-in">
-              <h1 style={{ fontSize: 28, marginBottom: 8 }}>Upgrade to Pro</h1>
-              <p style={{ color: 'var(--t2)', marginBottom: 40 }}>Unlock the full Subsrf intelligence suite.</p>
-
-              {paymentStatus === 'success' && (
-                <div style={{ marginBottom: 24, padding: '14px 20px', background: 'rgba(57,217,138,0.08)', border: '1px solid rgba(57,217,138,0.2)', borderRadius: 10, fontSize: 14, color: 'var(--ok)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>✓ Payment successful — your subscription has been activated!</span>
-                  {tier === 'free' && (
-                    <button onClick={() => window.location.reload()} style={{ background: 'transparent', border: '1px solid rgba(57,217,138,0.4)', color: 'var(--ok)', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font-main)', fontWeight: 600 }}>
-                      Refresh
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: 24, maxWidth: 760 }}>
-                {/* Starter */}
-                <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--t3)', marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>STARTER</div>
-                  <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$9<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
-                    {['75 AI credits/month', 'MCP Bridge access', 'Full-page capture', 'Advanced Figma sync'].map((f, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
-                    ))}
-                  </div>
-                  <button
-                    className="btn btn-secondary"
-                    style={{ width: '100%' }}
-                    onClick={() => handleUpgrade('starter')}
-                    disabled={!!upgrading || (hasStripeBilling && tier === 'starter')}
-                  >
-                    {upgrading === 'starter' ? 'Redirecting...' : (hasStripeBilling && tier === 'starter') ? 'Current plan' : 'Get Starter'}
-                  </button>
-                </div>
-
-                {/* Pro */}
-                <div className="glass" style={{ flex: 1, padding: 40, textAlign: 'left', border: '1px solid rgba(0,255,135,0.25)', background: 'rgba(0,255,135,0.03)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", color: 'var(--acid)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>PRO</div>
-                    <div style={{ fontSize: 9, fontWeight: 700, fontFamily: "'Azeret Mono', monospace", background: 'var(--acid)', color: 'var(--void)', padding: '3px 8px', borderRadius: 100, letterSpacing: '0.06em' }}>POPULAR</div>
-                  </div>
-                  <div style={{ fontSize: 40, fontWeight: 800, marginBottom: 24 }}>$19<span style={{ fontSize: 16, color: 'var(--t2)' }}>/mo</span></div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
-                    {['300 AI credits/month', 'MCP Bridge access', 'Full-page capture', 'Advanced Figma sync', 'Priority support'].map((f, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14 }}><span style={{ color: 'var(--ok)' }}>✓</span>{f}</div>
-                    ))}
-                  </div>
-                  <button
-                    className="btn btn-primary"
-                    style={{ width: '100%' }}
-                    onClick={() => handleUpgrade('pro')}
-                    disabled={!!upgrading || (hasStripeBilling && tier === 'pro')}
-                  >
-                    {upgrading === 'pro' ? 'Redirecting...' : (hasStripeBilling && tier === 'pro') ? 'Current plan' : 'Upgrade to Pro'}
-                  </button>
-                </div>
-              </div>
-
-              {upgradeError && (
-                <div style={{ marginTop: 16, fontSize: 13, color: 'var(--err)' }}>{upgradeError}</div>
-              )}
-              <div style={{ fontSize: 12, color: 'var(--t3)', marginTop: 16 }}>
-                Cancel anytime · Billed monthly
-              </div>
-
-              {hasStripeBilling && (
-                <div style={{ marginTop: 32, paddingTop: 32, borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>Manage subscription</div>
-                  <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 16 }}>
-                    Cancel, switch plans, or update your payment method via the Stripe billing portal.
-                  </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleManageBilling}
-                    disabled={portalLoading}
-                    style={{ padding: '9px 20px', fontSize: 13 }}
-                  >
-                    {portalLoading ? 'Opening portal...' : 'Manage billing →'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-        </main>
-      </div>
-    </div>
+      <Footer />
+    </>
   )
 }
 
