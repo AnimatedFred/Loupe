@@ -515,7 +515,14 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               >
                 {portalLoading ? 'Wait...' : 'Manage'}
               </button>
-              {!isPro && (
+              {isPro ? (
+                <button 
+                  className="flex-1 py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body font-medium"
+                  onClick={() => { window.location.hash = '#pricing' }}
+                >
+                  Downgrade
+                </button>
+              ) : (
                 <button 
                   className="flex-1 py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
                   onClick={() => handleUpgrade('pro')}
