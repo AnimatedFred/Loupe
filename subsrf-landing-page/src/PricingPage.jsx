@@ -215,8 +215,8 @@ export default function PricingPage({ onLogin, loading }) {
                 <p className="text-white-secondary font-body text-body">Credits are required for AI-powered operations like generating implementation briefs, semantic UI descriptions, and WCAG audits. Core functions like capturing, DOM export, and Figma syncing are credit-free.</p>
               </div>
               <div>
-                <h4 className="font-mono-data text-white-primary mb-sm">How does BYOK work?</h4>
-                <p className="text-white-secondary font-body text-body">Subsrf operates on a Bring Your Own Key model. You provide your own Anthropic API key, meaning you only pay for the exact tokens you consume, directly to the provider.</p>
+                <h4 className="font-mono-data text-white-primary mb-sm">Why do I need a Figma Token?</h4>
+                <p className="text-white-secondary font-body text-body">Subsrf utilizes a Bring Your Own Key (BYOK) model for design synchronization. You provide your own Figma Personal Access Token to authenticate the Claude-to-Figma bridge, ensuring secure, direct REST API access to your design files without third-party intermediaries.</p>
               </div>
             </div>
           </div>
