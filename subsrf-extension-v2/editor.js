@@ -21,9 +21,11 @@ window.onload = async () => {
     dCtx = drawCanvas.getContext('2d');
   
     console.log('[Subsrf Studio] Initializing...');
-    const data = await chrome.storage.local.get(['lastCapture', 'lastCaptureRect', 'lastCaptureViewportWidth', 'openAnalysisTab']);
+    const data = await chrome.storage.local.get(['lastCapture', 'lastCaptureRect', 'lastCaptureViewportWidth', 'openAnalysisTab', 'captureWatermark']);
     const pendingAnalysis = data.openAnalysisTab || null;
+    const needsWatermark = !!data.captureWatermark;
     if (pendingAnalysis) chrome.storage.local.remove('openAnalysisTab');
+    chrome.storage.local.remove('captureWatermark');
     console.log('[Subsrf Studio] Storage retrieved. Capture size:', data.lastCapture ? data.lastCapture.length : 0);
 
     if (data.lastCapture) {
@@ -54,6 +56,8 @@ window.onload = async () => {
         if (mainCanvas.width > window.innerWidth - 320) {
           zoom = (window.innerWidth - 320) / mainCanvas.width; updateZoom();
         }
+
+        if (needsWatermark) applyWatermark();
         requestAnimationFrame(drawLoop);
         if (pendingAnalysis) activateAnalysisTab(pendingAnalysis);
       };
@@ -73,6 +77,48 @@ window.onload = async () => {
     console.error('[Subsrf Studio] Critical Init Error:', err);
   }
 };
+
+function applyWatermark() {
+  const w = mainCanvas.width;
+  const h = mainCanvas.height;
+  const fontSize = Math.max(13, Math.round(Math.min(w, h) * 0.022));
+
+  // Diagonal tiled text
+  mCtx.save();
+  mCtx.font = `600 ${fontSize}px "Azeret Mono", monospace`;
+  mCtx.fillStyle = 'rgba(0, 255, 135, 0.13)';
+  mCtx.textAlign = 'center';
+  mCtx.textBaseline = 'middle';
+  const step = fontSize * 9;
+  for (let y = -step; y < h + step; y += step) {
+    for (let x = -step; x < w + step; x += step) {
+      mCtx.save();
+      mCtx.translate(x, y);
+      mCtx.rotate(-Math.PI / 6);
+      mCtx.fillText('subsrf.dev', 0, 0);
+      mCtx.restore();
+    }
+  }
+
+  // Corner badge
+  const pad = 10;
+  const badgeH = fontSize + 10;
+  const badgeW = mCtx.measureText('subsrf.dev').width + 24;
+  mCtx.fillStyle = 'rgba(5,5,8,0.72)';
+  mCtx.fillRect(w - badgeW - pad, h - badgeH - pad, badgeW, badgeH);
+  mCtx.fillStyle = 'rgba(0,255,135,0.85)';
+  mCtx.fillText('subsrf.dev', w - badgeW / 2 - pad, h - badgeH / 2 - pad);
+  mCtx.restore();
+
+  // Lock the AI analysis tab — free tier cannot run AI on watermarked captures
+  const analysisTab = document.getElementById('tab-analysis');
+  if (analysisTab) {
+    analysisTab.disabled = true;
+    analysisTab.title = 'AI Analysis requires a paid plan';
+    analysisTab.style.opacity = '0.35';
+    analysisTab.style.cursor = 'not-allowed';
+  }
+}
 
 function setupEventListeners() {
   const tools = ['select', 'rect', 'circle', 'star', 'arrow', 'text', 'emoji', 'pen'];

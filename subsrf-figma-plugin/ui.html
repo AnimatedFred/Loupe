@@ -124,9 +124,13 @@
     /* ── Activity feed ── */
     .feed {
       background: var(--deep); border: 1px solid var(--border);
-      height: 96px; margin-top: 12px; padding: 10px 12px;
+      flex: 1; min-height: 0; margin-top: 12px; padding: 10px 12px;
       font-family: 'Azeret Mono', monospace; font-size: 11px;
-      font-weight: 300; line-height: 1.8; overflow-y: auto;
+      font-weight: 300; line-height: 1.8;
+      display: flex; flex-direction: column;
+    }
+    #feedList {
+      overflow-y: auto; flex: 1; padding-right: 4px;
     }
 
     .feed-title {
@@ -165,6 +169,11 @@
     }
 
     #view-main { display: none; }
+    
+    #main-content {
+      display: flex; flex-direction: column;
+      height: calc(100vh - 28px);
+    }
 
     /* ── Minimize button ── */
     .minimize-btn {
@@ -590,7 +599,7 @@
     function setMinimized(min) {
       isMinimized = min;
       document.getElementById('toolbar').style.display = min ? 'flex' : 'none';
-      document.getElementById('main-content').style.display = min ? 'none' : 'block';
+      document.getElementById('main-content').style.display = min ? 'none' : 'flex';
       document.body.classList.toggle('compact', min);
       if (min) syncToolbar();
       parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 340, height: min ? MINI_HEIGHT : FULL_HEIGHT } }, '*');
