@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import ExtensionPage from './ExtensionPage'
 import PluginPage from './PluginPage'
 import PricingPage from './PricingPage'
+import DocsPage from './DocsPage'
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -72,7 +73,7 @@ export function TopNavBar({ onLogin, loading, session, tier, onLogout }) {
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#plugin">Plugin</a>
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#extension">Extension</a>
           <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#pricing">Pricing</a>
-          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#">Docs</a>
+          <a className="text-white-secondary font-light font-body text-body hover:text-neon transition-colors duration-200 active:scale-95 transition-transform" href="#docs">Docs</a>
         </nav>
         <div className="flex gap-md">
           {session ? (
@@ -783,6 +784,10 @@ function App() {
 
   if (currentPath === '#pricing') {
     return <PricingPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
+  }
+
+  if (currentPath === '#docs') {
+    return <DocsPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
   // If session exists and no specific page is requested, show dashboard
