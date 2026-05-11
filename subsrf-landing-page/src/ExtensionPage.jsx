@@ -1,7 +1,7 @@
 import React from 'react';
 import { TopNavBar, Footer } from './App';
 
-export default function ExtensionPage({ onLogin, loading }) {
+export default function ExtensionPage({ onLogin, loading, session, tier, onLogout }) {
   const scrollToGetStarted = (e) => {
     e.preventDefault();
     window.location.hash = ""; // Returns to the main page where get-started lives, or handled differently
@@ -10,7 +10,7 @@ export default function ExtensionPage({ onLogin, loading }) {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
-      <TopNavBar onLogin={onLogin} loading={loading} />
+      <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       <main className="flex-grow pt-4xl pb-4xl flex flex-col items-center bg-void">
         <section className="max-w-[1080px] w-full px-lg mb-4xl">

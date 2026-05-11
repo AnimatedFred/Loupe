@@ -137,7 +137,7 @@ export function Footer() {
   );
 }
 
-function LandingPage({ onLogin, loading }) {
+function LandingPage({ onLogin, loading, session, tier, onLogout }) {
   const scrollToGetStarted = (e) => {
     e.preventDefault();
     document.getElementById('get-started')?.scrollIntoView({ behavior: 'smooth' });
@@ -145,7 +145,7 @@ function LandingPage({ onLogin, loading }) {
 
   return (
     <>
-      <TopNavBar onLogin={onLogin} loading={loading} />
+      <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       {/* Main Canvas */}
       <main className="flex-grow pt-3xl pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
@@ -758,30 +758,33 @@ function App() {
     )
   }
 
-  if (session) {
-    const handleTierRefresh = async (attempts = 5) => {
-      const t = await fetchTier(session.user.id)
-      setTier(t)
-      if (t === 'free' && attempts > 1) {
-        setTimeout(() => handleTierRefresh(attempts - 1), 2000)
-      }
+  const handleTierRefresh = async (attempts = 5) => {
+    if (!session) return
+    const t = await fetchTier(session.user.id)
+    setTier(t)
+    if (t === 'free' && attempts > 1) {
+      setTimeout(() => handleTierRefresh(attempts - 1), 2000)
     }
-    return <Dashboard session={session} tier={tier} onLogout={handleLogout} paymentStatus={paymentStatus} onTierRefresh={handleTierRefresh} />
   }
 
   if (currentPath === '#extension') {
-    return <ExtensionPage onLogin={handleLogin} loading={authLoading} />
+    return <ExtensionPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
   if (currentPath === '#plugin') {
-    return <PluginPage onLogin={handleLogin} loading={authLoading} />
+    return <PluginPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
   if (currentPath === '#pricing') {
-    return <PricingPage onLogin={handleLogin} loading={authLoading} />
+    return <PricingPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
-  return <LandingPage onLogin={handleLogin} loading={authLoading} />
+  // If session exists and no specific page is requested, show dashboard
+  if (session && (currentPath === '' || currentPath === '#' || currentPath === '#dashboard')) {
+    return <Dashboard session={session} tier={tier} onLogout={handleLogout} paymentStatus={paymentStatus} onTierRefresh={handleTierRefresh} />
+  }
+
+  return <LandingPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
 }
 
 export default App

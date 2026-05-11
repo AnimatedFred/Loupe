@@ -1,11 +1,11 @@
 import React from 'react';
 import { TopNavBar, Footer } from './App';
 
-export default function PluginPage({ onLogin, loading }) {
+export default function PluginPage({ onLogin, loading, session, tier, onLogout }) {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
-      <TopNavBar onLogin={onLogin} loading={loading} />
+      <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       <main className="flex-grow pt-4xl pb-4xl flex flex-col items-center bg-void w-full">
         <div className="max-w-[1080px] w-full px-lg flex flex-col gap-xl">

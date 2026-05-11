@@ -1,11 +1,11 @@
 import React from 'react';
 import { TopNavBar, Footer } from './App';
 
-export default function PricingPage({ onLogin, loading }) {
+export default function PricingPage({ onLogin, loading, session, tier, onLogout }) {
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
-      <TopNavBar onLogin={onLogin} loading={loading} />
+      <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       <main className="max-w-[1080px] mx-auto px-md pt-4xl pb-2xl relative flex-grow w-full">
         {/* Hero Section */}
