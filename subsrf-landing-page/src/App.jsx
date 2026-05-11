@@ -361,16 +361,18 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   const initial = displayName?.[0]?.toUpperCase() || '?'
 
   const [hasStripeBilling, setHasStripeBilling] = useState(false)
+  const [credits, setCredits] = useState(0)
 
   useEffect(() => {
     supabase
       .from('profiles')
-      .select('figma_pat, stripe_customer_id')
+      .select('figma_pat, stripe_customer_id, credits')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
         if (data?.figma_pat) setFigmaPat(data.figma_pat)
         setHasStripeBilling(!!data?.stripe_customer_id)
+        if (typeof data?.credits === 'number') setCredits(data.credits)
       })
   }, [user.id])
 
@@ -529,11 +531,11 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
           <div className="md:col-span-4 bg-deep border border-neon rounded-lg p-lg flex flex-col gap-md shadow-[0_0_20px_rgba(0,255,135,0.06)] relative">
             <div className="absolute inset-0 bg-neon/10 opacity-20 pointer-events-none rounded-lg"></div>
             <div className="flex justify-between items-start z-10">
-              <span className="font-label-caps text-label-caps text-neon">COMPUTE CREDITS</span>
+              <span className="font-label-caps text-label-caps text-neon">CREDITS</span>
               <span className="material-symbols-outlined text-neon" data-icon="database">database</span>
             </div>
             <div className="z-10 flex items-baseline gap-sm">
-              <span className="font-display-lg text-display-lg text-white-primary">{isPro ? '300' : '0'}</span>
+              <span className="font-display-lg text-display-lg text-white-primary">{credits}</span>
               <span className="font-mono-data text-mono-data text-white-secondary">CR</span>
             </div>
           </div>
