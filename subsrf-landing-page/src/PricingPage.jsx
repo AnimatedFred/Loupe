@@ -222,13 +222,16 @@ export default function PricingPage({ onLogin, loading }) {
           </div>
           <div className="bg-deep border border-white-border p-xl">
             <h4 className="font-mono-data text-white-primary mb-md">Bridge Configuration (Pro)</h4>
-            <div className="bg-void p-md border border-white-border font-mono-data text-xs text-neon-dim overflow-x-auto">
-              <pre className="text-neon">{`{
+            <div className="bg-void p-md border border-white-border font-mono-data text-xs text-neon-dim overflow-hidden relative">
+              <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[3px] bg-void/30">
+                <span className="font-label-caps text-white-primary border border-white-border px-sm py-xs bg-layer rounded">PRO ACCESS REQUIRED</span>
+              </div>
+              <pre className="text-neon opacity-50 select-none blur-[2px]">{`{
   "mcpServers": {
     "subsrf": {
       "command": "npx",
-      "args": ["-y", "subsrf-intelligence", 
-               "--endpoint", "api.subsrf.dev"]
+      "args": ["-y", "subsrf-mcp-bridge", 
+               "--token", "HIDDEN_PRO_TOKEN"]
     }
   }
 }`}</pre>
