@@ -49,7 +49,9 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout 
                 <span className="font-mono-data text-white-muted text-label-caps">Capped Figma Sync (5 elems)</span>
               </div>
             </div>
-            <button className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">START BUILDING</button>
+            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">
+              {!session ? 'START BUILDING' : tier === 'free' ? 'CURRENT PLAN' : 'DOWNGRADE'}
+            </button>
           </div>
 
           {/* Starter Tier (Recommended) */}
@@ -81,7 +83,9 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout 
                 <span className="font-mono-data text-white-primary text-label-caps">Unlimited Figma Sync</span>
               </div>
             </div>
-            <button className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all">UPGRADE NOW</button>
+            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all">
+              {!session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE'}
+            </button>
           </div>
 
           {/* Pro Tier */}
@@ -112,7 +116,9 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout 
                 <span className="font-mono-data text-white-primary text-label-caps">Bidirectional Figma Control</span>
               </div>
             </div>
-            <button className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">GO PRO</button>
+            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">
+              {!session ? 'GO PRO' : tier === 'pro' ? 'CURRENT PLAN' : tier === 'starter' ? 'UPGRADE TO PRO' : 'GET PRO'}
+            </button>
           </div>
         </section>
 

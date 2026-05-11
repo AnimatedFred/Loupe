@@ -294,7 +294,9 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> CSS Export Mode</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Figma Sync (5 elements max)</li>
               </ul>
-              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={onLogin}>Select Free</button>
+              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={session ? () => window.location.hash = '#dashboard' : onLogin}>
+                {!session ? 'Select Free' : tier === 'free' ? 'Current Plan' : 'Downgrade'}
+              </button>
             </div>
             {/* Tier 2 (Active/Neon) */}
             <div className="bg-layer border border-neon shadow-[0_0_15px_rgba(0,255,135,0.1)] p-lg rounded-DEFAULT flex flex-col gap-lg relative transform scale-105 z-10">
@@ -313,7 +315,9 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 75 Credits / month</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync</li>
               </ul>
-              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={onLogin}>Select Starter</button>
+              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={session ? () => window.location.hash = '#dashboard' : onLogin}>
+                {!session ? 'Select Starter' : tier === 'starter' ? 'Current Plan' : tier === 'free' ? 'Get Starter' : 'Downgrade'}
+              </button>
             </div>
             {/* Tier 3 */}
             <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-lg">
@@ -331,7 +335,9 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 300 Credits / month</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Full Page Capture</li>
               </ul>
-              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={onLogin}>Select Pro</button>
+              <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={session ? () => window.location.hash = '#dashboard' : onLogin}>
+                {!session ? 'Select Pro' : tier === 'pro' ? 'Current Plan' : tier === 'starter' ? 'Upgrade to Pro' : 'Get Pro'}
+              </button>
             </div>
           </div>
         </section>
