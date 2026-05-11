@@ -1,7 +1,11 @@
 import React from 'react';
 import { TopNavBar, Footer } from './App';
 
-export default function PricingPage({ onLogin, loading, session, tier, onLogout }) {
+const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
+
+export default function PricingPage({ onLogin, loading, session, tier, onLogout, mcpConfig }) {
+  const isPaid = tier === 'pro' || tier === 'starter';
+  const displayConfig = isPaid && mcpConfig ? mcpConfig : BASE_MCP;
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
@@ -232,15 +236,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout 
               <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[3px] bg-void/30">
                 <span className="font-label-caps text-white-primary border border-white-border px-sm py-xs bg-layer rounded">PRO ACCESS REQUIRED</span>
               </div>
-              <pre className="text-neon opacity-50 select-none blur-[2px]">{`{
-  "mcpServers": {
-    "subsrf": {
-      "command": "npx",
-      "args": ["-y", "subsrf-mcp-bridge", 
-               "--token", "HIDDEN_PRO_TOKEN"]
-    }
-  }
-}`}</pre>
+              <pre className="text-neon opacity-50 select-none blur-[2px]">{JSON.stringify(displayConfig, null, 2)}</pre>
             </div>
             <p className="mt-md text-white-muted text-label-caps">Connect Claude Desktop, Cursor, or Zed in seconds.</p>
           </div>

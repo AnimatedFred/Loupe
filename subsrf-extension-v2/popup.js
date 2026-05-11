@@ -80,14 +80,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSignIn      = document.getElementById('btn-sign-in');
   const btnSignOut     = document.getElementById('btn-sign-out');
 
-  const mcpConfig = {
-    mcpServers: {
-      subsrf: {
-        command: 'npx',
-        args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev']
-      }
-    }
-  };
+  function buildMcpConfig(pat) {
+    const base = { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] };
+    if (pat) base.env = { FIGMA_PAT: pat };
+    return { mcpServers: { subsrf: base } };
+  }
+
+  let mcpConfig = buildMcpConfig(null);
   const mcpConfigBlock = document.getElementById('mcp-config-block');
   if (mcpConfigBlock) mcpConfigBlock.textContent = JSON.stringify(mcpConfig, null, 2);
 
@@ -148,12 +147,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // Update REST token button label based on whether this user already has a PAT stored
+    // Update REST token button label and rebuild MCP config with stored PAT (if any)
     chrome.storage.local.get([`figma_pat_${user.id}`], (stored) => {
+      const pat = stored[`figma_pat_${user.id}`] || null;
       const btnShowRest = document.getElementById('btn-show-rest-input');
-      if (btnShowRest) {
-        btnShowRest.innerText = stored[`figma_pat_${user.id}`] ? 'Update Token' : 'Configure Token';
-      }
+      if (btnShowRest) btnShowRest.innerText = pat ? 'Update Token' : 'Configure Token';
+      mcpConfig = buildMcpConfig(pat);
+      const block = document.getElementById('mcp-config-block');
+      if (block) block.textContent = JSON.stringify(mcpConfig, null, 2);
     });
 
     // Account tab feature rows

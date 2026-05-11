@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TopNavBar, Footer } from './App';
 
-export default function DocsPage({ onLogin, loading, session, tier, onLogout }) {
+const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
+
+export default function DocsPage({ onLogin, loading, session, tier, onLogout, mcpConfig }) {
   const isPro = tier === 'pro';
+  const isPaid = tier === 'pro' || tier === 'starter';
+  const displayConfig = isPaid && mcpConfig ? mcpConfig : BASE_MCP;
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(JSON.stringify(displayConfig, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <>
@@ -95,23 +106,13 @@ export default function DocsPage({ onLogin, loading, session, tier, onLogout }) 
             <div className={`bg-deep border border-white-border overflow-hidden ${!isPro ? 'opacity-30 pointer-events-none' : ''}`}>
               <div className="flex items-center justify-between px-md py-sm border-b border-white-border bg-surface">
                 <span className="font-mono-data text-label-caps text-white-muted">claude_desktop_config.json</span>
-                <span className="material-symbols-outlined text-white-muted text-[16px]">content_copy</span>
+                <button onClick={handleCopy} className="flex items-center gap-xs font-mono-data text-label-caps text-white-muted hover:text-neon transition-colors bg-transparent border-none cursor-pointer">
+                  <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'content_copy'}</span>
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
               </div>
               <pre className="p-md font-mono-data text-mono-data overflow-x-auto"><code className="text-white-primary">
-{`{
-  "mcpServers": {
-    "subsrf-bridge": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@subsrf/bridge-mcp"
-      ],
-      "env": {
-        "SUBSRF_API_KEY": "sk_live_67x89..."
-      }
-    }
-  }
-}`}
+{JSON.stringify(displayConfig, null, 2)}
               </code></pre>
             </div>
             <div className={`mt-lg aspect-video bg-surface-container border border-white-border flex flex-col items-center justify-center group cursor-pointer hover:border-neon transition-colors ${!isPro ? 'opacity-30 pointer-events-none' : ''}`}>
@@ -145,7 +146,96 @@ export default function DocsPage({ onLogin, loading, session, tier, onLogout }) 
               </div>
               <div className="flex items-start gap-md">
                 <span className="font-mono-data text-neon bg-neon-dim px-2 py-0.5 rounded">03</span>
-                <p className="font-body text-body text-white-secondary">Generate a new token with <code className="font-mono-data text-neon bg-deep px-1">file_read</code> permissions.</p>
+                <p className="font-body text-body text-white-secondary">Generate a token with all permissions.</p>
+              </div>
+            </div>
+
+            <div className="mt-xl border border-white-border bg-void overflow-hidden rounded-sm">
+              <div className="px-md py-sm border-b border-white-border bg-surface">
+                <h4 className="font-mono-data text-label-caps text-white-muted uppercase tracking-widest">Required Token Scopes</h4>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white-border/50">
+                      <th className="p-md font-mono-data text-label-caps text-white-secondary">Status</th>
+                      <th className="p-md font-mono-data text-label-caps text-white-secondary">Scope Identifier</th>
+                      <th className="p-md font-mono-data text-label-caps text-white-secondary">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white-border/30">
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">current_user:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read the current user's name, email, and profile image</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_comments:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read comments in accessible files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_comments:write</td>
+                      <td className="p-md font-body text-body text-white-muted">Create, modify, and delete comments in accessible files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_content:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read the contents of and render images from files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_metadata:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read metadata of files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_versions:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read version history of files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">library_assets:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read data about individual components and styles</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">library_content:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read components and styles published from individual files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">team_library_content:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read components and styles published in team libraries</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_dev_resources:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read and list dev resources in accessible files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">file_dev_resources:write</td>
+                      <td className="p-md font-body text-body text-white-muted">Create and modify dev resources in accessible files</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">projects:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read team project structure</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">webhooks:read</td>
+                      <td className="p-md font-body text-body text-white-muted">Read and list webhooks</td>
+                    </tr>
+                    <tr className="hover:bg-white-border/5 transition-colors">
+                      <td className="p-md"><span className="material-symbols-outlined text-neon text-[18px]">check_box</span></td>
+                      <td className="p-md font-mono-data text-mono-data text-neon">webhooks:write</td>
+                      <td className="p-md font-body text-body text-white-muted">Create, modify, and delete webhooks</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
             
