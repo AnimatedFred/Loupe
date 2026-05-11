@@ -250,7 +250,7 @@ async function ensureOffscreen() {
 }
 
 // Full-page scroll-and-stitch capture
-async function captureFullPage(tabId) {
+async function captureFullPage(tabId, watermark = false) {
   const dims = await sendTabMessage(tabId, { type: 'GET_PAGE_DIMENSIONS' });
   if (!dims) { console.error('[Subsrf] Could not get page dimensions'); return; }
 
@@ -291,7 +291,7 @@ async function captureFullPage(tabId) {
     await sendTabMessage(tabId, { type: 'SHOW_UI' });
 
     if (result?.dataUrl) {
-      chrome.storage.local.set({ lastCapture: result.dataUrl, lastCaptureTime: Date.now() }, () => {
+      chrome.storage.local.set({ lastCapture: result.dataUrl, lastCaptureTime: Date.now(), captureWatermark: watermark }, () => {
         chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
       });
     }
@@ -510,14 +510,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       console.log('[Subsrf Background] Initializing Region Capture...', msg.rect);
       (async () => {
         const session = await getAuthState();
-        if (!session?.tier || session.tier === 'free') return;
+        const watermark = !session?.tier || session.tier === 'free';
         throttleCapture((dataUrl) => {
           if (dataUrl) {
             chrome.storage.local.set({
               lastCapture: dataUrl,
               lastCaptureRect: msg.rect,
               lastCaptureViewportWidth: msg.viewportWidth,
-              lastCaptureTime: Date.now()
+              lastCaptureTime: Date.now(),
+              captureWatermark: watermark
             }, () => {
                chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
             });
@@ -555,8 +556,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!tabId) break;
       (async () => {
         const session = await getAuthState();
-        if (!session?.tier || session.tier === 'free') return;
-        captureFullPage(tabId).catch(e => console.error('[Subsrf] captureFullPage error:', e));
+        const watermark = !session?.tier || session.tier === 'free';
+        captureFullPage(tabId, watermark).catch(e => console.error('[Subsrf] captureFullPage error:', e));
       })();
       break;
     }

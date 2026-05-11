@@ -783,11 +783,11 @@ function App() {
   }
 
   if (currentPath === '#pricing') {
-    return <PricingPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} mcpConfig={mcpConfig} figmaPat={figmaPat} />
+    return <PricingPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
   if (currentPath === '#docs') {
-    return <DocsPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} mcpConfig={mcpConfig} figmaPat={figmaPat} />
+    return <DocsPage onLogin={handleLogin} loading={authLoading} session={session} tier={tier} onLogout={handleLogout} />
   }
 
   // If session exists and no specific page is requested, show dashboard

@@ -30,10 +30,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   btnFullPage.onclick = () => {
     const tier = (currentSession?.tier || 'free').toLowerCase();
-    if (!currentSession || tier === 'free') {
-      showUpgradeHint('Full Page capture requires Starter or Pro.');
-      return;
-    }
     if (tier === 'starter') {
       const today = new Date().toISOString().slice(0, 10);
       chrome.storage.local.get('fullPageCaptureLog', (data) => {
@@ -58,11 +54,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 
   btnScreenshot.onclick = () => {
-    const tier = (currentSession?.tier || 'free').toLowerCase();
-    if (!currentSession || tier === 'free') {
-      showUpgradeHint('Screenshot requires Starter or Pro.');
-      return;
-    }
     ensureAndExecute((id) => {
       setMode(id, 'screenshot');
       setTimeout(() => window.close(), 100);
@@ -102,8 +93,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       authSignedOut.style.display = '';
       authSignedIn.style.display  = 'none';
       renderMcpTab(false);
-      btnScreenshot.classList.add('locked');
-      btnFullPage.classList.add('locked');
       document.getElementById('popup-drop-zone')?.classList.add('locked');
       return;
     }
@@ -166,8 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const upgradeCta = document.getElementById('acct-upgrade-cta');
     if (upgradeCta) upgradeCta.style.display = isPaid ? 'none' : '';
 
-    btnScreenshot.classList.toggle('locked', !isPaid);
-    btnFullPage.classList.toggle('locked', !isPaid);
     document.getElementById('popup-drop-zone')?.classList.toggle('locked', !isPaid);
 
     const figmaSyncEl = document.getElementById('acct-figma-sync');
