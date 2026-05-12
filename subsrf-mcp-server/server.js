@@ -1180,7 +1180,7 @@ STRICT RULES:
 - Output ONLY the markdown brief. No preamble. No JSON wrappers. No code fences. No "Here is your brief:".`;
 
   const userContent = `Figma selection (${nodes.length} node${nodes.length !== 1 ? 's' : ''}):
-${JSON.stringify(nodes)}`;
+${JSON.stringify(nodes, null, 1)}`;
 
   try {
     const abortCtrl = new AbortController();
@@ -1207,11 +1207,14 @@ ${JSON.stringify(nodes)}`;
     }
 
     const result = await aiRes.json();
-    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!rawText) throw new Error('AI returned empty response');
 
+    // Strip markdown code fences Gemini sometimes adds despite instructions
+    rawText = rawText.replace(/^```(?:markdown)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
     console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${rawText.length} chars`);
-    res.json({ ok: true, prompt: rawText.trim(), balance: newBalance });
+    res.json({ ok: true, prompt: rawText, balance: newBalance });
 
   } catch (e) {
     console.error('[Subsrf Compose] Error:', e.message);
@@ -1327,7 +1330,7 @@ Rules:
     `Viewport: ${pageContext.viewport ? `${pageContext.viewport.w}×${pageContext.viewport.h}` : 'unknown'}`,
     '',
     `Captured ${elements.length} DOM elements with computed styles:`,
-    JSON.stringify(elements, null, 2)
+    JSON.stringify(elements)
   ].join('\n');
 
   try {
@@ -1342,7 +1345,10 @@ Rules:
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userContent }] }],
-          generationConfig: { maxOutputTokens: 3500 }
+          generationConfig: {
+            maxOutputTokens: 8192,
+            responseMimeType: 'application/json'
+          }
         })
       });
     } finally {
@@ -1357,7 +1363,6 @@ Rules:
     const result = await aiRes.json();
     const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Parse the JSON — strip any accidental markdown fences the model might add
     const enriched = parseAiJson(rawText);
 
     console.error(`[Subsrf AI] Smart prompt for ${auth.user.email} (${elements.length} elements) — balance: ${newBalance}`);
