@@ -188,7 +188,26 @@ The current code runs Gemini 2.5 Flash with **adaptive thinking on** (no `thinki
 | Compose + Smart Prompt no thinking | $0.0082 | $0.62 | $2.46 |
 | All operations no thinking | $0.0022 | $0.17 | $0.66 |
 
-> **Recommendation:** Vision operations (Describe, Accessibility, Build Prompt) benefit from thinking because the model is making complex visual judgments. Compose and Smart Prompt generate structured text with deterministic rules — thinking adds cost with minimal quality gain. Setting `thinkingBudget: 0` on these two endpoints would improve Pro margin by ~$0.54/user/month with no perceptible quality loss.
+### Quality Assessment by Operation
+
+The case for disabling thinking is **not equal across all operations**. Thinking adds value where the model must make non-obvious judgments; it adds little where the task is mechanical extraction.
+
+| Operation | Thinking useful? | Reasoning |
+|-----------|:----------------:|-----------|
+| **Smart Prompt** | ✗ Low | Pure structured extraction — reads computed CSS values and maps them into predefined JSON fields. The input is already machine-formatted; the output schema is rigid. Thinking provides minimal lift here. **Safe to disable.** |
+| **Compose (Figma brief)** | ~ Medium | Has real analytical steps: infer semantic color roles from raw hex values, classify UI pattern from node names, identify layout strategy. Thinking may improve quality on complex or ambiguous selections. For typical use (clear component trees) the impact is small, but disabling it is a non-trivial risk on edge cases. **Leave adaptive for now.** |
+| **Vision: Build Prompt** | ✓ High | Model must read an image, estimate dimensions, assign type scales, and group visual elements — multi-step spatial reasoning. Thinking pays for itself here. |
+| **Vision: Describe** | ✓ High | Classification step (UI vs Photo vs Illustration) followed by type-specific analysis and a crafted reconstruction prompt. Complex, open-ended. Keep thinking. |
+| **Vision: Accessibility** | ✓ High | Must visually estimate contrast ratios, identify interaction targets, and reason about keyboard navigation — all from pixel evidence alone. Thinking is directly valuable. |
+
+### Important Caveat: Adaptive Thinking Is Already Smart
+
+With no `thinkingConfig`, Gemini 2.5 Flash uses **adaptive thinking** — it decides per-call whether to engage extended reasoning based on perceived task complexity. This means:
+- Simple Compose inputs (one obvious card component) may already skip thinking internally
+- The $2.50/M output rate applies regardless, but actual thinking token volume varies
+- Realised savings from explicitly setting `thinkingBudget: 0` may be smaller than the table above suggests
+
+**Practical recommendation:** Disable thinking only on Smart Prompt (`/api/ai/generate`) where the task is unambiguously mechanical. The saving per Pro user is ~$0.15/month — not dramatic, but zero quality risk. Compose and all Vision operations should remain adaptive until you have output quality benchmarks to compare against.
 
 ---
 
@@ -210,7 +229,7 @@ The current code runs Gemini 2.5 Flash with **adaptive thinking on** (no `thinki
 1. Gross margins are strong at both tiers — even worst-case, Pro holds ~68% contribution margin
 2. Infra break-even is trivially low (4–6 subscribers)
 3. The largest margin risk is Pro users running heavy Accessibility Audits repeatedly — at $0.0171/credit × 300 = $5.13, that's 27% of Pro revenue
-4. Disabling Gemini thinking on Compose + Smart Prompt saves ~$0.54/month per Pro user with no quality tradeoff — worth implementing
+4. Disabling thinking on **Smart Prompt only** is safe (~$0.15/month Pro saving, zero quality risk) — Compose and Vision should stay adaptive until benchmarked
 5. Starter's $0.12 revenue-per-credit vs $0.010 cost gives a healthy 12× coverage buffer
 
 ---
