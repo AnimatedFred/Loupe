@@ -1557,6 +1557,68 @@ app.post('/api/ai/vision', async (req, res) => {
   }
 });
 
+const FIGMA_IMPORT_DOM_PROMPT = `You are a Figma Plugin API expert. Write complete JavaScript that recreates a UI as native Figma frames using only the provided DOM element data (tag names, bounding rects, and computed CSS styles).
+
+OUTPUT RULES:
+- Output ONLY valid JavaScript. No markdown fences, no explanation text, no preamble, nothing else.
+- The code runs inside: (async () => { YOUR_CODE_HERE })() with access to the \`figma\` global.
+- Every variable must be declared with const or let.
+- End with: figma.viewport.scrollAndZoomIntoView([mainFrame]); figma.notify("✓ Imported");
+
+COLORS — CRITICAL:
+- ALL colors MUST be normalized 0–1 floats: { r: 0.2, g: 0.4, b: 0.8, a: 1.0 }
+- Convert hex #RRGGBB: r = parseInt(hex.slice(1,3),16)/255, etc.
+- Convert rgb(R,G,B): divide each channel by 255.
+- NEVER use integer 0–255 values in color objects.
+- If a color is missing or "transparent", use fills = [].
+
+FONTS — CRITICAL:
+- Load every font BEFORE creating text: await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+- Common styles: "Regular", "Medium", "SemiBold", "Bold", "ExtraBold"
+- Fall back to Inter for any unavailable font.
+
+FRAME CREATION:
+const frame = figma.createFrame();
+frame.resize(width, height);
+frame.x = x; frame.y = y;
+frame.fills = [{ type: "SOLID", color: { r, g, b } }];  // [] for transparent
+frame.cornerRadius = 8;
+frame.strokeWeight = 1; frame.strokes = [{ type: "SOLID", color: { r, g, b } }];
+frame.effects = [{ type: "DROP_SHADOW", color: { r, g, b, a: 0.15 }, offset: { x: 0, y: 4 }, radius: 12, spread: 0, visible: true, blendMode: "NORMAL" }];
+frame.clipsContent = true;
+
+AUTO LAYOUT (use for every row/column):
+frame.layoutMode = "HORIZONTAL";  // or "VERTICAL"
+frame.primaryAxisAlignItems = "MIN";
+frame.counterAxisAlignItems = "MIN";
+frame.itemSpacing = 12;
+frame.paddingTop = 16; frame.paddingBottom = 16;
+frame.paddingLeft = 20; frame.paddingRight = 20;
+frame.primaryAxisSizingMode = "AUTO";
+frame.counterAxisSizingMode = "AUTO";
+
+TEXT CREATION:
+const text = figma.createText();
+await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+text.fontName = { family: "Inter", style: "Bold" };
+text.characters = "Hello World";
+text.fontSize = 24;
+text.fills = [{ type: "SOLID", color: { r, g, b } }];
+text.textAlignHorizontal = "LEFT";
+
+NESTING:
+parentFrame.appendChild(childFrame);
+figma.currentPage.appendChild(mainFrame);
+
+APPROACH:
+1. Use each element's rect (x, y, width, height) for exact positioning and sizing.
+2. Use styles.backgroundColor and styles.color for fill colors (parse hex, rgb, or rgba).
+3. Use styles.fontSize, styles.fontFamily, styles.fontWeight for text nodes.
+4. Use styles.borderRadius for corner radius; styles.boxShadow for drop shadows.
+5. Build a main container frame sized to the captured area.
+6. Add Auto Layout for elements with display:flex.
+7. Keep total node count reasonable (max ~60 nodes).`;
+
 const FIGMA_IMPORT_SYSTEM_PROMPT = `You are a Figma Plugin API expert. Analyze the provided UI screenshot and element DOM data, then write complete JavaScript that recreates the UI as native Figma frames.
 
 OUTPUT RULES:
@@ -1687,13 +1749,21 @@ app.post('/api/ai/figma-import', async (req, res) => {
     }
   }));
 
-  const userText = `Page URL: ${context.url || 'unknown'}
+  const userText = image
+    ? `Page URL: ${context.url || 'unknown'}
 Page title: ${context.title || 'unknown'}
 Element count: ${elements.length}
 DOM elements (first 40):
 ${JSON.stringify(elementSummary, null, 1)}
 
-Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot and the element data above.`;
+Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot and the element data above.`
+    : `Page URL: ${context.url || 'unknown'}
+Page title: ${context.title || 'unknown'}
+Element count: ${elements.length}
+DOM elements (first 40):
+${JSON.stringify(elementSummary, null, 1)}
+
+Generate Figma Plugin API JavaScript to recreate this UI from the element data above.`;
 
   try {
     const abortCtrl = new AbortController();
@@ -1705,10 +1775,10 @@ Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot
         signal: abortCtrl.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: FIGMA_IMPORT_SYSTEM_PROMPT }] },
+          system_instruction: { parts: [{ text: image ? FIGMA_IMPORT_SYSTEM_PROMPT : FIGMA_IMPORT_DOM_PROMPT }] },
           contents: [{ role: 'user', parts: image
             ? [{ inline_data: { mime_type: mimeType, data: image } }, { text: userText }]
-            : [{ text: 'No screenshot available — use DOM data only.\n\n' + userText }]
+            : [{ text: userText }]
           }],
           generationConfig: { maxOutputTokens: 8192 }
         })
