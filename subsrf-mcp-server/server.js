@@ -1152,7 +1152,7 @@ Rules:
     const abortTimer = setTimeout(() => abortCtrl.abort(), 25000);
     let aiRes;
     try {
-      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         signal: abortCtrl.signal,
         headers: { 'Content-Type': 'application/json' },
@@ -1359,7 +1359,7 @@ app.post('/api/ai/vision', async (req, res) => {
     const abortTimer = setTimeout(() => abortCtrl.abort(), 45000);
     let aiRes;
     try {
-      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         signal: abortCtrl.signal,
         headers: { 'Content-Type': 'application/json' },
