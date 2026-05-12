@@ -231,6 +231,151 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
           </div>
         </section>
 
+        {/* ── Subsrf Tokens Section ── */}
+        <section className="w-full flex flex-col gap-2xl">
+          <div className="flex flex-col items-center text-center gap-md">
+            <div className="flex items-center gap-sm">
+              <span className="w-1.5 h-1.5 bg-neon rounded-full animate-pulse"></span>
+              <span className="font-label-caps text-label-caps text-neon uppercase tracking-widest">New · tokens.subsrf.dev</span>
+            </div>
+            <h2 className="font-heading-md text-heading-md text-white-primary">Extract any design system</h2>
+            <p className="font-body text-body text-white-secondary max-w-xl">
+              Every live website runs on a design system. Subsrf Tokens reads the computed CSS of any URL and surfaces it as clean, exportable tokens — colors, typography, spacing, shadows, and radii.
+            </p>
+          </div>
+
+          {/* App preview card */}
+          <div className="w-full border border-white-border rounded-lg overflow-hidden">
+
+            {/* URL bar */}
+            <div className="flex items-center border-b border-white-border bg-layer">
+              <span className="font-mono-data text-mono-data text-white-muted px-md py-md border-r border-white-border shrink-0">https://</span>
+              <span className="font-mono-data text-mono-data text-white-primary flex-1 px-md py-md">stripe.com</span>
+              <div className="flex items-center gap-md px-md shrink-0">
+                <span className="font-label-caps text-[9px] text-neon bg-neon/10 border border-neon/20 px-sm py-xs rounded-DEFAULT hidden sm:block">LIVE EXTRACTION</span>
+                <span className="font-mono-data text-[10px] text-white-muted">1.4s · 52 tokens</span>
+              </div>
+            </div>
+
+            {/* Two-panel layout */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_260px]">
+
+              {/* Token panel */}
+              <div className="p-lg border-b md:border-b-0 md:border-r border-white-border">
+                {/* Category tabs */}
+                <div className="flex flex-wrap gap-xs mb-lg">
+                  {[
+                    { label: 'Colors',     color: '#00FF87', active: true },
+                    { label: 'Typography', color: '#818cf8' },
+                    { label: 'Spacing',    color: '#38bdf8' },
+                    { label: 'Radius',     color: '#fb923c' },
+                    { label: 'Shadows',    color: '#e879f9' },
+                  ].map(cat => (
+                    <span key={cat.label} className={`font-label-caps text-[9px] px-sm py-xs rounded-DEFAULT border cursor-default flex items-center gap-xs ${cat.active ? 'bg-neon/10 border-neon/20 text-neon' : 'border-white-border text-white-muted'}`}>
+                      <span className="w-1 h-1 rounded-full shrink-0" style={{ background: cat.color }}></span>
+                      {cat.label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Color swatches */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-sm">
+                  {[
+                    { name: 'text-primary', value: '#F2F2F4', bg: '#F2F2F4' },
+                    { name: 'bg-void',      value: '#050508', bg: '#050508', dim: true },
+                    { name: 'bg-surface',   value: '#111118', bg: '#111118' },
+                    { name: 'accent',       value: '#00FF87', bg: '#00FF87', glow: true },
+                    { name: 'success',      value: '#39D98A', bg: '#39D98A' },
+                    { name: 'error',        value: '#FF4D4D', bg: '#FF4D4D' },
+                  ].map(s => (
+                    <div key={s.name} className="border border-white-border rounded-DEFAULT overflow-hidden">
+                      <div className="h-10" style={{
+                        background: s.bg,
+                        boxShadow: s.glow ? '0 0 16px rgba(0,255,135,0.35)' : undefined,
+                        borderBottom: s.dim ? '1px solid rgba(255,255,255,0.06)' : undefined,
+                      }}></div>
+                      <div className="px-xs py-xs bg-surface">
+                        <div className="font-mono-data text-[8px] text-white-secondary truncate">{s.name}</div>
+                        <div className="font-mono-data text-[8px] text-white-muted truncate">{s.value}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Export panel */}
+              <div className="p-lg flex flex-col gap-md">
+                <span className="font-label-caps text-[9px] text-white-muted uppercase tracking-widest">Export format</span>
+                <div className="flex flex-col gap-xs">
+                  {[
+                    { abbr: 'CSS', label: 'CSS Variables',    active: true },
+                    { abbr: 'TW',  label: 'Tailwind Config' },
+                    { abbr: '{}',  label: 'JSON' },
+                    { abbr: 'Fig', label: 'Figma Variables' },
+                    { abbr: 'AI',  label: 'AI Prompt', badge: '1 credit' },
+                  ].map(f => (
+                    <div key={f.abbr} className={`flex items-center gap-sm px-sm py-xs rounded-DEFAULT border cursor-default ${f.active ? 'bg-neon/10 border-neon/20' : 'border-white-border'}`}>
+                      <span className={`font-mono-data text-[9px] w-6 text-center shrink-0 ${f.active ? 'text-neon' : 'text-white-muted'}`}>{f.abbr}</span>
+                      <span className={`font-body text-[11px] flex-1 ${f.active ? 'text-neon' : 'text-white-secondary'}`}>{f.label}</span>
+                      {f.badge && <span className="font-mono-data text-[8px] text-white-muted border border-white-border px-xs rounded-DEFAULT">{f.badge}</span>}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Code preview */}
+                <div className="bg-void border border-white-border rounded-DEFAULT overflow-hidden">
+                  <div className="flex items-center justify-between px-sm py-xs border-b border-white-border">
+                    <span className="font-label-caps text-[8px] text-white-muted">CSS</span>
+                    <span className="font-mono-data text-[8px] text-neon opacity-60">⎘ copy</span>
+                  </div>
+                  <pre className="px-sm py-sm font-mono-data text-[9px] leading-relaxed text-white-secondary overflow-x-auto">{`:root {
+  --color-accent: #00FF87;
+  --color-text:   #F2F2F4;
+  --color-bg:     #050508;
+  --space-4:      16px;
+  --radius-md:    8px;
+}`}</pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Value prop cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-sm">
+              <div className="flex items-center gap-sm">
+                <div className="w-2 h-2 bg-neon rounded-full"></div>
+                <span className="font-label-caps text-label-caps text-neon uppercase">Any URL</span>
+              </div>
+              <h3 className="font-heading-sm text-[18px] text-white-primary">No source access required</h3>
+              <p className="font-body text-[14px] text-white-secondary">Point at any public URL — your own site, a competitor's, or a reference. Works on any page you can open in a browser.</p>
+            </div>
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-sm">
+              <div className="flex items-center gap-sm">
+                <div className="w-2 h-2 rounded-full" style={{ background: '#818cf8' }}></div>
+                <span className="font-label-caps text-label-caps uppercase" style={{ color: '#818cf8' }}>All formats</span>
+              </div>
+              <h3 className="font-heading-sm text-[18px] text-white-primary">Export anywhere</h3>
+              <p className="font-body text-[14px] text-white-secondary">CSS custom properties, Tailwind config, Style Dictionary, Figma Variables, or a structured AI prompt. One extraction, every format.</p>
+            </div>
+            <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-sm">
+              <div className="flex items-center gap-sm">
+                <div className="w-2 h-2 rounded-full" style={{ background: '#38bdf8' }}></div>
+                <span className="font-label-caps text-label-caps uppercase" style={{ color: '#38bdf8' }}>Pro · MCP Tool</span>
+              </div>
+              <h3 className="font-heading-sm text-[18px] text-white-primary">Claude reads tokens directly</h3>
+              <p className="font-body text-[14px] text-white-secondary">The <code className="font-mono-data text-[11px] text-neon">subsrf_extract_tokens</code> MCP tool lets Claude and Cursor fetch any site's token set and apply it to code — no copy-paste.</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <a href="https://tokens.subsrf.dev" target="_blank" rel="noopener noreferrer"
+              className="bg-neon text-void px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95">
+              Try Subsrf Tokens →
+            </a>
+          </div>
+        </section>
+
         {/* Pricing Tier */}
         <section id="get-started" className="w-full flex flex-col gap-2xl">
           <div className="text-center flex flex-col gap-xs">
