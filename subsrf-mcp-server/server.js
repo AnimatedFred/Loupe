@@ -1726,19 +1726,33 @@ Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot
     let code = apiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!code) throw new Error('AI returned empty response');
 
-    // Extract JS from response — Gemini often wraps code in fences or adds explanatory text
-    const fenceMatch = code.match(/```(?:javascript|js)?\s*\n?([\s\S]+?)```/i);
-    if (fenceMatch) {
-      code = fenceMatch[1].trim();
+    // Extract JS from response — Gemini often wraps code in fences or adds explanatory text.
+    // Collect ALL code blocks and pick the longest one (usually the complete implementation).
+    const rawCode = code;
+    const blocks = [];
+    const fenceRe = /```(?:javascript|js|ts)?\s*\n([\s\S]+?)```/gi;
+    let m;
+    while ((m = fenceRe.exec(rawCode)) !== null) blocks.push(m[1].trim());
+
+    if (blocks.length > 0) {
+      code = blocks.reduce((a, b) => a.length >= b.length ? a : b);
     } else {
-      // No fence — find where the JS code actually starts by looking for the first
-      // statement keyword at the start of a line
-      const jsStart = code.search(/^(?:const|let|var|async|await|\/\/|figma\.|\/\*)/m);
-      if (jsStart > 0) code = code.slice(jsStart);
-      code = code.replace(/\s*```\s*$/, '').trim();
+      // No fences — skip any leading prose and find the first JS statement
+      const jsStart = rawCode.search(/^(?:const|let|var|async|await|\/\/|figma\.|\/\*)/m);
+      code = jsStart >= 0 ? rawCode.slice(jsStart) : rawCode;
+      code = code.replace(/\s*```[\s\S]*$/, '').trim();
     }
 
     if (!code) throw new Error('AI returned no executable code');
+
+    // Basic sanity: if the code appears truncated (ends inside a string),
+    // the EVAL will fail — surface it here with a clear error
+    const singleQ = (code.match(/(?<!\\)'/g) || []).length;
+    const doubleQ = (code.match(/(?<!\\)"/g) || []).length;
+    const backtickQ = (code.match(/(?<!\\)`/g) || []).length;
+    if (singleQ % 2 !== 0 || doubleQ % 2 !== 0 || backtickQ % 2 !== 0) {
+      throw new Error('Generated code appears truncated — please try again');
+    }
 
     console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email} — starts: ${code.slice(0, 60).replace(/\n/g, ' ')}`);
     res.json({ ok: true, code, balance: newBalance });
