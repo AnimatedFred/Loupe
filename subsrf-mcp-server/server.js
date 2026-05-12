@@ -1718,10 +1718,21 @@ Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot
     let code = apiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!code) throw new Error('AI returned empty response');
 
-    // Strip any markdown code fences Gemini may add despite instructions
-    code = code.replace(/^```(?:javascript|js)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    // Extract JS from response — Gemini often wraps code in fences or adds explanatory text
+    const fenceMatch = code.match(/```(?:javascript|js)?\s*\n?([\s\S]+?)```/i);
+    if (fenceMatch) {
+      code = fenceMatch[1].trim();
+    } else {
+      // No fence — find where the JS code actually starts by looking for the first
+      // statement keyword at the start of a line
+      const jsStart = code.search(/^(?:const|let|var|async|await|\/\/|figma\.|\/\*)/m);
+      if (jsStart > 0) code = code.slice(jsStart);
+      code = code.replace(/\s*```\s*$/, '').trim();
+    }
 
-    console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email}`);
+    if (!code) throw new Error('AI returned no executable code');
+
+    console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email} — starts: ${code.slice(0, 60).replace(/\n/g, ' ')}`);
     res.json({ ok: true, code, balance: newBalance });
 
   } catch (e) {
