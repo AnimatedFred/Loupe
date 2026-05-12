@@ -39,14 +39,16 @@ Max capture (2 048×2 048 px, worst case) → 8 × 8 = 64 tiles × 258 = **~16 5
 
 ### Per-Operation Token Breakdown
 
-| Operation | Endpoint | Input tokens | Output tokens | Input cost | Output cost | **Cost / call** |
-|-----------|----------|:------------:|:-------------:|:----------:|:-----------:|:---------------:|
-| Compose (Figma brief) | `/api/ai/compose` | ~1 850 | ~2 000 | $0.00056 | $0.00500 | **$0.0056** |
-| Smart Prompt (DOM → tokens) | `/api/ai/generate` | ~1 625 | ~3 500 | $0.00049 | $0.00875 | **$0.0092** |
-| Vision: Build Prompt | `/api/ai/vision` | ~6 342 | ~2 500 | $0.00190 | $0.00625 | **$0.0082** |
-| Vision: Describe (UI / Photo / Art) | `/api/ai/vision` | ~7 067 | ~4 500 | $0.00212 | $0.01125 | **$0.0134** |
-| Vision: Accessibility Audit | `/api/ai/vision` | ~6 942 | ~6 000 | $0.00208 | $0.01500 | **$0.0171** |
-| Vision: Design Match (2 images) | `/api/ai/vision` | ~13 184 | ~2 000 | $0.00396 | $0.00500 | **$0.0090** |
+| Operation | Endpoint | Credits | Input tokens | Output tokens | Input cost | Output cost | **Cost / call** |
+|-----------|----------|:-------:|:------------:|:-------------:|:----------:|:-----------:|:---------------:|
+| Compose (Figma brief) | `/api/ai/compose` | 1 | ~1 850 | ~2 000 | $0.00056 | $0.00500 | **$0.0056** |
+| Smart Prompt (DOM → tokens) | `/api/ai/generate` | 1 | ~1 625 | ~3 500 | $0.00049 | $0.00875 | **$0.0092** |
+| Vision: Build Prompt | `/api/ai/vision` | 1 | ~6 342 | ~2 500 | $0.00190 | $0.00625 | **$0.0082** |
+| Vision: Describe (UI / Photo / Art) | `/api/ai/vision` | 1 | ~7 067 | ~4 500 | $0.00212 | $0.01125 | **$0.0134** |
+| Vision: Accessibility Audit | `/api/ai/vision` | 1 | ~6 942 | ~6 000 | $0.00208 | $0.01500 | **$0.0171** |
+| Vision: Design Match (2 images) | `/api/ai/vision` | 1 | ~13 184 | ~2 000 | $0.00396 | $0.00500 | **$0.0090** |
+| **AI Import (w/ screenshot)** | `/api/ai/figma-import` | **2** | ~8 892 | ~4 000 avg | $0.00267 | $0.00120 | **$0.0039** |
+| **AI Import (DOM-only)** | `/api/ai/figma-import` | **2** | ~2 700 | ~4 000 avg | $0.00081 | $0.00120 | **$0.0020** |
 
 **Notes on token estimates:**
 - *Compose input*: 1 100 tokens system prompt + 750 tokens Figma nodes JSON (avg 3 nodes)
@@ -55,31 +57,67 @@ Max capture (2 048×2 048 px, worst case) → 8 × 8 = 64 tiles × 258 = **~16 5
 - *Describe* and *Accessibility* system prompts are significantly larger than other modes due to the new brains added (multi-format classify logic and inline markdown template)
 - *Accessibility output* is the largest: full `markdownReport` + structured JSON = ~6 000 tokens
 - *Match*: two images sent simultaneously → ~12 384 image tokens
+- *AI Import input (w/ screenshot)*: ~1 200 token system prompt + ~1 500 token DOM JSON (40 elements) + ~6 192 image tokens (typical capture)
+- *AI Import input (DOM-only)*: ~1 200 token system prompt + ~1 500 token DOM JSON — no image
+- *AI Import output*: JavaScript code generation; typical medium UI ~3 000–6 000 tokens; thinking **disabled** — all output budget goes to code (see note below)
+
+### AI Import: Thinking Disabled — Cost & Truncation Impact
+
+AI Import runs with `thinkingConfig: { thinkingBudget: 0 }` and `maxOutputTokens: 32768`.
+
+**Why thinking is disabled here:** Gemini 2.5 Flash's thinking tokens and code output tokens share the same `maxOutputTokens` budget. With adaptive thinking on, the model can burn 6 000–10 000 tokens on internal reasoning before writing a single line of code — leaving too little budget for the generated JavaScript and causing truncation. Code generation is a mechanical DOM→Figma translation; thinking adds no meaningful quality lift.
+
+**Two effects of disabling thinking:**
+
+1. **Output pricing drops 8×** — from $2.50/1M (thinking-enabled rate) to $0.30/1M (non-thinking rate). This is the dominant cost saving.
+2. **Full 32 768 token budget goes to code** — no more truncation from reasoning token competition.
+
+| Scenario | Output tokens | Output cost (no thinking) | Total call cost |
+|----------|:-------------:|:-------------------------:|:---------------:|
+| Simple UI — completes early | ~2 000 | $0.00060 | ~$0.0032 |
+| Typical UI — completes naturally | ~4 000 | $0.00120 | ~$0.0039 |
+| Complex UI | ~8 000 | $0.00240 | ~$0.0051 |
+| Large UI — near old 8192 cap | ~12 000 | $0.00360 | ~$0.0063 |
+| Worst case — hits 32 768 cap | 32 768 | $0.00983 | ~$0.0125 |
+
+Compare to the previous cost with thinking enabled and `maxOutputTokens: 16384`:
+- Typical call: $0.0177 → **$0.0039** (78% cheaper)
+- Worst case: $0.0436 → **$0.0125** (71% cheaper)
+
+**Revenue coverage:** AI Import costs 2 credits.
+- Starter revenue per call: 2 × ($9 / 75) = **$0.240** → ~60× coverage at typical cost
+- Pro revenue per call: 2 × ($19 / 300) = **$0.127** → ~32× coverage at typical cost
+
+Coverage is now extremely comfortable — the tightest scenario is Pro worst-case ($0.0125 × 150 calls = $1.88), well within margin.
 
 ### Cost Range Summary
 
-| Operation | Min cost | Max cost (2048px image) |
-|-----------|:--------:|:-----------------------:|
-| Compose | $0.0056 | $0.0056 |
-| Smart Prompt | $0.0092 | $0.0092 |
-| Vision: Build Prompt | $0.0082 | $0.0175 |
-| Vision: Describe | $0.0134 | $0.0240 |
-| Vision: Accessibility | $0.0171 | $0.0276 |
+| Operation | Credits | Min cost | Typical cost | Max cost |
+|-----------|:-------:|:--------:|:------------:|:--------:|
+| Compose | 1 | $0.0056 | $0.0056 | $0.0056 |
+| Smart Prompt | 1 | $0.0092 | $0.0092 | $0.0092 |
+| Vision: Build Prompt | 1 | $0.0082 | $0.0082 | $0.0175 |
+| Vision: Describe | 1 | $0.0134 | $0.0134 | $0.0240 |
+| Vision: Accessibility | 1 | $0.0171 | $0.0171 | $0.0276 |
+| **AI Import** | **2** | **$0.0020** | **$0.0039** | **$0.0125** |
 
 ---
 
 ## Blended Cost Per Credit
 
-Assuming a typical usage distribution across operations:
+Assuming a typical usage distribution across operations. AI Import costs 2 credits per call; for blended-per-credit purposes, its $0.0177 cost is divided across 2 credits = $0.00885 / credit-equivalent.
 
-| Operation | Usage share | Cost / call | Weighted cost |
-|-----------|:-----------:|:-----------:|:-------------:|
-| Vision: Build Prompt | 40% | $0.0082 | $0.00328 |
-| Compose (Figma) | 20% | $0.0056 | $0.00112 |
-| Vision: Describe | 15% | $0.0134 | $0.00201 |
-| Vision: Accessibility | 15% | $0.0171 | $0.00257 |
-| Smart Prompt | 10% | $0.0092 | $0.00092 |
-| **Blended average** | **100%** | | **~$0.010 / credit** |
+| Operation | Usage share (by credits spent) | Cost / call | Credits / call | Cost / credit | Weighted |
+|-----------|:------------------------------:|:-----------:|:--------------:|:-------------:|:--------:|
+| Vision: Build Prompt | 30% | $0.0082 | 1 | $0.00820 | $0.00246 |
+| Compose (Figma) | 20% | $0.0056 | 1 | $0.00560 | $0.00112 |
+| Vision: Describe | 15% | $0.0134 | 1 | $0.01340 | $0.00201 |
+| Vision: Accessibility | 10% | $0.0171 | 1 | $0.01710 | $0.00171 |
+| Smart Prompt | 10% | $0.0092 | 1 | $0.00920 | $0.00092 |
+| AI Import | 15% | $0.0039 | 2 | $0.00195 | $0.00029 |
+| **Blended average** | **100%** | | | | **~$0.0085 / credit** |
+
+> Blended cost dropped from ~$0.010 to ~$0.0085/credit largely because AI Import (15% of usage) is now very cheap with thinking disabled.
 
 ### Worst Case (if all credits spent on Accessibility Audits)
 
@@ -87,6 +125,15 @@ Assuming a typical usage distribution across operations:
 |------|:-------:|:----:|:-----------------:|
 | Starter | 75 | $0.0171 | **$1.28** |
 | Pro | 300 | $0.0171 | **$5.13** |
+
+### Worst Case — AI Import (if all credits spent on AI Import, complex pages)
+
+| Tier | Credits | Calls | Rate (worst, no-thinking) | Total Gemini cost |
+|------|:-------:|:-----:|:-------------------------:|:-----------------:|
+| Starter | 75 | 37 | $0.0125 | **$0.46** |
+| Pro | 300 | 150 | $0.0125 | **$1.88** |
+
+> With thinking disabled, AI Import worst case is well-contained. Pro worst case ($1.88) is only 10% of Pro net revenue.
 
 ### Best Case (if all credits spent on Compose)
 
@@ -218,19 +265,21 @@ With no `thinkingConfig`, Gemini 2.5 Flash uses **adaptive thinking** — it dec
 | Monthly price | $0 | $9.00 | $19.00 |
 | Credits | 0 | 75 | 300 |
 | Stripe fee | $0 | −$0.56 | −$0.85 |
-| Gemini API (avg case) | $0 | −$0.75 | −$3.00 |
-| Gemini API (worst case) | $0 | −$1.28 | −$5.13 |
-| **Gross margin (avg)** | 100% | **85.4%** | **79.7%** |
-| **Gross margin (worst)** | 100% | **79.6%** | **68.5%** |
+| Gemini API (avg case) | $0 | −$0.64 | −$2.55 |
+| Gemini API (worst case — Accessibility) | $0 | −$1.28 | −$5.13 |
+| Gemini API (worst case — AI Import) | $0 | −$0.46 | −$1.88 |
+| **Gross margin (avg)** | 100% | **86.8%** | **82.4%** |
+| **Gross margin (worst — Accessibility)** | 100% | **79.6%** | **68.5%** |
 | Infra @ 100 users | $0 | −$0.46 | −$0.46 |
 | **Net margin @ 100 users (avg)** | 100% | **80.3%** | **77.3%** |
 
 **Key takeaways:**
-1. Gross margins are strong at both tiers — even worst-case, Pro holds ~68% contribution margin
+1. Gross margins are strong at both tiers — even blended average, Pro holds ~80% contribution margin
 2. Infra break-even is trivially low (4–6 subscribers)
-3. The largest margin risk is Pro users running heavy Accessibility Audits repeatedly — at $0.0171/credit × 300 = $5.13, that's 27% of Pro revenue
-4. Disabling thinking on **Smart Prompt only** is safe (~$0.15/month Pro saving, zero quality risk) — Compose and Vision should stay adaptive until benchmarked
-5. Starter's $0.12 revenue-per-credit vs $0.010 cost gives a healthy 12× coverage buffer
+3. **AI Import is extremely cheap with thinking disabled** — $0.004 typical vs $0.018 if thinking were on. The 8× output cost reduction (from $2.50/1M to $0.30/1M) makes it the lowest-cost-per-credit operation despite the 2-credit price.
+4. The worst-case risk has shifted back to **Accessibility Audits** (Gemini reasoning-heavy, $0.0171/credit) — AI Import worst case ($1.88 for Pro) is no longer the primary margin risk.
+5. Disabling thinking on **Smart Prompt only** is safe (~$0.15/month Pro saving, zero quality risk) — Compose and Vision should stay adaptive until benchmarked
+6. Starter's $0.12 revenue-per-credit vs $0.0096 cost gives a 12.5× coverage buffer; AI Import's $0.24 revenue vs ~$0.018 average cost gives a 13× buffer specifically for that operation
 
 ---
 
