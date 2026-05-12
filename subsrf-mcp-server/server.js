@@ -1053,7 +1053,7 @@ app.post('/api/auth/refresh', async (req, res) => {
 
 // Smart Prompt Engine — interprets captured DOM elements using Claude and returns
 // structured semantic JSON. The extension assembles the final prompt from that data.
-// ANTHROPIC_API_KEY must be set in Railway env.
+// GEMINI_API_KEY must be set in Railway env.
 app.post('/api/ai/generate', async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
@@ -1062,10 +1062,10 @@ app.post('/api/ai/generate', async (req, res) => {
   if (!isPaid) return res.status(403).json({ error: 'AI features require a paid plan' });
   if (auth.credits < 1) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
-  // Deduct 1 credit before the Anthropic call — refund on failure
+  // Deduct 1 credit before the AI call — refund on failure
   let newBalance;
   try {
     if (supabase) {
@@ -1150,44 +1150,38 @@ Rules:
   try {
     const abortCtrl = new AbortController();
     const abortTimer = setTimeout(() => abortCtrl.abort(), 25000);
-    let anthropicRes;
+    let aiRes;
     try {
-      const anthropicBase = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
-      anthropicRes = await fetch(`${anthropicBase}/v1/messages`, {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         signal: abortCtrl.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 3500,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userContent }]
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userContent }] }],
+          generationConfig: { maxOutputTokens: 3500 }
         })
       });
     } finally {
       clearTimeout(abortTimer);
     }
 
-    if (!anthropicRes.ok) {
-      const errData = await anthropicRes.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `Anthropic error ${anthropicRes.status}`);
+    if (!aiRes.ok) {
+      const errData = await aiRes.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Gemini error ${aiRes.status}`);
     }
 
-    const result = await anthropicRes.json();
-    const rawText = result.content?.[0]?.text || '';
+    const result = await aiRes.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Parse the JSON — strip any accidental markdown fences Claude might add
+    // Parse the JSON — strip any accidental markdown fences the model might add
     let enriched;
     try {
       const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
       enriched = JSON.parse(cleaned);
     } catch (_) {
       const match = rawText.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('Claude returned malformed JSON — please try again');
+      if (!match) throw new Error('AI returned malformed JSON — please try again');
       enriched = JSON.parse(match[0]);
     }
 
@@ -1318,14 +1312,14 @@ app.post('/api/ai/vision', async (req, res) => {
   if (!isPaid) return res.status(403).json({ error: 'AI features require a paid plan' });
   if (auth.credits < 1) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
   const { image, mimeType = 'image/png', mode = 'build_prompt', referenceImage, referenceMimeType = 'image/png' } = req.body;
   if (!image) return res.status(400).json({ error: 'image is required' });
   if (!VISION_PROMPTS[mode]) return res.status(400).json({ error: `Unknown mode: ${mode}` });
 
-  // Deduct credits before the Anthropic call — refund on failure
+  // Deduct credits before the AI call — refund on failure
   let newBalance;
   try {
     if (supabase) {
@@ -1348,50 +1342,44 @@ app.post('/api/ai/vision', async (req, res) => {
     return res.status(500).json({ error: e.message });
   }
 
-  // Build message content — match mode sends two images
-  const content = [];
+  // Build parts — match mode sends two images
+  const parts = [];
   if (mode === 'match' && referenceImage) {
-    content.push({ type: 'image', source: { type: 'base64', media_type: referenceMimeType, data: referenceImage } });
-    content.push({ type: 'text', text: 'This is the REFERENCE design (first image).' });
-    content.push({ type: 'image', source: { type: 'base64', media_type: mimeType, data: image } });
-    content.push({ type: 'text', text: 'This is the current IMPLEMENTATION (second image). Compare them.' });
+    parts.push({ inline_data: { mime_type: referenceMimeType, data: referenceImage } });
+    parts.push({ text: 'This is the REFERENCE design (first image).' });
+    parts.push({ inline_data: { mime_type: mimeType, data: image } });
+    parts.push({ text: 'This is the current IMPLEMENTATION (second image). Compare them.' });
   } else {
-    content.push({ type: 'image', source: { type: 'base64', media_type: mimeType, data: image } });
-    content.push({ type: 'text', text: 'Analyze this UI screenshot.' });
+    parts.push({ inline_data: { mime_type: mimeType, data: image } });
+    parts.push({ text: 'Analyze this UI screenshot.' });
   }
 
   try {
     const abortCtrl = new AbortController();
     const abortTimer = setTimeout(() => abortCtrl.abort(), 45000);
-    let anthropicRes;
+    let aiRes;
     try {
-      const anthropicBase = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
-      anthropicRes = await fetch(`${anthropicBase}/v1/messages`, {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         signal: abortCtrl.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 4096,
-          system: VISION_PROMPTS[mode],
-          messages: [{ role: 'user', content }]
+          system_instruction: { parts: [{ text: VISION_PROMPTS[mode] }] },
+          contents: [{ role: 'user', parts }],
+          generationConfig: { maxOutputTokens: 4096 }
         })
       });
     } finally {
       clearTimeout(abortTimer);
     }
 
-    if (!anthropicRes.ok) {
-      const errData = await anthropicRes.json().catch(() => ({}));
-      throw new Error(errData.error?.message || `Anthropic error ${anthropicRes.status}`);
+    if (!aiRes.ok) {
+      const errData = await aiRes.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Gemini error ${aiRes.status}`);
     }
 
-    const apiResult = await anthropicRes.json();
-    const rawText = apiResult.content?.[0]?.text || '';
+    const apiResult = await aiRes.json();
+    const rawText = apiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     let parsed;
     try {
@@ -1399,7 +1387,7 @@ app.post('/api/ai/vision', async (req, res) => {
       parsed = JSON.parse(cleaned);
     } catch (_) {
       const m = rawText.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('Claude returned malformed JSON — please try again');
+      if (!m) throw new Error('AI returned malformed JSON — please try again');
       parsed = JSON.parse(m[0]);
     }
 
