@@ -1051,7 +1051,24 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
-// Smart Prompt Engine — interprets captured DOM elements using Claude and returns
+// Robustly parse AI-generated JSON: strip fences, remove trailing commas, extract first {...}
+function parseAiJson(rawText) {
+  function sanitize(s) {
+    // Remove trailing commas before } or ]
+    return s.replace(/,(\s*[}\]])/g, '$1');
+  }
+  // Strip leading text/fences so we start at the first {
+  const stripped = rawText.replace(/^[\s\S]*?(\{)/, '$1');
+  try { return JSON.parse(sanitize(stripped)); } catch (_) {}
+  // Fallback: extract the outermost {...} block
+  const match = rawText.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AI returned no JSON — please try again');
+  try { return JSON.parse(sanitize(match[0])); } catch (e) {
+    throw new Error('AI returned malformed JSON: ' + e.message);
+  }
+}
+
+// Smart Prompt Engine — interprets captured DOM elements and returns
 // structured semantic JSON. The extension assembles the final prompt from that data.
 // GEMINI_API_KEY must be set in Railway env.
 app.post('/api/ai/generate', async (req, res) => {
@@ -1175,15 +1192,7 @@ Rules:
     const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     // Parse the JSON — strip any accidental markdown fences the model might add
-    let enriched;
-    try {
-      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-      enriched = JSON.parse(cleaned);
-    } catch (_) {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error('AI returned malformed JSON — please try again');
-      enriched = JSON.parse(match[0]);
-    }
+    const enriched = parseAiJson(rawText);
 
     console.error(`[Subsrf AI] Smart prompt for ${auth.user.email} (${elements.length} elements) — balance: ${newBalance}`);
     res.json({ ok: true, enriched, balance: newBalance });
@@ -1381,15 +1390,7 @@ app.post('/api/ai/vision', async (req, res) => {
     const apiResult = await aiRes.json();
     const rawText = apiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    let parsed;
-    try {
-      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-      parsed = JSON.parse(cleaned);
-    } catch (_) {
-      const m = rawText.match(/\{[\s\S]*\}/);
-      if (!m) throw new Error('AI returned malformed JSON — please try again');
-      parsed = JSON.parse(m[0]);
-    }
+    const parsed = parseAiJson(rawText);
 
     console.error(`[Subsrf AI] Vision/${mode} for ${auth.user.email} — balance: ${newBalance}`);
     res.json({ ok: true, result: parsed, mode, balance: newBalance });
