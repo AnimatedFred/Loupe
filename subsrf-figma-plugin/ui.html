@@ -311,8 +311,10 @@
     #resultText::-webkit-scrollbar { width: 2px; }
     #resultText::-webkit-scrollbar-thumb { background: var(--border-md); }
     .credit-row {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      padding: 8px 16px; border-top: 1px solid var(--border);
       font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
+      background: var(--void);
     }
     .credit-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
 
@@ -477,13 +479,13 @@
           <div id="resultText"></div>
         </div>
 
-        <div class="credit-row" id="creditRow">
-          <span class="credit-dot"></span>
-          <span id="creditBalText">0 credits</span>
-          <span style="color:var(--t4)">·</span>
-          <span>1 credit per compose</span>
-        </div>
+      </div>
 
+      <div class="credit-row" id="creditRow">
+        <span class="credit-dot"></span>
+        <span id="creditBalText">0 credits</span>
+        <span style="color:var(--t4)">·</span>
+        <span>1 credit per compose</span>
       </div>
 
       <div class="tab-footer">
