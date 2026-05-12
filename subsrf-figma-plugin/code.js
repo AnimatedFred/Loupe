@@ -1,5 +1,5 @@
 // Subsrf to Figma Bridge v2.0
-figma.showUI(__html__, { width: 340, height: 560, themeColors: true });
+figma.showUI(__html__, { width: 360, height: 720, themeColors: true });
 
 figma.ui.onmessage = async (msg) => {
 
