@@ -2,7 +2,6 @@
 <head>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -41,10 +40,9 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-      font-size: 16px; line-height: 1; vertical-align: middle; user-select: none;
-    }
+    /* inline SVG icons */
+    .ico { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ico svg { display: block; }
 
     /* ── Button reset ── */
     button {
@@ -57,7 +55,6 @@
     }
     button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    /* Primary neon — Azeret Mono uppercase to match sync button design */
     .btn-primary {
       width: 100%; background: var(--neon); color: var(--void);
       padding: 12px;
@@ -87,7 +84,6 @@
     }
     .btn-icon:not(:disabled):hover { border-color: var(--border-md); color: var(--t1); opacity: 1; }
 
-    /* Minimize — just a styled dash, no box */
     .btn-minimize {
       background: transparent; border: none; padding: 0;
       color: var(--t3); font-family: 'Azeret Mono', monospace; font-size: 11px; line-height: 1;
@@ -168,12 +164,10 @@
     /* ── Main view ── */
     #view-main { height: 100%; display: flex; flex-direction: column; }
 
-    /* Header — TopAppBar spec: 38px, 8px 16px padding */
     .header-bar {
       height: 38px;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; flex-shrink: 0;
-      background: var(--void);
+      padding: 0 16px; flex-shrink: 0; background: var(--void);
     }
     .header-left { display: flex; align-items: center; gap: 8px; }
     .header-brand {
@@ -187,13 +181,11 @@
       border: 1px solid var(--border); text-transform: uppercase;
     }
 
-    /* Tab nav — Nav-Tabs spec: 30px height, 0 16px padding, 16px gap */
     .tab-nav {
       height: 30px;
       display: flex; align-items: center;
       padding: 0 16px; gap: 16px; flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--void);
+      border-bottom: 1px solid var(--border); background: var(--void);
     }
     .tab-btn {
       font-family: 'Azeret Mono', monospace; font-size: 11px; letter-spacing: 2px;
@@ -207,11 +199,9 @@
       height: 2px; background: var(--neon);
     }
 
-    /* Tab panels */
     .tab-panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
     .tab-panel.active { display: flex; }
 
-    /* Shared scroll area */
     .scroll-area {
       flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px;
       display: flex; flex-direction: column; gap: 10px;
@@ -220,11 +210,9 @@
     .scroll-area::-webkit-scrollbar-track { background: transparent; }
     .scroll-area::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
 
-    /* Sync tab: no outer scroll, feed fills remaining height */
     #tab-sync .scroll-area { overflow: hidden; }
     #tab-sync .feed { flex: 1; max-height: none; }
 
-    /* Section label */
     .sec-label {
       font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
       color: var(--t3); text-transform: uppercase; margin-bottom: 7px;
@@ -241,6 +229,7 @@
       width: 32px; height: 32px; background: rgba(255,255,255,0.04);
       border: 1px solid var(--border); border-radius: 2px;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      color: var(--t3);
     }
     .card-body { flex: 1; }
     .card-title { font-size: 13px; font-weight: 600; color: var(--t1); line-height: 1.2; }
@@ -264,10 +253,7 @@
       font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
       color: var(--t3); text-transform: uppercase; margin-bottom: 8px; flex-shrink: 0;
     }
-    .feed-list {
-      overflow-y: auto; flex: 1;
-      display: flex; flex-direction: column;
-    }
+    .feed-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
     .feed-list::-webkit-scrollbar { width: 2px; }
     .feed-list::-webkit-scrollbar-thumb { background: var(--border-md); }
     .feed-row {
@@ -285,7 +271,7 @@
       border-top: 1px solid var(--border); background: var(--void);
     }
 
-    /* ── Compose: selection chips ── */
+    /* ── Compose ── */
     .sel-chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .sel-chip {
       font-size: 10px; font-weight: 500; color: var(--t2);
@@ -293,28 +279,22 @@
     }
     .sel-chip.empty { color: var(--t3); font-style: italic; border-style: dashed; }
 
-    /* ── Compose: target grid ── */
     .target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .target-btn {
       display: flex; flex-direction: column; align-items: center;
       gap: 5px; padding: 9px 4px;
       background: var(--surface); border: 1px solid var(--border);
       width: 100%; transition: border-color 0.15s, background 0.15s;
+      color: var(--t3);
     }
     .target-btn:hover { border-color: var(--border-md); background: var(--lift); opacity: 1; }
-    .target-btn.selected { border-color: var(--neon); background: var(--neon-dim); }
-    .t-icon {
-      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
-      color: var(--t3); font-size: 15px;
-    }
-    .target-btn.selected .t-icon { color: var(--neon); }
+    .target-btn.selected { border-color: var(--neon); background: var(--neon-dim); color: var(--neon); }
+    .t-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
     .t-name {
       font-family: 'Azeret Mono', monospace; font-size: 8px; letter-spacing: 0.5px;
-      color: var(--t3); text-transform: uppercase;
+      text-transform: uppercase;
     }
-    .target-btn.selected .t-name { color: var(--neon); }
 
-    /* ── Compose: options ── */
     .option-row {
       display: flex; align-items: center; justify-content: space-between;
       padding: 7px 0; border-bottom: 1px solid var(--border);
@@ -329,11 +309,7 @@
       border: 1px solid rgba(255,171,0,0.2);
     }
 
-    /* ── Compose: result ── */
-    #resultPanel {
-      display: none; flex-direction: column;
-      border: 1px solid var(--neon); background: var(--deep);
-    }
+    #resultPanel { display: none; flex-direction: column; border: 1px solid var(--neon); background: var(--deep); }
     #resultPanel.visible { display: flex; }
     .result-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -359,14 +335,12 @@
     .btn-open-tool:hover { background: rgba(0,255,135,0.18); opacity: 1; }
     .btn-open-tool.hidden { display: none !important; }
 
-    /* Credit row */
     .credit-row {
       display: flex; align-items: center; gap: 6px;
       font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
     }
     .credit-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
 
-    /* ── History ── */
     .hist-item {
       background: var(--surface); border: 1px solid var(--border);
       padding: 9px; cursor: pointer; transition: border-color 0.15s;
@@ -383,12 +357,9 @@
       font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t2);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .hist-empty { color: var(--t3); font-size: 11px; text-align: center; padding: 24px 0; }
 
     /* ── Settings ── */
-    .settings-card {
-      background: var(--layer); border: 1px solid var(--border); padding: 11px;
-    }
+    .settings-card { background: var(--layer); border: 1px solid var(--border); padding: 11px; }
     .settings-title {
       font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
       color: var(--t3); text-transform: uppercase; margin-bottom: 10px;
@@ -416,7 +387,6 @@
 
 <body>
 
-  <!-- Loading -->
   <div id="view-loading" style="display:none">Loading…</div>
 
   <!-- Sign-in -->
@@ -439,7 +409,7 @@
   <!-- Main UI -->
   <div id="view-main" style="display:none">
 
-    <!-- Compact toolbar (minimized) -->
+    <!-- Compact toolbar -->
     <div id="toolbar" onclick="setMinimized(false)">
       <div class="toolbar-chips">
         <span class="toolbar-chip" id="tcExtChip">
@@ -452,17 +422,24 @@
           <span class="dot" id="tcExtDot"></span>
         </span>
         <span class="toolbar-chip" id="tcAiChip">
-          <span class="material-symbols-outlined" style="font-size:13px;color:var(--neon);opacity:0.8;">auto_awesome</span>
+          <!-- sparkles icon -->
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8">
+            <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
+            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+          </svg>
           <span class="chip-status" id="tcAiLabel">Compose</span>
           <span class="dot" id="tcAiDot"></span>
         </span>
       </div>
       <button class="toolbar-expand" title="Expand" onclick="event.stopPropagation();setMinimized(false)">
-        <span class="material-symbols-outlined" style="font-size:14px;">expand_less</span>
+        <!-- chevron-up -->
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
       </button>
     </div>
 
-    <!-- Header — TopAppBar: 38px, padding 0 16px -->
+    <!-- Header -->
     <div class="header-bar">
       <div class="header-left">
         <button class="btn-minimize" id="btnMinimize">—</button>
@@ -471,7 +448,7 @@
       <span class="tier-badge" id="tierBadge">FREE</span>
     </div>
 
-    <!-- Nav Tabs — 30px, padding 0 16px, gap 16px -->
+    <!-- Tab nav -->
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="sync">SYNC</button>
       <button class="tab-btn" data-tab="compose">COMPOSE</button>
@@ -484,7 +461,10 @@
 
         <div class="card" id="extCard">
           <div class="card-icon">
-            <span class="material-symbols-outlined" style="font-size:16px;color:var(--t3);">extension</span>
+            <!-- puzzle piece (extension) -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>
+            </svg>
           </div>
           <div class="card-body">
             <div class="card-title">Chrome Extension</div>
@@ -495,7 +475,15 @@
 
         <div class="card" id="aiCard">
           <div class="card-icon">
-            <span class="material-symbols-outlined" style="font-size:16px;color:var(--t3);">smart_toy</span>
+            <!-- robot / smart_toy -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="7" width="16" height="13" rx="2"/>
+              <path d="M12 7V4M9 4h6"/>
+              <circle cx="9" cy="13" r="1.2" fill="currentColor"/>
+              <circle cx="15" cy="13" r="1.2" fill="currentColor"/>
+              <path d="M9 17h6"/>
+              <path d="M2 11h2M20 11h2"/>
+            </svg>
           </div>
           <div class="card-body">
             <div class="card-title">AI Connection</div>
@@ -533,31 +521,58 @@
           <div class="sec-label">Output target</div>
           <div class="target-grid">
             <button class="target-btn selected" data-target="claude">
-              <span class="t-icon material-symbols-outlined">auto_awesome</span>
+              <span class="t-icon">
+                <!-- sparkles -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
+                  <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+                </svg>
+              </span>
               <span class="t-name">Claude</span>
             </button>
             <button class="target-btn" data-target="lovable">
-              <span class="t-icon material-symbols-outlined">favorite</span>
+              <span class="t-icon">
+                <!-- heart -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                </svg>
+              </span>
               <span class="t-name">Lovable</span>
             </button>
             <button class="target-btn" data-target="v0">
               <span class="t-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 19h20L12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 19h20L12 2z"/>
                 </svg>
               </span>
               <span class="t-name">v0</span>
             </button>
             <button class="target-btn" data-target="bolt">
-              <span class="t-icon material-symbols-outlined">bolt</span>
+              <span class="t-icon">
+                <!-- bolt / lightning -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              </span>
               <span class="t-name">Bolt</span>
             </button>
             <button class="target-btn" data-target="cursor">
-              <span class="t-icon material-symbols-outlined">mouse</span>
+              <span class="t-icon">
+                <!-- cursor / pointer -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4l7.07 17 2.51-7.39L21 11.07z"/>
+                </svg>
+              </span>
               <span class="t-name">Cursor</span>
             </button>
             <button class="target-btn" data-target="raw">
-              <span class="t-icon material-symbols-outlined">code</span>
+              <span class="t-icon">
+                <!-- code brackets -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"/>
+                  <polyline points="8 6 2 12 8 18"/>
+                </svg>
+              </span>
               <span class="t-name">Raw</span>
             </button>
           </div>
@@ -589,11 +604,20 @@
             <span class="result-target" id="resultTargetLabel">Claude</span>
             <div class="result-actions">
               <button class="btn-icon" id="btnCopyResult">
-                <span class="material-symbols-outlined" style="font-size:12px;">content_copy</span>
+                <!-- copy icon -->
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
                 Copy
               </button>
               <button class="btn-open-tool hidden" id="btnOpenTool">
-                Open <span class="material-symbols-outlined" style="font-size:11px;">open_in_new</span>
+                Open
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
               </button>
             </div>
           </div>
@@ -616,7 +640,10 @@
 
       <div class="tab-footer">
         <button class="btn-primary locked" id="btnCompose">
-          <span class="material-symbols-outlined" style="font-size:14px;">auto_awesome</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
+            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+          </svg>
           <span id="btnComposeLabel">Select something in Figma</span>
         </button>
       </div>
@@ -661,7 +688,7 @@
       </div>
     </div>
 
-  </div><!-- /view-main -->
+  </div>
 
   <script>
     const BRIDGE = 'https://api.subsrf.dev';
@@ -673,7 +700,6 @@
     let pollInterval = null;
     let oauthPollInterval = null;
 
-    // Compose state
     let selectedTarget = 'claude';
     let defaultTarget = 'claude';
     let currentSelNodes = [];
@@ -689,7 +715,14 @@
       raw:     null
     };
 
-    // ── Plugin storage bridge ─────────────────────────────────────────────────
+    // SVG snippets for dynamic icon injection
+    const ICO = {
+      copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+      check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      open: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`
+    };
+
+    // ── Storage bridge ────────────────────────────────────────────────────────
     const storageCbs = {};
     function storageGet(key) {
       return new Promise(r => { storageCbs[key] = r; parent.postMessage({ pluginMessage: { type: 'GET_STORAGE', key } }, '*'); });
@@ -697,14 +730,12 @@
     function storageSet(key, value) { parent.postMessage({ pluginMessage: { type: 'SET_STORAGE', key, value } }, '*'); }
     function storageDel(key) { parent.postMessage({ pluginMessage: { type: 'DEL_STORAGE', key } }, '*'); }
 
-    // ── View switching ────────────────────────────────────────────────────────
     function showView(name) {
       document.getElementById('view-loading').style.display  = name === 'loading'  ? 'flex'  : 'none';
       document.getElementById('view-signin').style.display   = name === 'signin'   ? 'flex'  : 'none';
       document.getElementById('view-main').style.display     = name === 'main'     ? 'flex'  : 'none';
     }
 
-    // ── Tabs ─────────────────────────────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -714,7 +745,6 @@
       });
     });
 
-    // ── Tier display ──────────────────────────────────────────────────────────
     function applyTier(tier) {
       const badge = document.getElementById('tierBadge');
       if (tier === 'pro') {
@@ -759,7 +789,6 @@
       updateComposeBtn();
     }
 
-    // ── Activity feed ─────────────────────────────────────────────────────────
     function addLog(msg, type) {
       const list = document.getElementById('feedList');
       const empty = list.querySelector('.feed-empty');
@@ -779,7 +808,6 @@
       while (list.children.length > 50) list.removeChild(list.firstChild);
     }
 
-    // ── Sync tab logic ────────────────────────────────────────────────────────
     function updateSyncTab(data) {
       if (!data) return;
       const tier = data.tier || 'free';
@@ -802,7 +830,6 @@
           addLog('Synced ' + elements.length + ' elements to canvas', 'ok');
           syncBtn.disabled = true;
         };
-
         const syncId = (elements[0]?.rect?.top || 0) + '-' + elements.length;
         if (syncId !== lastProcessedSyncId) {
           lastProcessedSyncId = syncId;
@@ -829,7 +856,6 @@
       }
     }
 
-    // ── Compose tab ───────────────────────────────────────────────────────────
     document.querySelectorAll('.target-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('selected'));
@@ -941,7 +967,7 @@
       if (link) {
         openBtn.classList.remove('hidden');
         openBtn.onclick = () => window.open(link, '_blank');
-        openBtn.innerHTML = 'Open <span class="material-symbols-outlined" style="font-size:11px;">open_in_new</span>';
+        openBtn.innerHTML = 'Open ' + ICO.open;
       } else {
         openBtn.classList.add('hidden');
       }
@@ -953,12 +979,11 @@
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('btnCopyResult');
         const orig = btn.innerHTML;
-        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:12px;">check</span> Copied!';
+        btn.innerHTML = ICO.check + ' Copied!';
         setTimeout(() => { btn.innerHTML = orig; }, 2000);
       }).catch(() => {});
     });
 
-    // ── History ───────────────────────────────────────────────────────────────
     function saveHistory(item) {
       composeHistory.unshift(item);
       if (composeHistory.length > 20) composeHistory = composeHistory.slice(0, 20);
@@ -988,7 +1013,6 @@
       });
     }
 
-    // ── Default target (settings) ─────────────────────────────────────────────
     document.querySelectorAll('.dt-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('selected'));
@@ -1001,7 +1025,6 @@
       });
     });
 
-    // ── Bridge state polling ──────────────────────────────────────────────────
     async function checkState() {
       try {
         const headers = { 'Content-Type': 'application/json' };
@@ -1066,7 +1089,6 @@
       document.getElementById('tcAiLabel').textContent = isComposing ? 'Composing…' : 'Compose';
     }
 
-    // ── Fetch live credits explicitly ─────────────────────────────────────────
     async function fetchCredits() {
       if (!session?.accessToken) return;
       try {
@@ -1093,7 +1115,6 @@
       pollInterval = setInterval(checkState, 2000);
     }
 
-    // ── OAuth ─────────────────────────────────────────────────────────────────
     async function refreshSession() {
       if (!session?.refreshToken) return false;
       try {
@@ -1169,7 +1190,6 @@
       showView('signin');
     }
 
-    // ── Minimize ──────────────────────────────────────────────────────────────
     let isMinimized = false;
     const FULL_H = 720, MINI_H = 48;
 
@@ -1183,13 +1203,11 @@
       parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 360, height: min ? MINI_H : FULL_H } }, '*');
     }
 
-    // ── Wiring ────────────────────────────────────────────────────────────────
     document.getElementById('btnMinimize').onclick = () => setMinimized(true);
     document.getElementById('btnSignIn').onclick = startOAuth;
     document.getElementById('btnSignInCancel').onclick = cancelOAuth;
     document.getElementById('btnSignOut').onclick = signOut;
 
-    // ── Init ──────────────────────────────────────────────────────────────────
     showView('signin');
     storageGet('subsrf_session');
     storageGet('subsrf_compose_history');
@@ -1198,7 +1216,6 @@
       if (document.getElementById('view-loading').style.display !== 'none') showView('signin');
     }, 4000);
 
-    // ── Message handler ───────────────────────────────────────────────────────
     window.onmessage = async (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
