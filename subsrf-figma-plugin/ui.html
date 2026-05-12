@@ -669,7 +669,7 @@
         } else {
           aiImportBtn.disabled = false;
           aiImportBtn.textContent = 'AI Import (2 credits)';
-          aiImportBtn.onclick = () => runAiImport(lastData?.elements || [], lastData?.screenshot || null, lastData?.page || {});
+          aiImportBtn.onclick = () => runAiImport();
         }
 
         const syncId = (elements[0]?.rect?.top || 0) + '-' + elements.length;
@@ -710,7 +710,7 @@
       }
     }
 
-    async function runAiImport(elements, screenshot, context) {
+    async function runAiImport() {
       if (isImporting) return;
       isImporting = true;
       if (lastData) updateSyncTab(lastData);
@@ -718,29 +718,10 @@
       addLog('AI Import: generating Figma code…', 'ai');
 
       try {
-        // Always re-fetch the latest state to get the most current screenshot,
-        // bypassing the 2-second poll cache. Retry once after a short wait in case
-        // the auto-capture is still in flight from background.js.
-        let imageData = screenshot || null;
-        for (let attempt = 0; attempt < 2 && !imageData; attempt++) {
-          if (attempt > 0) await new Promise(r => setTimeout(r, 1200));
-          try {
-            const headers = { 'Content-Type': 'application/json' };
-            if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
-            const freshRes = await fetch(BRIDGE + '/api/state?source=figma', { headers });
-            if (freshRes.ok) {
-              const freshData = await freshRes.json();
-              lastData = freshData;
-              imageData = freshData.screenshot || null;
-              elements = freshData.elements || elements;
-              context = freshData.page || context;
-            }
-          } catch (_) {}
-        }
-
-        if (!imageData) {
-          addLog('No screenshot — running DOM-only import', 'ai');
-        }
+        // The server reads the screenshot from its own memory (pushed there by the
+        // Chrome extension). We only send the lightweight elements + context.
+        const elements = lastData?.elements || [];
+        const context = lastData?.page || {};
 
         const headers = { 'Content-Type': 'application/json' };
         if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
@@ -748,7 +729,7 @@
         const res = await fetch(BRIDGE + '/api/ai/figma-import', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ image: imageData, elements, context })
+          body: JSON.stringify({ elements, context })
         });
 
         if (res.status === 402) {

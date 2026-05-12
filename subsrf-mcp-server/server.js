@@ -1629,13 +1629,21 @@ app.post('/api/ai/figma-import', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
-  let { image, mimeType = 'image/jpeg', elements = [], context = {} } = req.body;
-  // Strip data URL prefix if present (browser sends data:image/jpeg;base64,<data>)
-  if (image && image.startsWith('data:')) {
-    const commaIdx = image.indexOf(',');
-    const header = image.slice(0, commaIdx);
-    mimeType = header.split(':')[1]?.split(';')[0] || mimeType;
-    image = image.slice(commaIdx + 1);
+  const { elements = [], context = {} } = req.body;
+
+  // Use the screenshot already stored in server memory by the extension.
+  // The client never sends the image — this avoids large fetch bodies in
+  // the Figma plugin environment that cause "Failed to fetch" errors.
+  let image = null;
+  let mimeType = 'image/jpeg';
+  if (lastScreenshot) {
+    if (lastScreenshot.startsWith('data:')) {
+      const commaIdx = lastScreenshot.indexOf(',');
+      mimeType = lastScreenshot.slice(0, commaIdx).split(':')[1]?.split(';')[0] || mimeType;
+      image = lastScreenshot.slice(commaIdx + 1);
+    } else {
+      image = lastScreenshot;
+    }
   }
 
   // Deduct 2 credits before the AI call — refund on failure
