@@ -160,10 +160,18 @@
       'backgroundColor', 'color', 'fontSize', 'fontFamily', 'fontWeight',
       'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
       'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-      'borderTopWidth', 'borderTopColor', 'borderTopStyle', 'borderRadius', 'boxShadow',
-      'display', 'flexDirection', 'gap', 'justifyContent', 'alignItems', 'flexGrow',
-      'opacity', 'zIndex', 'position', 'lineHeight', 'textAlign', 'overflow',
-      'backgroundImage'
+      'borderTopWidth', 'borderTopColor', 'borderTopStyle',
+      'borderRightWidth', 'borderRightColor', 'borderRightStyle',
+      'borderBottomWidth', 'borderBottomColor', 'borderBottomStyle',
+      'borderLeftWidth', 'borderLeftColor', 'borderLeftStyle',
+      'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
+      'borderBottomRightRadius', 'borderBottomLeftRadius',
+      'boxShadow', 'display', 'flexDirection', 'flexWrap', 'gap',
+      'justifyContent', 'alignItems', 'flexGrow',
+      'opacity', 'zIndex', 'position', 'lineHeight', 'letterSpacing',
+      'textAlign', 'textDecoration', 'textTransform', 'overflow',
+      'backgroundImage', 'objectFit', 'mixBlendMode',
+      'backdropFilter', 'filter'
     ];
     props.forEach(p => { styles[p] = s[p]; });
     return styles;

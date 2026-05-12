@@ -239,23 +239,59 @@ figma.ui.onmessage = async (msg) => {
         var op = parseFloat(styles.opacity);
         if (!isNaN(op) && op !== 1) container.opacity = op;
 
-        // Border radius
-        var bRad = parseInt(styles.borderRadius);
-        if (!isNaN(bRad) && bRad > 0) container.cornerRadius = bRad;
-
-        // Drop shadow
-        if (styles.boxShadow && styles.boxShadow !== 'none') {
-          var shadow = parseShadow(styles.boxShadow);
-          if (shadow) container.effects = [shadow];
+        // Border radius — per-corner when values differ
+        var bTL = parseInt(styles.borderTopLeftRadius)     || parseInt(styles.borderRadius) || 0;
+        var bTR = parseInt(styles.borderTopRightRadius)    || parseInt(styles.borderRadius) || 0;
+        var bBR = parseInt(styles.borderBottomRightRadius) || parseInt(styles.borderRadius) || 0;
+        var bBL = parseInt(styles.borderBottomLeftRadius)  || parseInt(styles.borderRadius) || 0;
+        if (bTL || bTR || bBR || bBL) {
+          if (bTL === bTR && bTR === bBR && bBR === bBL) {
+            container.cornerRadius = bTL;
+          } else {
+            container.topLeftRadius     = bTL;
+            container.topRightRadius    = bTR;
+            container.bottomRightRadius = bBR;
+            container.bottomLeftRadius  = bBL;
+          }
         }
 
-        // Border — only apply if the border is actually visible (style !== 'none')
-        var bw = parseInt(styles.borderTopWidth) || parseInt(styles.borderLeftWidth) ||
-                 parseInt(styles.borderRightWidth) || parseInt(styles.borderBottomWidth) || 0;
-        var bStyle = styles.borderTopStyle || 'none';
-        if (bw > 0 && bStyle !== 'none') {
+        // Effects: shadows + backdrop blur + layer blur
+        var effects = [];
+        if (styles.boxShadow && styles.boxShadow !== 'none') {
+          var shadows = parseAllShadows(styles.boxShadow);
+          effects = effects.concat(shadows);
+        }
+        if (styles.backdropFilter && styles.backdropFilter !== 'none') {
+          var bfMatch = styles.backdropFilter.match(/blur\((\d+(?:\.\d+)?)/);
+          if (bfMatch) effects.push({ type: 'BACKGROUND_BLUR', radius: parseFloat(bfMatch[1]), visible: true });
+        }
+        if (styles.filter && styles.filter !== 'none') {
+          var fMatch = styles.filter.match(/blur\((\d+(?:\.\d+)?)/);
+          if (fMatch) effects.push({ type: 'LAYER_BLUR', radius: parseFloat(fMatch[1]), visible: true });
+        }
+        if (effects.length > 0) container.effects = effects;
+
+        // Blend mode
+        var blendMap = {
+          'multiply':'MULTIPLY','screen':'SCREEN','overlay':'OVERLAY','darken':'DARKEN',
+          'lighten':'LIGHTEN','color-dodge':'COLOR_DODGE','color-burn':'COLOR_BURN',
+          'hard-light':'HARD_LIGHT','soft-light':'SOFT_LIGHT','difference':'DIFFERENCE',
+          'exclusion':'EXCLUSION','hue':'HUE','saturation':'SATURATION','color':'COLOR','luminosity':'LUMINOSITY'
+        };
+        if (styles.mixBlendMode && blendMap[styles.mixBlendMode]) {
+          container.blendMode = blendMap[styles.mixBlendMode];
+        }
+
+        // Border — use per-side widths; fall back to uniform stroke if all sides match
+        var bwTop    = parseInt(styles.borderTopWidth)    || 0;
+        var bwRight  = parseInt(styles.borderRightWidth)  || 0;
+        var bwBottom = parseInt(styles.borderBottomWidth) || 0;
+        var bwLeft   = parseInt(styles.borderLeftWidth)   || 0;
+        var bStyle = styles.borderTopStyle || styles.borderLeftStyle || 'none';
+        if ((bwTop || bwRight || bwBottom || bwLeft) && bStyle !== 'none') {
           var bColor = styles.borderTopColor || styles.borderLeftColor || '#000000';
-          container.strokeWeight = bw;
+          var uniformBw = (bwTop === bwRight && bwRight === bwBottom && bwBottom === bwLeft) ? bwTop : Math.max(bwTop, bwRight, bwBottom, bwLeft);
+          container.strokeWeight = uniformBw;
           container.strokes = [createSolidFill(bColor)];
           container.strokeAlign = 'INSIDE';
         }
@@ -265,7 +301,7 @@ figma.ui.onmessage = async (msg) => {
           var flexDir = styles.flexDirection || 'row';
           var isRow = !flexDir.startsWith('column');
           container.layoutMode = isRow ? 'HORIZONTAL' : 'VERTICAL';
-          container.layoutWrap = 'NO_WRAP';
+          container.layoutWrap = (styles.flexWrap === 'wrap' || styles.flexWrap === 'wrap-reverse') ? 'WRAP' : 'NO_WRAP';
           container.primaryAxisSizingMode = 'FIXED';
           container.counterAxisSizingMode = 'FIXED';
 
@@ -296,7 +332,8 @@ figma.ui.onmessage = async (msg) => {
             elObj.attributes && elObj.attributes.src) {
           try {
             var image = await figma.createImageAsync(elObj.attributes.src);
-            container.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
+            var scaleMode = styles.objectFit === 'contain' ? 'FIT' : styles.objectFit === 'none' ? 'CROP' : 'FILL';
+            container.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: scaleMode }];
           } catch (e) { /* image load failed, leave empty */ }
         }
 
@@ -355,6 +392,13 @@ figma.ui.onmessage = async (msg) => {
           else if (styles.textAlign === 'right') textNode.textAlignHorizontal = 'RIGHT';
           else textNode.textAlignHorizontal = 'LEFT';
 
+          if (styles.textDecoration && styles.textDecoration !== 'none') {
+            if (styles.textDecoration.includes('underline')) textNode.textDecoration = 'UNDERLINE';
+            else if (styles.textDecoration.includes('line-through')) textNode.textDecoration = 'STRIKETHROUGH';
+          }
+          if (styles.textTransform === 'uppercase') textNode.characters = textNode.characters.toUpperCase();
+          else if (styles.textTransform === 'lowercase') textNode.characters = textNode.characters.toLowerCase();
+
           textNode.textAutoResize = 'HEIGHT';
           var pL = parseInt(styles.paddingLeft) || 0;
           var pT = parseInt(styles.paddingTop) || 0;
@@ -380,8 +424,11 @@ figma.ui.onmessage = async (msg) => {
       else childrenOf[parentIdx[j]].push(j);
     }
 
-    // Sort root elements top-to-bottom, left-to-right
+    // Sort root elements by z-index (lower first = rendered below), then by position
     rootList.sort(function(a, b) {
+      var za = parseInt((sorted[a].styles || {}).zIndex) || 0;
+      var zb = parseInt((sorted[b].styles || {}).zIndex) || 0;
+      if (za !== zb) return za - zb;
       var ra = sorted[a].rect, rb = sorted[b].rect;
       return ra.top !== rb.top ? ra.top - rb.top : ra.left - rb.left;
     });
@@ -397,6 +444,13 @@ figma.ui.onmessage = async (msg) => {
         orderedChildren.sort(function(a, b) { return sorted[a].rect.left - sorted[b].rect.left; });
       } else if (alDir === 'VERTICAL') {
         orderedChildren.sort(function(a, b) { return sorted[a].rect.top - sorted[b].rect.top; });
+      } else {
+        // Absolute: sort by z-index so higher z-index elements are appended last (on top in Figma)
+        orderedChildren.sort(function(a, b) {
+          var za = parseInt((sorted[a].styles || {}).zIndex) || 0;
+          var zb = parseInt((sorted[b].styles || {}).zIndex) || 0;
+          return za - zb;
+        });
       }
 
       for (var k = 0; k < orderedChildren.length; k++) {
@@ -425,6 +479,26 @@ figma.ui.onmessage = async (msg) => {
     figma.notify('Sync complete — ' + sorted.length + ' elements, nested by hierarchy.');
   }
 };
+
+function parseAllShadows(cssShadow) {
+  // Split comma-separated shadows, respecting rgba() parentheses
+  var result = [];
+  var depth = 0, start = 0;
+  for (var i = 0; i <= cssShadow.length; i++) {
+    var ch = cssShadow[i];
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    else if ((ch === ',' || i === cssShadow.length) && depth === 0) {
+      var part = cssShadow.slice(start, i).trim();
+      if (part) {
+        var s = parseShadow(part);
+        if (s) result.push(s);
+      }
+      start = i + 1;
+    }
+  }
+  return result;
+}
 
 function parseShadow(cssShadow) {
   // Extract color token first so the numbers-only pass is clean
