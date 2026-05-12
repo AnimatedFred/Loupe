@@ -136,30 +136,28 @@
       100% { box-shadow: 0 0 0 0 rgba(0,255,135,0); }
     }
 
-    /* ── Compact toolbar ── */
+    /* ── Compact status bar (collapsed state) ── */
     #toolbar {
-      display: none; height: 48px;
-      align-items: center; cursor: pointer;
-      background: var(--void); border-bottom: 1px solid var(--border);
+      display: none; height: 30px;
+      align-items: stretch; cursor: pointer;
+      border-top: 1px solid var(--border);
     }
-    .toolbar-chips { display: flex; flex: 1; height: 100%; }
+    .toolbar-chips { display: flex; flex: 1; }
     .toolbar-chip {
-      display: flex; align-items: center; gap: 8px;
-      flex: 1; height: 100%; padding: 0 12px;
-      border-right: 1px solid var(--border);
+      display: flex; align-items: center; gap: 7px;
+      flex: 1; padding: 0 12px;
+      background: var(--layer); border-right: 1px solid var(--border);
+      transition: background 0.12s;
     }
     .toolbar-chip:last-child { border-right: none; }
+    .toolbar-chip:hover { background: var(--surface); }
     .chip-status {
-      font-family: 'Azeret Mono', monospace; font-size: 9px;
-      color: var(--t2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 0.3px;
+      color: var(--t3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .toolbar-chip.active .chip-status { color: var(--neon); }
-    #toolbar:hover .toolbar-chip { background: var(--layer); }
-    .toolbar-expand {
-      flex-shrink: 0; width: 36px; height: 100%;
-      display: flex; align-items: center; justify-content: center; color: var(--t3);
-    }
-    .toolbar-expand:hover { color: var(--t1); }
+    .chip-status.warn { color: var(--warn); }
+    .chip-status.ok   { color: var(--ok); }
 
     /* ── Main view ── */
     #view-main { height: 100%; display: flex; flex-direction: column; }
@@ -360,43 +358,38 @@
   <!-- Main UI -->
   <div id="view-main" style="display:none">
 
-    <!-- Compact toolbar -->
-    <div id="toolbar" onclick="setMinimized(false)">
-      <div class="toolbar-chips">
-        <span class="toolbar-chip" id="tcExtChip">
-          <svg width="13" height="13" viewBox="0 0 36 36" fill="none">
-            <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="2" fill="none"/>
-            <rect x="2" y="22" width="32" height="10" stroke="#00FF87" stroke-width="2" fill="none" opacity="0.4"/>
-            <path d="M13 18 L18 23 L23 18" stroke="#00FF87" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          </svg>
-          <span class="chip-status" id="tcExtLabel">Waiting…</span>
-          <span class="dot" id="tcExtDot"></span>
-        </span>
-        <span class="toolbar-chip" id="tcAiChip">
-          <!-- sparkles icon -->
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8">
-            <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
-            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
-          </svg>
-          <span class="chip-status" id="tcAiLabel">Compose</span>
-          <span class="dot" id="tcAiDot"></span>
-        </span>
-      </div>
-      <button class="toolbar-expand" title="Expand" onclick="event.stopPropagation();setMinimized(false)">
-        <!-- chevron-up -->
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="18 15 12 9 6 15"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Header -->
+    <!-- Header — always visible, acts as expand trigger when collapsed -->
     <div class="header-bar">
       <div class="header-left" id="btnMinimize" role="button" aria-label="Collapse plugin">
-        <span class="btn-minimize">—</span>
+        <span class="btn-minimize" id="minimizeIcon">—</span>
         <span class="header-brand">SUBSRF</span>
       </div>
       <span class="tier-badge" id="tierBadge">FREE</span>
+    </div>
+
+    <!-- Status chips — only visible when collapsed -->
+    <div id="toolbar" onclick="setMinimized(false)">
+      <div class="toolbar-chips">
+        <span class="toolbar-chip" id="tcExtChip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>
+          </svg>
+          <span class="chip-status warn" id="tcExtLabel">Waiting for selection...</span>
+          <span class="dot warn" id="tcExtDot"></span>
+        </span>
+        <span class="toolbar-chip" id="tcAiChip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="16" height="13" rx="2"/>
+            <path d="M12 7V4M9 4h6"/>
+            <circle cx="9" cy="13" r="1.2" fill="currentColor"/>
+            <circle cx="15" cy="13" r="1.2" fill="currentColor"/>
+            <path d="M9 17h6"/>
+            <path d="M2 11h2M20 11h2"/>
+          </svg>
+          <span class="chip-status" id="tcAiLabel">Idle</span>
+          <span class="dot" id="tcAiDot"></span>
+        </span>
+      </div>
     </div>
 
     <!-- Tab nav -->
@@ -847,11 +840,20 @@
     function syncToolbar(data) {
       const elements = data?.elements || [];
       const hasEl = elements.length > 0;
-      document.getElementById('tcExtDot').className = hasEl ? 'dot on' : 'dot';
-      document.getElementById('tcExtLabel').textContent = hasEl ? elements.length + ' elements' : document.getElementById('extStatus').textContent;
+      const extLabel = document.getElementById('tcExtLabel');
+      const extDot   = document.getElementById('tcExtDot');
+      extDot.className = hasEl ? 'dot on' : 'dot warn';
+      extLabel.className = 'chip-status' + (hasEl ? ' ok' : ' warn');
+      extLabel.textContent = hasEl ? elements.length + ' elements' : document.getElementById('extStatus').textContent;
       document.getElementById('tcExtChip').classList.toggle('active', hasEl);
-      document.getElementById('tcAiDot').className = isComposing ? 'dot pulse' : 'dot on';
-      document.getElementById('tcAiLabel').textContent = isComposing ? 'Composing…' : 'Compose';
+
+      const aiLabel = document.getElementById('tcAiLabel');
+      const aiDot   = document.getElementById('tcAiDot');
+      const srcLabel = document.getElementById('aiStatus');
+      const srcDot   = document.getElementById('aiDot');
+      aiDot.className   = srcDot.className;
+      aiLabel.className = 'chip-status' + (srcLabel.className.includes('ok') ? ' ok' : srcLabel.className.includes('neon') ? ' ok' : '');
+      aiLabel.textContent = isComposing ? 'Composing…' : srcLabel.textContent;
     }
 
     async function fetchCredits() {
@@ -956,19 +958,22 @@
     }
 
     let isMinimized = false;
-    const FULL_H = 720, MINI_H = 48;
+    const FULL_H = 720, MINI_H = 68;
 
     function setMinimized(min) {
       isMinimized = min;
-      document.getElementById('toolbar').style.display   = min ? 'flex' : 'none';
-      document.querySelector('.header-bar').style.display = min ? 'none' : '';
+      document.getElementById('minimizeIcon').textContent = min ? '+' : '—';
+      document.getElementById('toolbar').style.display    = min ? 'flex' : 'none';
       document.querySelector('.tab-nav').style.display    = min ? 'none' : '';
       document.querySelectorAll('.tab-panel').forEach(p => { p.style.display = min ? 'none' : ''; });
       document.body.classList.toggle('compact', min);
       parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 360, height: min ? MINI_H : FULL_H } }, '*');
     }
 
-    document.getElementById('btnMinimize').addEventListener('click', () => setMinimized(true));
+    document.getElementById('btnMinimize').addEventListener('click', (e) => {
+      e.stopPropagation();
+      setMinimized(!isMinimized);
+    });
     document.getElementById('btnSignIn').onclick = startOAuth;
     document.getElementById('btnSignInCancel').onclick = cancelOAuth;
     document.getElementById('btnSignOut').onclick = signOut;

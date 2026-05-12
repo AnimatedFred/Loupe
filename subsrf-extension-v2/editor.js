@@ -838,25 +838,65 @@ function buildEditorVisionText(result, vMode) {
   const lines = [];
 
   if (vMode === 'describe') {
-    const ds = result.designSystem || {};
-    lines.push(`UI ANALYSIS — ${result.pagePattern || 'Capture'}`);
-    lines.push(rule);
-    if ((ds.colors || []).length) {
-      lines.push('\nColors');
-      (ds.colors || []).forEach(c => lines.push(`  ${c.value}  ${c.role}  ${c.usage ? '— ' + c.usage : ''}`));
+    const imgType = (result.type || 'ui').toLowerCase();
+
+    if (imgType === 'photo') {
+      lines.push(`PHOTO ANALYSIS — ${result.imageSubtype || 'Photograph'}`);
+      lines.push(rule);
+      if (result.subject)        lines.push(`\nSubject      ${result.subject}`);
+      if (result.mood)           lines.push(`Mood         ${result.mood}`);
+      if (result.lighting)       lines.push(`Lighting     ${result.lighting}`);
+      if (result.composition)    lines.push(`Composition  ${result.composition}`);
+      if (result.technicalStyle) lines.push(`Style        ${result.technicalStyle}`);
+      if ((result.colorPalette || []).length) {
+        lines.push('\nColor Palette');
+        result.colorPalette.forEach(c => lines.push(`  ${c.value}  — ${c.role}`));
+      }
+
+    } else if (imgType === 'illustration' || imgType === 'diagram' || imgType === 'mixed') {
+      const label = imgType === 'illustration' ? 'ILLUSTRATION' : imgType === 'diagram' ? 'DIAGRAM' : 'MIXED CONTENT';
+      lines.push(`${label} — ${result.imageSubtype || imgType}`);
+      lines.push(rule);
+      if (result.subject)          lines.push(`\nSubject       ${result.subject}`);
+      if (result.artStyle)         lines.push(`Art Style     ${result.artStyle}`);
+      if (result.composition)      lines.push(`Composition   ${result.composition}`);
+      if (result.technicalDetails) lines.push(`Technical     ${result.technicalDetails}`);
+      if ((result.colorPalette || []).length) {
+        lines.push('\nColor Palette');
+        result.colorPalette.forEach(c => lines.push(`  ${c.value}  — ${c.role}`));
+      }
+
+    } else {
+      // UI screenshot
+      const ds = result.designSystem || {};
+      lines.push(`UI ANALYSIS — ${result.imageSubtype || result.pagePattern || 'Capture'}`);
+      lines.push(rule);
+      if ((ds.colors || []).length) {
+        lines.push('\nColors');
+        ds.colors.forEach(c => lines.push(`  ${c.value}  ${c.role}  ${c.usage ? '— ' + c.usage : ''}`));
+      }
+      if ((ds.typography || []).length) {
+        lines.push('\nTypography');
+        ds.typography.forEach(t => lines.push(`  ${t.family} ${t.weight}/${t.size}  — ${t.role || ''}`));
+      }
+      if ((ds.spacing || []).length) lines.push(`\nSpacing  ${ds.spacing.join(' · ')}`);
+      if ((ds.radii   || []).length) lines.push(`Radii    ${ds.radii.join(' · ')}`);
+      if ((result.components || []).length) {
+        lines.push('\n' + rule + '\nCOMPONENTS\n');
+        result.components.forEach((c, i) => {
+          lines.push(`${i + 1}. ${c.name}  [${c.type || c.estimatedLayout || ''}]`);
+          if (c.description) lines.push(`   ${c.description}`);
+        });
+      }
+      if (result.semanticPurpose) lines.push(`\n${rule}\n${result.semanticPurpose}`);
     }
-    if ((ds.typography || []).length) {
-      lines.push('\nTypography');
-      (ds.typography || []).forEach(t => lines.push(`  ${t.family} ${t.weight}/${t.size}  — ${t.role || ''}`));
+
+    // Always append the reconstruction prompt regardless of image type
+    if (result.reconstructionPrompt) {
+      lines.push('\n' + rule);
+      lines.push(`RECONSTRUCTION PROMPT — paste into any AI to recreate this ${imgType === 'photo' ? 'photo' : imgType === 'ui' ? 'UI' : 'image'}\n`);
+      lines.push(result.reconstructionPrompt);
     }
-    if ((ds.spacing || []).length) lines.push(`\nSpacing  ${ds.spacing.join(' · ')}`);
-    if ((ds.radii   || []).length) lines.push(`Radii    ${ds.radii.join(' · ')}`);
-    lines.push('\n' + rule + '\nCOMPONENTS\n');
-    (result.components || []).forEach((c, i) => {
-      lines.push(`${i + 1}. ${c.name}  [${c.type}]`);
-      if (c.description) lines.push(`   ${c.description}`);
-    });
-    if (result.semanticPurpose) lines.push(`\n${rule}\n${result.semanticPurpose}`);
 
   } else if (vMode === 'build_prompt') {
     const dt = result.designTokens || {};
@@ -884,6 +924,11 @@ function buildEditorVisionText(result, vMode) {
     }
 
   } else if (vMode === 'accessibility') {
+    // Prefer full markdown report if the server returned one
+    if (result.markdownReport) {
+      return result.markdownReport;
+    }
+    // Fallback: structured plain-text layout
     const score = result.overallScore ?? '?';
     lines.push(`ACCESSIBILITY AUDIT — ${result.wcagLevel || '?'}  ·  ${score}/100`);
     lines.push(rule);
