@@ -486,7 +486,30 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({ type: 'SELECTION_DATA', nodes: [], empty: true });
       return;
     }
-    var nodes = sel.map(function(n) { return extractNodeFull(n, 0, msg.depth || 3); });
+
+    // Unwrap transparent container nodes (e.g. "Html → Body", root frames with no fills/strokes).
+    // When a single invisible wrapper is selected, use its children as the root nodes so the AI
+    // sees the actual UI sections rather than a featureless container.
+    function isTransparentWrapper(node) {
+      if (!('children' in node) || !Array.isArray(node.children) || node.children.length === 0) return false;
+      var hasVisualFill = 'fills' in node && Array.isArray(node.fills) &&
+        node.fills.some(function(f) { return f.visible !== false && f.type !== 'IMAGE'; });
+      var hasStroke = 'strokes' in node && Array.isArray(node.strokes) &&
+        node.strokes.some(function(s) { return s.visible !== false; });
+      var hasEffect = 'effects' in node && Array.isArray(node.effects) &&
+        node.effects.some(function(e) { return e.visible !== false; });
+      return !hasVisualFill && !hasStroke && !hasEffect;
+    }
+
+    var rootNodes = sel;
+    if (sel.length === 1 && isTransparentWrapper(sel[0])) {
+      rootNodes = sel[0].children;
+    }
+
+    // Adapt depth: full pages (many sections) get depth 4 to keep payload manageable;
+    // focused selections (1–3 nodes) get depth 6 for full detail.
+    var depth = rootNodes.length > 4 ? 4 : 6;
+    var nodes = rootNodes.slice(0, 20).map(function(n) { return extractNodeFull(n, 0, depth); });
     figma.ui.postMessage({ type: 'SELECTION_DATA', nodes: nodes });
     return;
   }
@@ -743,6 +766,22 @@ function rgbToHex(r, g, b) {
   }).join('');
 }
 
+function resolveVarName(id) {
+  try {
+    var v = figma.variables && figma.variables.getVariableById(id);
+    return v ? v.name : null;
+  } catch (_e) { return null; }
+}
+
+function gradientCss(f) {
+  var stops = (f.gradientStops || []).map(function(s) {
+    return rgbToHex(s.color.r, s.color.g, s.color.b) + ' ' + Math.round(s.position * 100) + '%';
+  }).join(', ');
+  if (f.type === 'GRADIENT_LINEAR') return 'linear-gradient(' + stops + ')';
+  if (f.type === 'GRADIENT_RADIAL') return 'radial-gradient(' + stops + ')';
+  return f.type.replace('GRADIENT_', '').toLowerCase() + '-gradient(' + stops + ')';
+}
+
 function extractNodeFull(node, depth, maxDepth) {
   if (!node) return null;
   var info = {
@@ -753,20 +792,58 @@ function extractNodeFull(node, depth, maxDepth) {
 
   if ('width'  in node) info.width  = Math.round(node.width);
   if ('height' in node) info.height = Math.round(node.height);
+  if ('x' in node) info.x = Math.round(node.x);
+  if ('y' in node) info.y = Math.round(node.y);
+
+  // Blend mode (skip default values)
+  if ('blendMode' in node && node.blendMode !== 'NORMAL' && node.blendMode !== 'PASS_THROUGH') {
+    info.blendMode = node.blendMode;
+  }
+
+  // Clip content
+  if (node.clipsContent === true) info.clipsContent = true;
+
+  // Min/max dimensions
+  if (typeof node.minWidth === 'number' && node.minWidth > 0) info.minWidth = node.minWidth;
+  if (typeof node.maxWidth === 'number') info.maxWidth = node.maxWidth;
+  if (typeof node.minHeight === 'number' && node.minHeight > 0) info.minHeight = node.minHeight;
+  if (typeof node.maxHeight === 'number') info.maxHeight = node.maxHeight;
+
+  var bv = ('boundVariables' in node) ? (node.boundVariables || {}) : {};
 
   // Fills
   if ('fills' in node && Array.isArray(node.fills)) {
     var visibleFills = node.fills.filter(function(f) { return f.visible !== false; });
     if (visibleFills.length > 0) {
-      info.fills = visibleFills.map(function(f) {
+      info.fills = visibleFills.map(function(f, i) {
         if (f.type === 'SOLID') {
+          var hex = rgbToHex(f.color.r, f.color.g, f.color.b);
+          var tok = bv.fills && bv.fills[i] ? resolveVarName(bv.fills[i].id) : null;
           return {
             type: 'SOLID',
-            color: rgbToHex(f.color.r, f.color.g, f.color.b),
+            color: tok ? hex + ' (' + tok + ')' : hex,
             opacity: f.opacity !== undefined ? Math.round(f.opacity * 100) / 100 : 1
           };
         }
+        if (f.type === 'IMAGE') return { type: 'IMAGE', note: 'image fill' };
+        if (f.type && f.type.indexOf('GRADIENT') === 0) return { type: f.type, css: gradientCss(f) };
         return { type: f.type };
+      });
+    }
+  }
+
+  // Strokes
+  if ('strokes' in node && Array.isArray(node.strokes)) {
+    var visibleStrokes = node.strokes.filter(function(s) { return s.visible !== false; });
+    if (visibleStrokes.length > 0) {
+      info.strokes = visibleStrokes.map(function(s, i) {
+        var hex = s.color ? rgbToHex(s.color.r, s.color.g, s.color.b) : null;
+        var tok = bv.strokes && bv.strokes[i] ? resolveVarName(bv.strokes[i].id) : null;
+        var out = { type: s.type || 'SOLID', color: tok ? hex + ' (' + tok + ')' : hex };
+        if (typeof node.strokeWeight === 'number') out.weight = node.strokeWeight;
+        if (node.strokeAlign) out.align = node.strokeAlign;
+        if (Array.isArray(node.strokeDashes) && node.strokeDashes.length > 0) out.dashes = node.strokeDashes;
+        return out;
       });
     }
   }
@@ -787,6 +864,7 @@ function extractNodeFull(node, depth, maxDepth) {
       info.effects = visibleEffects.map(function(e) {
         var out = { type: e.type };
         if ('radius' in e) out.radius = e.radius;
+        if ('spread' in e) out.spread = e.spread;
         if (e.offset) out.offset = { x: e.offset.x, y: e.offset.y };
         if (e.color) out.color = rgbToHex(e.color.r, e.color.g, e.color.b);
         return out;
@@ -807,7 +885,8 @@ function extractNodeFull(node, depth, maxDepth) {
         bottom: node.paddingBottom || 0, left: node.paddingLeft || 0
       },
       primaryAxis: node.primaryAxisAlignItems,
-      counterAxis: node.counterAxisAlignItems
+      counterAxis: node.counterAxisAlignItems,
+      wrap: node.layoutWrap === 'WRAP'
     };
   }
 
@@ -815,12 +894,16 @@ function extractNodeFull(node, depth, maxDepth) {
   if (node.type === 'TEXT') {
     try {
       info.text = node.characters;
-      if (typeof node.fontSize === 'number') info.fontSize = node.fontSize;
+      if (typeof node.fontSize === 'number') {
+        var fsTok = bv.fontSize ? resolveVarName(bv.fontSize.id) : null;
+        info.fontSize = fsTok ? node.fontSize + ' (' + fsTok + ')' : node.fontSize;
+      }
       if (typeof node.fontName === 'object' && node.fontName) {
         info.fontFamily = node.fontName.family;
         info.fontStyle = node.fontName.style;
       }
       if (node.textAlignHorizontal) info.textAlign = node.textAlignHorizontal;
+      if (node.textCase && node.textCase !== 'ORIGINAL') info.textCase = node.textCase;
       if (typeof node.lineHeight === 'object' && node.lineHeight.unit !== 'AUTO') {
         info.lineHeight = node.lineHeight.value + (node.lineHeight.unit === 'PERCENT' ? '%' : 'px');
       }
@@ -831,11 +914,29 @@ function extractNodeFull(node, depth, maxDepth) {
   }
 
   // Component / instance info
-  if (node.type === 'COMPONENT' || node.type === 'COMPONENT_SET') {
+  if (node.type === 'COMPONENT_SET') {
+    info.isComponentSet = true;
+  }
+  if (node.type === 'COMPONENT') {
     info.isComponent = true;
+    try {
+      if (node.variantProperties && Object.keys(node.variantProperties).length > 0) {
+        info.variantProperties = node.variantProperties;
+      }
+      if (node.parent && node.parent.type === 'COMPONENT_SET') {
+        info.variants = node.parent.children.map(function(s) {
+          return { name: s.name, variantProperties: s.variantProperties };
+        });
+      }
+    } catch (_e) {}
   }
   if (node.type === 'INSTANCE') {
     try { info.mainComponentName = node.mainComponent ? node.mainComponent.name : null; } catch (_e) {}
+    try {
+      if (node.variantProperties && Object.keys(node.variantProperties).length > 0) {
+        info.variantProperties = node.variantProperties;
+      }
+    } catch (_e) {}
   }
 
   // Children (up to depth limit, max 30 per level)

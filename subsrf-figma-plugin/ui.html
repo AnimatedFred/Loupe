@@ -294,36 +294,6 @@
     }
     .sel-chip.empty { color: var(--t3); font-style: italic; border-style: dashed; }
 
-    .target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .target-btn {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 5px; padding: 9px 4px;
-      background: var(--surface); border: 1px solid var(--border);
-      width: 100%; transition: border-color 0.15s, background 0.15s;
-      color: var(--t3);
-    }
-    .target-btn:hover { border-color: var(--border-md); background: var(--lift); opacity: 1; }
-    .target-btn.selected { border-color: var(--neon); background: var(--neon-dim); color: var(--neon); }
-    .t-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
-    .t-name {
-      font-family: 'Azeret Mono', monospace; font-size: 8px; letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .option-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 0; border-bottom: 1px solid var(--border);
-    }
-    .option-row:last-child { border-bottom: none; }
-    .option-label { font-size: 12px; font-weight: 500; color: var(--t2); }
-    .option-sub { font-size: 10px; color: var(--t3); margin-top: 1px; }
-    .option-right { display: flex; align-items: center; gap: 6px; }
-    .pro-tag {
-      font-family: 'Azeret Mono', monospace; font-size: 8px; letter-spacing: 1px;
-      padding: 2px 5px; background: rgba(255,171,0,0.08); color: var(--warn);
-      border: 1px solid rgba(255,171,0,0.2);
-    }
-
     #resultPanel { display: none; flex-direction: column; border: 1px solid var(--neon); background: var(--deep); }
     #resultPanel.visible { display: flex; }
     .result-header {
@@ -338,40 +308,15 @@
     #resultText {
       font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 300;
       color: var(--t2); line-height: 1.7; padding: 10px;
-      max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+      min-height: 220px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
     }
     #resultText::-webkit-scrollbar { width: 2px; }
     #resultText::-webkit-scrollbar-thumb { background: var(--border-md); }
-    .btn-open-tool {
-      background: var(--neon-dim); color: var(--neon);
-      border: 1px solid rgba(0,255,135,0.2);
-      padding: 5px 9px; font-size: 11px; font-weight: 600; gap: 4px;
-    }
-    .btn-open-tool:hover { background: rgba(0,255,135,0.18); opacity: 1; }
-    .btn-open-tool.hidden { display: none !important; }
-
     .credit-row {
       display: flex; align-items: center; gap: 6px;
       font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
     }
     .credit-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
-
-    .hist-item {
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 9px; cursor: pointer; transition: border-color 0.15s;
-    }
-    .hist-item:hover { border-color: var(--border-md); }
-    .hist-item-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
-    .hist-target {
-      font-family: 'Azeret Mono', monospace; font-size: 9px;
-      letter-spacing: 1px; text-transform: uppercase; color: var(--neon);
-    }
-    .hist-time { font-family: 'Azeret Mono', monospace; font-size: 9px; color: var(--t3); }
-    .hist-nodes { font-size: 10px; color: var(--t3); margin-bottom: 4px; }
-    .hist-preview {
-      font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t2);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
 
     /* ── Settings ── */
     .settings-card { background: var(--layer); border: 1px solid var(--border); padding: 11px; }
@@ -388,15 +333,6 @@
     .settings-val { font-size: 12px; font-weight: 600; color: var(--t1); }
     .credits-bar { height: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
     .credits-fill { height: 100%; background: var(--neon); transition: width 0.4s; }
-    .dt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
-    .dt-btn {
-      font-family: 'Azeret Mono', monospace; font-size: 8px; letter-spacing: 0.5px;
-      text-transform: uppercase; color: var(--t3); background: var(--surface);
-      border: 1px solid var(--border); padding: 6px 4px; text-align: center;
-      transition: all 0.15s; width: 100%;
-    }
-    .dt-btn:hover { border-color: var(--border-md); color: var(--t2); opacity: 1; }
-    .dt-btn.selected { border-color: var(--neon); color: var(--neon); background: var(--neon-dim); }
   </style>
 </head>
 
@@ -532,116 +468,20 @@
           </div>
         </div>
 
-        <div>
-          <div class="sec-label">Output target</div>
-          <div class="target-grid">
-            <button class="target-btn selected" data-target="claude">
-              <span class="t-icon">
-                <!-- sparkles -->
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
-                  <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
-                </svg>
-              </span>
-              <span class="t-name">Claude</span>
-            </button>
-            <button class="target-btn" data-target="lovable">
-              <span class="t-icon">
-                <!-- heart -->
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-                </svg>
-              </span>
-              <span class="t-name">Lovable</span>
-            </button>
-            <button class="target-btn" data-target="v0">
-              <span class="t-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L2 19h20L12 2z"/>
-                </svg>
-              </span>
-              <span class="t-name">v0</span>
-            </button>
-            <button class="target-btn" data-target="bolt">
-              <span class="t-icon">
-                <!-- bolt / lightning -->
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-              </span>
-              <span class="t-name">Bolt</span>
-            </button>
-            <button class="target-btn" data-target="cursor">
-              <span class="t-icon">
-                <!-- cursor / pointer -->
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4l7.07 17 2.51-7.39L21 11.07z"/>
-                </svg>
-              </span>
-              <span class="t-name">Cursor</span>
-            </button>
-            <button class="target-btn" data-target="raw">
-              <span class="t-icon">
-                <!-- code brackets -->
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="16 18 22 12 16 6"/>
-                  <polyline points="8 6 2 12 8 18"/>
-                </svg>
-              </span>
-              <span class="t-name">Raw</span>
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div class="sec-label">Options</div>
-          <div class="option-row">
-            <div>
-              <div class="option-label">Include child layers</div>
-              <div class="option-sub">Describe nested components</div>
-            </div>
-            <button class="toggle on" id="optDepth"></button>
-          </div>
-          <div class="option-row">
-            <div>
-              <div class="option-label">Include variables</div>
-              <div class="option-sub">Reference token names</div>
-            </div>
-            <div class="option-right">
-              <span class="pro-tag" id="varProTag">PRO</span>
-              <button class="toggle" id="optVariables" disabled></button>
-            </div>
-          </div>
-        </div>
-
         <div id="resultPanel">
           <div class="result-header">
-            <span class="result-target" id="resultTargetLabel">Claude</span>
+            <span class="result-target">BRIEF</span>
             <div class="result-actions">
               <button class="btn-icon" id="btnCopyResult">
-                <!-- copy icon -->
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="9" y="9" width="13" height="13" rx="2"/>
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
                 Copy
               </button>
-              <button class="btn-open-tool hidden" id="btnOpenTool">
-                Open
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
-                  <polyline points="15 3 21 3 21 9"/>
-                  <line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-              </button>
             </div>
           </div>
           <div id="resultText"></div>
-        </div>
-
-        <div id="historySection" style="display:none">
-          <div class="sec-label">Recent</div>
-          <div id="historyList"></div>
         </div>
 
         <div class="credit-row" id="creditRow">
@@ -685,18 +525,6 @@
           <div class="credits-bar"><div class="credits-fill" id="creditsFill" style="width:0%"></div></div>
         </div>
 
-        <div class="settings-card">
-          <div class="settings-title">Default compose target</div>
-          <div class="dt-grid" id="dtGrid">
-            <button class="dt-btn selected" data-dt="claude">Claude</button>
-            <button class="dt-btn" data-dt="lovable">Lovable</button>
-            <button class="dt-btn" data-dt="v0">v0</button>
-            <button class="dt-btn" data-dt="bolt">Bolt</button>
-            <button class="dt-btn" data-dt="cursor">Cursor</button>
-            <button class="dt-btn" data-dt="raw">Raw</button>
-          </div>
-        </div>
-
         <button class="btn-secondary" id="btnSignOut" style="width:100%;margin-top:4px;">Sign out</button>
         <div style="height:8px;"></div>
 
@@ -715,20 +543,8 @@
     let pollInterval = null;
     let oauthPollInterval = null;
 
-    let selectedTarget = 'claude';
-    let defaultTarget = 'claude';
     let currentSelNodes = [];
-    let composeHistory = [];
     let isComposing = false;
-
-    const TOOL_LINKS = {
-      claude:  'https://claude.ai/new',
-      lovable: 'https://lovable.dev/',
-      v0:      'https://v0.dev/',
-      bolt:    'https://bolt.new/',
-      cursor:  null,
-      raw:     null
-    };
 
     // SVG snippets for dynamic icon injection
     const ICO = {
@@ -778,9 +594,6 @@
         document.getElementById('settingsTier').textContent = 'Free';
         document.getElementById('settingsTier').style.color = 'var(--t1)';
       }
-      const isPro = tier === 'pro';
-      document.getElementById('optVariables').disabled = !isPro;
-      document.getElementById('varProTag').style.display = isPro ? 'none' : '';
       updateComposeBtn();
     }
 
@@ -871,17 +684,6 @@
       }
     }
 
-    document.querySelectorAll('.target-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedTarget = btn.dataset.target;
-        updateComposeBtn();
-      });
-    });
-
-    document.getElementById('optDepth').addEventListener('click', function() { this.classList.toggle('on'); });
-
     function updateComposeBtn() {
       const btn = document.getElementById('btnCompose');
       const label = document.getElementById('btnComposeLabel');
@@ -908,7 +710,7 @@
         label.textContent = 'Composing…';
       } else {
         btn.disabled = false;
-        label.textContent = 'Compose → ' + selectedTarget.charAt(0).toUpperCase() + selectedTarget.slice(1);
+        label.textContent = 'Generate Brief';
       }
     }
 
@@ -938,33 +740,25 @@
       isComposing = true;
       updateComposeBtn();
       document.getElementById('resultPanel').classList.remove('visible');
-      parent.postMessage({ pluginMessage: {
-        type: 'READ_SELECTION',
-        depth: document.getElementById('optDepth').classList.contains('on') ? 3 : 1
-      } }, '*');
+      parent.postMessage({ pluginMessage: { type: 'READ_SELECTION' } }, '*');
     });
 
     async function runCompose(nodes) {
       if (!nodes || nodes.length === 0) { isComposing = false; updateComposeBtn(); return; }
-      const options = {
-        depth: document.getElementById('optDepth').classList.contains('on') ? 'full' : 'shallow',
-        includeVariables: !document.getElementById('optVariables').disabled && document.getElementById('optVariables').classList.contains('on')
-      };
       try {
         const headers = { 'Content-Type': 'application/json' };
         if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
         const res = await fetch(BRIDGE + '/api/ai/compose', {
           method: 'POST', headers,
-          body: JSON.stringify({ target: selectedTarget, nodes, options })
+          body: JSON.stringify({ nodes })
         });
         if (res.status === 402) { updateCredits(0, getTier()); throw new Error('No credits remaining'); }
         if (res.status === 403) { throw new Error('Upgrade required'); }
         if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Compose failed'); }
         const data = await res.json();
         if (typeof data.balance === 'number') { updateCredits(data.balance, getTier()); if (session) { session.credits = data.balance; storageSet('subsrf_session', session); } }
-        showResult(data.prompt || '', selectedTarget);
-        saveHistory({ target: selectedTarget, nodes: currentSelNodes.map(n => n.name || n.type), prompt: data.prompt || '', ts: Date.now() });
-        addLog('Composed for ' + selectedTarget, 'ai');
+        showResult(data.prompt || '');
+        addLog('Brief generated', 'ai');
       } catch (e) {
         const row = document.getElementById('creditRow');
         const orig = row.innerHTML;
@@ -973,71 +767,27 @@
       } finally { isComposing = false; updateComposeBtn(); }
     }
 
-    function showResult(prompt, target) {
-      document.getElementById('resultTargetLabel').textContent = target.charAt(0).toUpperCase() + target.slice(1);
+    function showResult(prompt) {
       document.getElementById('resultText').textContent = prompt;
       document.getElementById('resultPanel').classList.add('visible');
-      const openBtn = document.getElementById('btnOpenTool');
-      const link = TOOL_LINKS[target];
-      if (link) {
-        openBtn.classList.remove('hidden');
-        openBtn.onclick = () => window.open(link, '_blank');
-        openBtn.innerHTML = 'Open ' + ICO.open;
-      } else {
-        openBtn.classList.add('hidden');
-      }
       setTimeout(() => { document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
     }
 
     document.getElementById('btnCopyResult').addEventListener('click', () => {
       const text = document.getElementById('resultText').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('btnCopyResult');
+      const btn = document.getElementById('btnCopyResult');
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
         const orig = btn.innerHTML;
         btn.innerHTML = ICO.check + ' Copied!';
         setTimeout(() => { btn.innerHTML = orig; }, 2000);
-      }).catch(() => {});
-    });
-
-    function saveHistory(item) {
-      composeHistory.unshift(item);
-      if (composeHistory.length > 20) composeHistory = composeHistory.slice(0, 20);
-      storageSet('subsrf_compose_history', composeHistory);
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const list = document.getElementById('historyList');
-      const sec = document.getElementById('historySection');
-      if (composeHistory.length === 0) { sec.style.display = 'none'; return; }
-      sec.style.display = '';
-      list.innerHTML = composeHistory.slice(0, 5).map((item, idx) => {
-        const d = new Date(item.ts);
-        const ts = d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' +
-                   d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        return '<div class="hist-item" data-idx="' + idx + '">' +
-          '<div class="hist-item-head"><span class="hist-target">' + (item.target||'raw') + '</span><span class="hist-time">' + ts + '</span></div>' +
-          (item.nodes?.length ? '<div class="hist-nodes">' + item.nodes.slice(0,3).join(', ') + '</div>' : '') +
-          '<div class="hist-preview">' + (item.prompt||'').slice(0,80).replace(/\n/g,' ') + '</div></div>';
-      }).join('');
-      list.querySelectorAll('.hist-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const item = composeHistory[parseInt(el.dataset.idx)];
-          if (item) showResult(item.prompt, item.target || 'raw');
-        });
-      });
-    }
-
-    document.querySelectorAll('.dt-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.dt-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        defaultTarget = btn.dataset.dt;
-        storageSet('subsrf_default_target', defaultTarget);
-        document.querySelectorAll('.target-btn').forEach(b => b.classList.toggle('selected', b.dataset.target === defaultTarget));
-        selectedTarget = defaultTarget;
-        updateComposeBtn();
-      });
+      } catch (_e) {}
     });
 
     async function checkState() {
@@ -1225,8 +975,6 @@
 
     showView('signin');
     storageGet('subsrf_session');
-    storageGet('subsrf_compose_history');
-    storageGet('subsrf_default_target');
     setTimeout(() => {
       if (document.getElementById('view-loading').style.display !== 'none') showView('signin');
     }, 4000);
@@ -1256,18 +1004,6 @@
           }
         }
 
-        if (msg.key === 'subsrf_compose_history' && Array.isArray(msg.value)) {
-          composeHistory = msg.value;
-          renderHistory();
-        }
-
-        if (msg.key === 'subsrf_default_target' && msg.value) {
-          defaultTarget = msg.value;
-          selectedTarget = defaultTarget;
-          document.querySelectorAll('.target-btn').forEach(b => b.classList.toggle('selected', b.dataset.target === defaultTarget));
-          document.querySelectorAll('.dt-btn').forEach(b => b.classList.toggle('selected', b.dataset.dt === defaultTarget));
-          updateComposeBtn();
-        }
         return;
       }
 

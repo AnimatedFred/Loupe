@@ -1068,8 +1068,8 @@ function parseAiJson(rawText) {
   }
 }
 
-// Subsrf Compose — generates target-specific implementation prompts from
-// Figma node data. Supports Claude, Lovable, v0, Bolt, Cursor, and Raw output.
+// Subsrf Compose — intelligent UI analysis agent that generates a universal
+// implementation brief from Figma node data. Works with any AI coding tool.
 // Costs 1 credit. Requires Starter or Pro tier.
 app.post('/api/ai/compose', async (req, res) => {
   const auth = await verifyToken(req);
@@ -1082,9 +1082,7 @@ app.post('/api/ai/compose', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
-  const { target = 'raw', nodes = [], options = {} } = req.body;
-  const validTargets = ['claude', 'lovable', 'v0', 'bolt', 'cursor', 'raw'];
-  const resolvedTarget = validTargets.includes(target) ? target : 'raw';
+  const { nodes = [] } = req.body;
 
   let newBalance;
   try {
@@ -1108,31 +1106,85 @@ app.post('/api/ai/compose', async (req, res) => {
     return res.status(500).json({ error: e.message });
   }
 
-  const TARGET_INSTRUCTIONS = {
-    claude: `You are generating a prompt the user will paste into Claude. Write a detailed, conversational implementation prompt. Describe the component clearly — layout, colors (exact hex), typography (family, weight, size), spacing, border-radius, shadows, and hierarchy. End with a concrete instruction like "Build this as a React component with Tailwind CSS." Write in second person ("Build a card component...").`,
-    lovable: `You are generating a prompt for Lovable (a React AI app builder at lovable.dev). Write a focused component prompt optimized for Lovable's strengths: React functional components, Tailwind CSS classes, and clean state management. Include exact visual specs. Start with "Create a React component that..." and list the key visual and interaction requirements.`,
-    v0: `You are generating a prompt for v0 by Vercel (v0.dev — an AI UI generator). Write a precise, structured prompt that v0 can turn into a React + Tailwind component. Include: component name, visual description, exact color values, layout (flex/grid), spacing values, typography, interactive states if any. Keep it concise but complete. Start with the component type.`,
-    bolt: `You are generating a prompt for Bolt.new (a full-stack AI code generator). Write a prompt that covers both the visual UI and any implied interactivity or functionality. Include component structure, exact styles (colors, spacing, typography), and describe any hover states, animations, or data requirements suggested by the design. Be specific about the tech stack: React + Tailwind.`,
-    cursor: `You are generating a prompt for Cursor (an AI code editor). Write a code-centric implementation prompt. Include: suggested file/component name, exact style values to use as constants or CSS variables, component structure (which sub-components to create), props interface if TypeScript, and specific implementation notes. Format it as a direct instruction a developer pastes into Cursor chat.`,
-    raw: `You are a design specification writer. Extract and document this Figma design with precision. Produce a structured specification covering: component name and purpose, visual hierarchy, exact colors (hex), typography (family/weight/size/line-height), spacing (padding/margin/gap), border-radius, shadows, layout mode (flex/grid/absolute), and any notable visual treatments. No tool framing. Pure design spec.`
-  };
+  const systemPrompt = `You are an intelligent UI analysis agent and senior frontend engineer. Analyze a Figma node tree and produce a world-class implementation brief that any AI coding assistant (Claude, Cursor, v0, Lovable, Bolt) can use to build a pixel-perfect result.
 
-  const systemPrompt = `${TARGET_INSTRUCTIONS[resolvedTarget]}
+Process the design in four steps:
 
-Analyze the provided Figma node tree and output a single, ready-to-use prompt string. Return ONLY the prompt text — no JSON, no markdown fences, no preamble like "Here is your prompt:". Just the raw prompt the user will copy and paste.`;
+STEP 1 — CLASSIFY
+Identify the exact UI pattern: landing page, SaaS dashboard, marketing page, modal/dialog, navigation bar, card component, data table, onboarding screen, pricing section, form, notification UI, settings panel, etc. Use node names, hierarchy depth, and text content to determine this with confidence.
 
-  const depthNote = options.depth === 'full' ? 'Include all nested child components.' : 'Focus on the top-level component and its immediate children.';
-  const variablesNote = options.includeVariables ? 'Include design variable/token names where referenced.' : '';
+STEP 2 — EXTRACT DESIGN SYSTEM
+From the node data, extract and name:
+- Colors: group by semantic role (bg-primary, bg-surface, text-primary, text-muted, accent, border, status-ok, status-warn, status-error). Never name a color by its hex value.
+- Typography: identify the scale with exact values — font-size (px), font-weight, font-family, line-height. Label each role: display, h1, h2, h3, body-lg, body-sm, label, caption, mono.
+- Spacing: identify the base unit and how it compounds (e.g. 4px base, multiples of 4: 8/12/16/24/32/48/64/80).
+- Border radius: describe the pattern and where each value is used.
+- Visual treatments: shadows (exact box-shadow values), gradients (exact stops), blur effects, borders.
 
-  const userContent = `Target tool: ${resolvedTarget.toUpperCase()}
-${depthNote} ${variablesNote}
+STEP 3 — MAP COMPONENT ARCHITECTURE
+Break the UI into named semantic sections. For each:
+- Name it by purpose (Hero Section, Navbar, Stats Bar, Feature Cards Grid, Pricing Tiers, CTA Banner, Footer)
+- Describe its layout strategy: flex (direction, gap, alignment), CSS grid (columns, gap), or absolute
+- Note key dimensions, padding, and child components
+- Describe any interaction states implied by the design (hover, active, disabled)
 
-Figma selection (${nodes.length} node${nodes.length !== 1 ? 's' : ''}):
-${JSON.stringify(nodes, null, 2)}`;
+STEP 4 — WRITE THE BRIEF
+Output structured markdown in EXACTLY this format:
+
+# [UI Type] — [Inferred Name]
+
+## Overview
+[2–3 sentences: what this UI is, its purpose, primary user action]
+
+## Design System
+
+### Colors
+| Token | Hex | Role |
+|-------|-----|------|
+[one row per color, semantic token names]
+
+### Typography
+| Role | Size | Weight | Family | Line Height |
+|------|------|--------|--------|-------------|
+[one row per type style]
+
+### Spacing
+[Describe the spacing system: base unit, scale, key values used]
+
+### Visual Treatments
+[Shadows, gradients, borders — with exact CSS values]
+
+## Component Architecture
+
+### [Section Name]
+- **Purpose**: [what it does for the user]
+- **Layout**: [exact flex/grid strategy]
+- **Dimensions**: [width, height, padding if available]
+- **Children**: [key child components]
+
+[Repeat for every major section]
+
+## Implementation Notes
+[Technical details: tricky layout parts, responsive behavior, animation/transition specs, data/state requirements, accessibility notes]
+
+## Build
+Build this as a React application with Tailwind CSS. Define the design tokens as CSS custom properties. [1–2 sentences calling out the most critical technical requirement based on the detected UI type — e.g. sticky header behavior, grid layout specifics, animation requirements, etc.]
+
+---
+
+STRICT RULES:
+- Never say "dark background" — always give the exact hex value
+- Never say "some padding" or "moderate spacing" — always derive px values from the node data or mark as "~approx"
+- Name every color with a semantic token (bg-void, text-primary, accent-neon) — never use hex as the name
+- The brief must work verbatim when pasted into any AI coding tool
+- Output ONLY the markdown brief. No preamble. No JSON wrappers. No code fences. No "Here is your brief:".`;
+
+  const userContent = `Figma selection (${nodes.length} node${nodes.length !== 1 ? 's' : ''}):
+${JSON.stringify(nodes)}`;
 
   try {
     const abortCtrl = new AbortController();
-    const abortTimer = setTimeout(() => abortCtrl.abort(), 25000);
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 40000);
     let aiRes;
     try {
       aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -1142,7 +1194,7 @@ ${JSON.stringify(nodes, null, 2)}`;
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userContent }] }],
-          generationConfig: { maxOutputTokens: 2000 }
+          generationConfig: { maxOutputTokens: 4000 }
         })
       });
     } finally {
@@ -1158,7 +1210,7 @@ ${JSON.stringify(nodes, null, 2)}`;
     const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!rawText) throw new Error('AI returned empty response');
 
-    console.error(`[Subsrf Compose] ${resolvedTarget} prompt for ${auth.user.email} — ${rawText.length} chars`);
+    console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${rawText.length} chars`);
     res.json({ ok: true, prompt: rawText.trim(), balance: newBalance });
 
   } catch (e) {
