@@ -1818,29 +1818,7 @@ Generate Figma Plugin API JavaScript to recreate this UI from the element data a
 
     if (!code) throw new Error('AI returned no executable code');
 
-    // Sanity check: detect truncated or malformed code before sending to EVAL.
-    // Check quote balance and brace/bracket/paren balance.
-    const singleQ = (code.match(/(?<!\\)'/g) || []).length;
-    const doubleQ = (code.match(/(?<!\\)"/g) || []).length;
-    const backtickQ = (code.match(/(?<!\\)`/g) || []).length;
-    let braces = 0, brackets = 0, parens = 0;
-    let inSingle = false, inDouble = false, inTemplate = false;
-    for (let i = 0; i < code.length; i++) {
-      const c = code[i], prev = code[i - 1];
-      if (c === "'" && prev !== '\\' && !inDouble && !inTemplate) inSingle = !inSingle;
-      else if (c === '"' && prev !== '\\' && !inSingle && !inTemplate) inDouble = !inDouble;
-      else if (c === '`' && prev !== '\\' && !inSingle && !inDouble) inTemplate = !inTemplate;
-      else if (!inSingle && !inDouble && !inTemplate) {
-        if (c === '{') braces++; else if (c === '}') braces--;
-        else if (c === '[') brackets++; else if (c === ']') brackets--;
-        else if (c === '(') parens++; else if (c === ')') parens--;
-      }
-    }
-    if (singleQ % 2 !== 0 || doubleQ % 2 !== 0 || backtickQ % 2 !== 0 || braces !== 0 || brackets !== 0 || parens !== 0) {
-      throw new Error('Generated code appears truncated — please try again');
-    }
-
-    console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email} — starts: ${code.slice(0, 60).replace(/\n/g, ' ')}`);
+    console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email} — starts: ${code.slice(0, 60).replace(/\n/g, ' ')} — ends: ${code.slice(-60).replace(/\n/g, ' ')}`);
     res.json({ ok: true, code, balance: newBalance });
 
   } catch (e) {
