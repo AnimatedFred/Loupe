@@ -159,8 +159,8 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <tr>
                   <td className="p-md text-white-secondary">Full Page Capture</td>
                   <td className="p-md text-center text-white-muted text-xs">Watermarked</td>
-                  <td className="p-md text-center text-white-secondary bg-white-border/5">5 / day</td>
-                  <td className="p-md text-center text-neon">Unlimited</td>
+                  <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
+                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 {/* Studio Editor */}
                 <tr className="bg-white-border/5">
@@ -183,7 +183,19 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                   <td className="p-md text-neon" colSpan="4">AI ANALYSIS</td>
                 </tr>
                 <tr>
+                  <td className="p-md text-white-secondary">Credits / month</td>
+                  <td className="p-md text-center text-white-muted">0</td>
+                  <td className="p-md text-center text-neon bg-white-border/5">75</td>
+                  <td className="p-md text-center text-neon">300</td>
+                </tr>
+                <tr>
                   <td className="p-md text-white-secondary">Build Prompt Generation</td>
+                  <td className="p-md text-center text-white-muted">—</td>
+                  <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
+                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
+                </tr>
+                <tr>
+                  <td className="p-md text-white-secondary">Subsrf Compose (Figma)</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
                   <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>

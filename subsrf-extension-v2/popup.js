@@ -29,24 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnArea.onclick = () => ensureAndExecute((id) => setMode(id, 'region'));
 
   btnFullPage.onclick = () => {
-    const tier = (currentSession?.tier || 'free').toLowerCase();
-    if (tier === 'starter') {
-      const today = new Date().toISOString().slice(0, 10);
-      chrome.storage.local.get('fullPageCaptureLog', (data) => {
-        const log = data.fullPageCaptureLog || {};
-        const count = log.date === today ? (log.count || 0) : 0;
-        if (count >= 5) {
-          showUpgradeHint('Daily Full Page limit reached (5/day on Starter). Upgrade to Pro for unlimited.');
-          return;
-        }
-        chrome.storage.local.set({ fullPageCaptureLog: { date: today, count: count + 1 } });
-        ensureAndExecute((id) => {
-          chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
-          setTimeout(() => window.close(), 100);
-        });
-      });
-      return;
-    }
     ensureAndExecute((id) => {
       chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
       setTimeout(() => window.close(), 100);

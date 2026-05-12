@@ -16,10 +16,7 @@ Draw a rectangle over any part of the page to bulk-select every element inside t
 Draw a region and capture a pixel-perfect screenshot of that area. The screenshot opens directly in Subsrf Studio for annotation and AI analysis.
 
 **Full Page Capture**
-Auto-scrolls the entire page, captures each section, and stitches the screenshots together into one full-length image. No manual scrolling needed.
-
-**Accessibility Audit**
-Select any elements on the page and trigger an accessibility audit. The extension captures a screenshot of the selection bounding box and opens it in Studio, automatically running a WCAG analysis.
+Auto-scrolls the entire page, captures each section, and stitches the screenshots together into one full-length image. No manual scrolling needed. Available on Starter and Pro; Free tier captures with watermark.
 
 **Image Drop Zone**
 Drop any image (screenshot, Figma export, wireframe) directly into the popup. It routes straight to Studio for AI analysis — no capture step required.
@@ -73,11 +70,9 @@ Annotate directly on top of any screenshot. Drawings are composited onto the ima
 Every drawn object appears as a layer entry in the sidebar. Click a layer to select it; use the delete button to remove it. Bring to Front / Send to Back controls manage depth ordering.
 
 **AI Analysis Panel (Starter & Pro)**
-Three analysis modes available from the sidebar while viewing any captured image:
+One analysis mode available from the sidebar while viewing any captured image:
 
-- **Build Prompt** — Generates a detailed, pixel-accurate implementation brief from the image, including design tokens and component descriptions.
-- **Describe UI** — Returns a semantic breakdown of the UI: components, design system tokens, layout patterns, and purpose.
-- **Accessibility Audit** — Scores the design against WCAG 2.1, lists specific issues by severity with fixes, and highlights what's already done well.
+- **Build Prompt** — Analyzes the capture and generates a pixel-perfect implementation brief — design tokens, component architecture, and a prompt ready to paste into any AI coding tool. Costs 1 credit.
 
 **Credit Balance**
 The current credit balance is displayed in the Analysis panel so you always know your remaining budget before running an analysis.
@@ -137,6 +132,13 @@ Linear gradients with any number of color stops are parsed from CSS `backgroundI
 
 **Smart Hierarchy**
 Elements are sorted and nested by geometric containment — larger elements become parent frames, smaller elements inside them become children. This mirrors the original DOM structure without requiring any explicit nesting data.
+
+---
+
+### Subsrf Compose
+
+**AI Implementation Brief from Figma Selection (Starter & Pro)**
+Select one or more nodes in Figma and tap Compose. The plugin sends the node tree to the Subsrf server, which uses Gemini to classify the UI pattern, extract the design system (colors, typography, spacing, radii, shadows), map the component architecture, and write a structured markdown implementation brief. The output is formatted with the Subsrf Implementation Brain header and can be pasted directly into Claude, Cursor, v0, or any AI coding tool for pixel-perfect reconstruction. Costs 1 credit.
 
 ---
 

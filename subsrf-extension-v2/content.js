@@ -21,7 +21,7 @@
     cachedTier = data.subsrf_session?.tier || 'free';
   });
 
-  const FREE_ELEMENT_LIMIT = 10;
+  const FREE_ELEMENT_LIMIT = 5;
 
   console.log('[Subsrf] Capture Engine v2.8 Online.');
 
