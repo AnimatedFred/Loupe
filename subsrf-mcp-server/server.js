@@ -1780,7 +1780,10 @@ Generate Figma Plugin API JavaScript to recreate this UI from the element data a
             ? [{ inline_data: { mime_type: mimeType, data: image } }, { text: userText }]
             : [{ text: userText }]
           }],
-          generationConfig: { maxOutputTokens: 16384 }
+          generationConfig: {
+            maxOutputTokens: 32768,
+            thinkingConfig: { thinkingBudget: 0 }
+          }
         })
       });
     } finally {
