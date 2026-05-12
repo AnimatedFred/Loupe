@@ -1401,69 +1401,8 @@ Rules:
 });
 
 // Vision Analysis — sends a screenshot / dropped image to Claude and returns structured JSON.
-// Five modes: describe, build_prompt, match, push_figma, accessibility.
+// Three modes: build_prompt, match, push_figma.
 const VISION_PROMPTS = {
-  describe: `You are an expert visual analyst and prompt engineer. Your first job is to classify the image, then produce a detailed breakdown tailored to its type. Return ONLY valid JSON, no markdown fences, no commentary.
-
-STEP 1 — CLASSIFY: Look at the image and decide which type it is:
-  "ui"           — a software screenshot, design mockup, app interface, web page, dashboard, or any interactive digital product
-  "photo"        — a real-world photograph (portrait, landscape, product, architecture, macro, etc.)
-  "illustration" — artwork, icon, drawing, painting, vector art, concept art
-  "diagram"      — flowchart, infographic, wireframe, technical drawing, chart, graph
-  "mixed"        — contains multiple distinct types
-
-STEP 2 — Return JSON in the format for the detected type:
-
-If type is "ui":
-{
-  "type": "ui",
-  "imageSubtype": "specific pattern e.g. 'SaaS dashboard', 'mobile app onboarding', 'pricing page', 'design system docs'",
-  "pagePattern": "concise page type",
-  "designSystem": {
-    "colors": [{ "value": "#hex", "role": "semantic-name e.g. bg-primary", "usage": "where used in the UI" }],
-    "typography": [{ "family": "font name", "weight": "400|700|etc", "size": "estimated px", "role": "heading-xl|body|caption|mono|etc" }],
-    "spacing": ["8px", "16px", "..."],
-    "radii": ["4px", "8px", "..."],
-    "shadows": ["box-shadow value or omit if none"]
-  },
-  "components": [
-    { "name": "...", "type": "section|card|nav|button|form|list|hero|footer|etc", "description": "what it does", "estimatedLayout": "flex-row|flex-col|grid|etc" }
-  ],
-  "semanticPurpose": "one sentence describing the page goal",
-  "reconstructionPrompt": "A complete, self-contained implementation brief — 200-300 words — ready to paste into any AI coding assistant to recreate this UI with pixel-perfect fidelity. MUST cite: specific hex colors, font families and weights, estimated spacing and border-radius values, component names, layout strategy for each section, any visual treatments (shadows, gradients, glassmorphism, animations). Never use vague terms like 'dark background' — always name the value."
-}
-
-If type is "photo":
-{
-  "type": "photo",
-  "imageSubtype": "portrait | landscape | product | architecture | street | macro | abstract | food | fashion | sports | event | etc.",
-  "subject": "primary subject described concisely",
-  "composition": "framing technique, rule of thirds, depth of field, perspective, focal point",
-  "lighting": "quality (hard/soft/diffused), direction, color temperature, time of day if apparent, notable shadows or highlights",
-  "colorPalette": [{ "value": "#hex (or ~approx)", "role": "dominant | accent | shadow | highlight | midtone" }],
-  "mood": "emotional tone or atmosphere of the image",
-  "technicalStyle": "estimated camera style, focal length feel, film grain, HDR, bokeh, any notable photographic technique",
-  "reconstructionPrompt": "A detailed prompt for an AI image generator (Midjourney / DALL-E / Stable Diffusion / Flux) to recreate this photo. 150-200 words. Include: subject, composition, lighting quality and direction, color palette, mood, photographic style, camera/lens characteristics, any stylistic treatments. Write it as a direct generation prompt, not a description."
-}
-
-If type is "illustration", "diagram", or "mixed":
-{
-  "type": "illustration" | "diagram" | "mixed",
-  "imageSubtype": "vector art | watercolor | sketch | pixel art | 3D render | technical diagram | flowchart | infographic | wireframe | icon set | etc.",
-  "subject": "what is depicted",
-  "artStyle": "detailed description of the artistic style — medium, rendering technique, influences",
-  "colorPalette": [{ "value": "#hex (or ~approx)", "role": "primary | secondary | accent | background | neutral" }],
-  "composition": "how visual elements are arranged and weighted",
-  "technicalDetails": "any relevant technical observations (stroke weight, grid alignment, perspective type, etc.)",
-  "reconstructionPrompt": "A detailed prompt to recreate this image. 150-200 words. Specify the artistic medium, style references, exact color roles, composition details, and any distinctive visual characteristics that make this image unique."
-}
-
-Rules:
-- Classify before generating — never skip Step 1
-- Use ~approx suffix on color values you're estimating rather than reading directly
-- reconstructionPrompt must be self-contained: pasting it alone into any AI tool should produce a close match
-- For UI: include the IMPLEMENTATION_BRAIN stack (React 18+, Tailwind, shadcn/ui, TypeScript) at the end of reconstructionPrompt`,
-
   build_prompt: `You are a senior frontend engineer. Analyze this UI screenshot and generate a precise implementation brief. Return ONLY valid JSON, no markdown fences.
 Required format:
 {
@@ -1527,70 +1466,6 @@ Required format:
   ]
 }
 Assume viewport 1440px wide. Estimate all coordinates and sizes from visual proportions in the image.`,
-
-  accessibility: `You are a certified WCAG 2.1 accessibility expert and inclusive design engineer. Perform a comprehensive accessibility audit of this UI screenshot. Return ONLY valid JSON, no markdown fences.
-
-Required format:
-{
-  "overallScore": 0-100,
-  "wcagLevel": "AAA|AA|A|Fails",
-  "summary": "2-3 sentence executive summary of the accessibility state",
-  "issues": [
-    {
-      "severity": "critical|major|minor",
-      "element": "describe the UI element visually so a developer can locate it",
-      "issue": "specific, precise accessibility problem",
-      "wcagCriteria": "criterion number and name e.g. '1.4.3 Contrast (Minimum)'",
-      "estimatedValue": "what was found e.g. 'contrast ratio ~2.1:1' or 'no alt text' or 'not keyboard reachable'",
-      "requiredValue": "what WCAG requires e.g. 'contrast ratio 4.5:1 for body text' or 'alt attribute required'",
-      "fix": "specific, actionable developer fix — cite the CSS property, HTML attribute, or ARIA role needed"
-    }
-  ],
-  "positives": ["specific accessibility strength observed in the UI"],
-  "markdownReport": "SEE INSTRUCTIONS BELOW — full markdown audit report as a single string"
-}
-
-The markdownReport field must contain a complete, well-structured markdown document. Use this exact structure:
-
-# Accessibility Audit Report
-
-**WCAG Level:** [level]  |  **Score:** [score]/100
-
-## Executive Summary
-[2-3 sentence overview. State the most critical problem first, then overall impression.]
-
-## Critical Issues
-> Failures that violate WCAG 2.1 AA — must fix before launch
-
-| Element | Issue | WCAG Criterion | Found | Required |
-|---------|-------|----------------|-------|----------|
-[One row per critical issue. If none, write "None identified."]
-
-## Major Issues
-> WCAG AA borderline / AAA failures / significant UX barriers
-
-| Element | Issue | WCAG Criterion | Fix |
-|---------|-------|----------------|-----|
-[One row per major issue. If none, write "None identified."]
-
-## Minor Issues & Best Practices
-[Bulleted list of minor issues and best-practice recommendations]
-
-## What's Working Well
-[Bulleted list of accessibility strengths. Always find at least 2-3 positives.]
-
-## Priority Fixes
-[The 3 most impactful fixes, each with: the exact HTML attribute, CSS value, or ARIA role to add/change. Format as numbered list with inline code.]
-
----
-*Generated by Subsrf AI Accessibility Engine — WCAG 2.1 Reference*
-
-Severity definitions:
-- critical = fails WCAG 2.1 AA (must fix)
-- major = fails WCAG 2.1 AAA or causes significant barriers (should fix)
-- minor = best practice or enhancement (nice to have)
-
-Contrast ratios: estimate visually — text <18pt requires 4.5:1 (AA), text ≥18pt or bold ≥14pt requires 3:1 (AA), UI components and focus indicators require 3:1 (AA). Mark all estimates with ~approx.`
 };
 
 app.post('/api/ai/vision', async (req, res) => {

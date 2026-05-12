@@ -152,13 +152,13 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Screenshot Capture</td>
-                  <td className="p-md text-center text-white-muted">—</td>
+                  <td className="p-md text-center text-white-muted text-xs">Watermarked</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
                   <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Full Page Capture</td>
-                  <td className="p-md text-center text-white-muted">—</td>
+                  <td className="p-md text-center text-white-muted text-xs">Watermarked</td>
                   <td className="p-md text-center text-white-secondary bg-white-border/5">5 / day</td>
                   <td className="p-md text-center text-neon">Unlimited</td>
                 </tr>
@@ -184,12 +184,6 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Build Prompt Generation</td>
-                  <td className="p-md text-center text-white-muted">—</td>
-                  <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
-                </tr>
-                <tr>
-                  <td className="p-md text-white-secondary">WCAG Accessibility Audit</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
                   <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
@@ -222,7 +216,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
             <div className="space-y-lg">
               <div>
                 <h4 className="font-mono-data text-white-primary mb-sm">What are credits used for?</h4>
-                <p className="text-white-secondary font-body text-body">Credits are required for AI-powered operations like generating implementation briefs, semantic UI descriptions, and WCAG audits. Core functions like capturing, DOM export, and Figma syncing are credit-free.</p>
+                <p className="text-white-secondary font-body text-body">Credits are required for AI-powered operations like generating implementation briefs and smart prompts. Core functions like capturing, DOM export, and Figma syncing are credit-free.</p>
               </div>
               <div>
                 <h4 className="font-mono-data text-white-primary mb-sm">Why do I need a Figma Token?</h4>

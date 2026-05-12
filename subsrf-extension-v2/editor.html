@@ -483,8 +483,8 @@
       <!-- AI Analysis panel -->
       <div id="panel-analysis">
 
-        <!-- Mode action cards -->
-        <button class="analysis-mode-btn active" data-mode="build_prompt">
+        <!-- Mode card — single mode, acts as description -->
+        <div class="analysis-mode-btn active" data-mode="build_prompt">
           <div class="mode-card-header">
             <span class="mode-card-name">
               <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">code_blocks</span>
@@ -492,30 +492,8 @@
             </span>
             <span class="mode-card-cr">1 CR</span>
           </div>
-          <p class="mode-card-desc">Generate a UI component prompt based on the capture.</p>
-        </button>
-
-        <button class="analysis-mode-btn" data-mode="describe">
-          <div class="mode-card-header">
-            <span class="mode-card-name">
-              <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">description</span>
-              Describe UI
-            </span>
-            <span class="mode-card-cr">1 CR</span>
-          </div>
-          <p class="mode-card-desc">Extract design tokens and component structure.</p>
-        </button>
-
-        <button class="analysis-mode-btn" data-mode="accessibility">
-          <div class="mode-card-header">
-            <span class="mode-card-name">
-              <span class="material-symbols-outlined" style="font-size:18px; color:var(--neon);">accessibility_new</span>
-              A11y Audit
-            </span>
-            <span class="mode-card-cr">1 CR</span>
-          </div>
-          <p class="mode-card-desc">Analyze contrast ratios and semantic structure.</p>
-        </button>
+          <p class="mode-card-desc">Analyzes the capture and generates a pixel-perfect implementation brief — design tokens, component architecture, and a prompt ready to paste into any AI coding tool.</p>
+        </div>
 
         <!-- Analyze button -->
         <button class="btn-analyze" id="btn-analyze">Analyze (1 credit)</button>
