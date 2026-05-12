@@ -445,9 +445,8 @@
 
       </div>
 
-      <div class="tab-footer" style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn-primary" id="aiImportBtn" disabled>AI Import (2 credits)</button>
-        <button class="btn-secondary" id="syncBtn" disabled>Quick Sync</button>
+      <div class="tab-footer">
+        <button class="btn-primary" id="syncBtn" disabled>Sync to Figma</button>
       </div>
     </div>
 
@@ -539,7 +538,6 @@
 
     let currentSelNodes = [];
     let isComposing = false;
-    let isImporting = false;
 
     // SVG snippets for dynamic icon injection
     const ICO = {
@@ -635,9 +633,7 @@
       const tier = data.tier || 'free';
       const isPaid = tier === 'starter' || tier === 'pro';
       const elements = data.elements || [];
-      const credits = getCredits();
       const syncBtn = document.getElementById('syncBtn');
-      const aiImportBtn = document.getElementById('aiImportBtn');
 
       if (isPaid && elements.length > 0) {
         document.getElementById('extDot').className = 'dot on';
@@ -645,32 +641,16 @@
         document.getElementById('extStatus').textContent = elements.length + ' elements ready';
         document.getElementById('extCard').classList.add('active');
 
-        // Quick Sync button
-        syncBtn.disabled = isImporting;
-        syncBtn.textContent = 'Quick Sync (' + elements.length + ')';
+        syncBtn.disabled = false;
+        syncBtn.textContent = 'Sync to Figma (' + elements.length + ')';
         syncBtn.classList.remove('locked');
         syncBtn.onclick = function() {
           parent.postMessage({ pluginMessage: {
             type: 'IMPORT_ELEMENTS', elements: elements, context: data.page || {}, tier: tier
           } }, '*');
-          addLog('Quick Synced ' + elements.length + ' elements', 'ok');
+          addLog('Synced ' + elements.length + ' elements', 'ok');
           syncBtn.disabled = true;
         };
-
-        // AI Import button
-        aiImportBtn.classList.remove('locked', 'loading');
-        if (isImporting) {
-          aiImportBtn.disabled = true;
-          aiImportBtn.classList.add('loading');
-          aiImportBtn.textContent = 'Generating…';
-        } else if (credits < 2) {
-          aiImportBtn.disabled = true;
-          aiImportBtn.textContent = 'AI Import (no credits)';
-        } else {
-          aiImportBtn.disabled = false;
-          aiImportBtn.textContent = 'AI Import (2 credits)';
-          aiImportBtn.onclick = () => runAiImport();
-        }
 
         const syncId = (elements[0]?.rect?.top || 0) + '-' + elements.length;
         if (syncId !== lastProcessedSyncId) {
@@ -687,11 +667,6 @@
         syncBtn.textContent = '⚡ Upgrade to Sync';
         syncBtn.classList.add('locked');
         syncBtn.onclick = function() { window.open(BRIDGE + '/#pricing', '_blank'); };
-
-        aiImportBtn.disabled = false;
-        aiImportBtn.classList.add('locked');
-        aiImportBtn.textContent = '⚡ Upgrade for AI Import';
-        aiImportBtn.onclick = function() { window.open(BRIDGE + '/#pricing', '_blank'); };
       } else {
         document.getElementById('extDot').className = 'dot warn';
         document.getElementById('extStatus').className = 'card-status warn';
@@ -699,65 +674,9 @@
         document.getElementById('extCard').classList.remove('active');
 
         syncBtn.disabled = true;
-        syncBtn.textContent = 'Quick Sync';
+        syncBtn.textContent = 'Sync to Figma';
         syncBtn.classList.remove('locked');
         syncBtn.onclick = null;
-
-        aiImportBtn.disabled = true;
-        aiImportBtn.classList.remove('locked', 'loading');
-        aiImportBtn.textContent = 'AI Import (2 credits)';
-        aiImportBtn.onclick = null;
-      }
-    }
-
-    async function runAiImport() {
-      if (isImporting) return;
-      isImporting = true;
-      if (lastData) updateSyncTab(lastData);
-
-      addLog('AI Import: generating Figma code…', 'ai');
-
-      try {
-        // The server reads the screenshot from its own memory (pushed there by the
-        // Chrome extension). We only send the lightweight elements + context.
-        const elements = lastData?.elements || [];
-        const context = lastData?.page || {};
-
-        const headers = { 'Content-Type': 'application/json' };
-        if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
-
-        const res = await fetch(BRIDGE + '/api/ai/figma-import', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ elements, context })
-        });
-
-        if (res.status === 402) {
-          updateCredits(0, getTier());
-          throw new Error('No credits remaining');
-        }
-        if (res.status === 403) { throw new Error('Upgrade required'); }
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e.error || `Server error ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (typeof data.balance === 'number') {
-          updateCredits(data.balance, getTier());
-          if (session) { session.credits = data.balance; storageSet('subsrf_session', session); }
-        }
-
-        if (!data.code) throw new Error('No code returned from AI');
-
-        parent.postMessage({ pluginMessage: { type: 'EVAL', code: data.code } }, '*');
-        addLog('AI Import: executed on canvas', 'ai');
-
-      } catch (e) {
-        addLog('AI Import error: ' + e.message, 'err');
-      } finally {
-        isImporting = false;
-        if (lastData) updateSyncTab(lastData);
       }
     }
 
