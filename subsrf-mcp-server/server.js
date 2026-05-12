@@ -1557,6 +1557,194 @@ app.post('/api/ai/vision', async (req, res) => {
   }
 });
 
+const FIGMA_IMPORT_SYSTEM_PROMPT = `You are a Figma Plugin API expert. Analyze the provided UI screenshot and element DOM data, then write complete JavaScript that recreates the UI as native Figma frames.
+
+OUTPUT RULES:
+- Output ONLY valid JavaScript. No markdown fences, no explanation text, nothing else.
+- The code runs inside: (async () => { YOUR_CODE_HERE })() with access to the \`figma\` global.
+- Every variable must be declared with const or let.
+- End with: figma.viewport.scrollAndZoomIntoView([mainFrame]); figma.notify("✓ Imported");
+
+COLORS — CRITICAL:
+- ALL colors MUST be normalized 0–1 floats: { r: 0.2, g: 0.4, b: 0.8, a: 1.0 }
+- Convert hex #RRGGBB: r = parseInt(hex.slice(1,3),16)/255, etc.
+- NEVER use integer 0–255 values in color objects.
+
+FONTS — CRITICAL:
+- Load every font BEFORE creating text: await figma.loadFontAsync({ family: "Inter", style: "Regular" });
+- Common styles: "Regular", "Medium", "SemiBold", "Bold", "ExtraBold"
+- If the original font isn't available, fall back to Inter.
+
+FRAME CREATION:
+const frame = figma.createFrame();
+frame.resize(width, height);
+frame.x = x; frame.y = y;
+frame.fills = [{ type: "SOLID", color: { r, g, b } }];  // [] for transparent
+frame.cornerRadius = 8;
+frame.strokeWeight = 1; frame.strokes = [{ type: "SOLID", color: { r, g, b } }];
+frame.effects = [{ type: "DROP_SHADOW", color: { r, g, b, a: 0.15 }, offset: { x: 0, y: 4 }, radius: 12, spread: 0, visible: true, blendMode: "NORMAL" }];
+frame.clipsContent = true;
+
+AUTO LAYOUT (use for every row/column):
+frame.layoutMode = "HORIZONTAL";  // or "VERTICAL"
+frame.primaryAxisAlignItems = "MIN";  // "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN"
+frame.counterAxisAlignItems = "MIN";  // "MIN" | "CENTER" | "MAX"
+frame.itemSpacing = 12;
+frame.paddingTop = 16; frame.paddingBottom = 16;
+frame.paddingLeft = 20; frame.paddingRight = 20;
+frame.primaryAxisSizingMode = "AUTO";  // or "FIXED"
+frame.counterAxisSizingMode = "AUTO";  // or "FIXED"
+
+TEXT CREATION:
+const text = figma.createText();
+await figma.loadFontAsync({ family: "Inter", style: "Bold" });
+text.fontName = { family: "Inter", style: "Bold" };
+text.characters = "Hello World";
+text.fontSize = 24;
+text.fills = [{ type: "SOLID", color: { r, g, b } }];
+text.textAlignHorizontal = "LEFT";  // "LEFT" | "CENTER" | "RIGHT"
+text.resize(width, height);  // only if you want fixed dimensions
+
+NESTING:
+parentFrame.appendChild(childFrame);
+figma.currentPage.appendChild(mainFrame);
+
+APPROACH:
+1. Read the screenshot for visual layout, spacing, and hierarchy.
+2. Use the DOM element data for exact dimensions (rect), colors (styles.backgroundColor, styles.color), and typography (styles.fontSize, styles.fontFamily, styles.fontWeight).
+3. Build a main container frame sized to the captured area.
+4. Recreate each major section as a child frame with Auto Layout where content flows horizontally or vertically.
+5. Render text elements with correct colors and sizes.
+6. Apply border-radius, shadows, and borders from the computed styles.
+7. Keep total node count reasonable (max ~60 nodes) — group minor decorative elements.`;
+
+app.post('/api/ai/figma-import', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const isPaid = auth.tier === 'starter' || auth.tier === 'pro';
+  if (!isPaid) return res.status(403).json({ error: 'AI Import requires a paid plan' });
+  if (auth.credits < 2) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
+
+  let { image, mimeType = 'image/jpeg', elements = [], context = {} } = req.body;
+  // Strip data URL prefix if present (browser sends data:image/jpeg;base64,<data>)
+  if (image && image.startsWith('data:')) {
+    const commaIdx = image.indexOf(',');
+    const header = image.slice(0, commaIdx);
+    mimeType = header.split(':')[1]?.split(';')[0] || mimeType;
+    image = image.slice(commaIdx + 1);
+  }
+
+  // Deduct 2 credits before the AI call — refund on failure
+  let newBalance;
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: 2 });
+      if (error) throw new Error(error.message);
+      newBalance = data;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+      const token = req.headers.authorization?.slice(7);
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/deduct_credits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: auth.user.id, amount: 2 })
+      });
+      if (!r.ok) throw new Error(`Deduct RPC failed: ${r.status}`);
+      newBalance = await r.json();
+    }
+  } catch (e) {
+    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
+    return res.status(500).json({ error: e.message });
+  }
+
+  const elementSummary = elements.slice(0, 40).map(el => ({
+    tag: el.tagName,
+    text: el.text?.slice(0, 80) || '',
+    rect: el.rect,
+    styles: {
+      backgroundColor: el.styles?.backgroundColor,
+      color: el.styles?.color,
+      fontSize: el.styles?.fontSize,
+      fontFamily: el.styles?.fontFamily,
+      fontWeight: el.styles?.fontWeight,
+      borderRadius: el.styles?.borderRadius,
+      boxShadow: el.styles?.boxShadow,
+      padding: el.styles?.padding,
+      display: el.styles?.display,
+      flexDirection: el.styles?.flexDirection,
+    }
+  }));
+
+  const userText = `Page URL: ${context.url || 'unknown'}
+Page title: ${context.title || 'unknown'}
+Element count: ${elements.length}
+DOM elements (first 40):
+${JSON.stringify(elementSummary, null, 1)}
+
+Generate Figma Plugin API JavaScript to recreate this UI based on the screenshot and the element data above.`;
+
+  try {
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 55000);
+    let aiRes;
+    try {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        signal: abortCtrl.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: FIGMA_IMPORT_SYSTEM_PROMPT }] },
+          contents: [{ role: 'user', parts: image
+            ? [{ inline_data: { mime_type: mimeType, data: image } }, { text: userText }]
+            : [{ text: 'No screenshot available — use DOM data only.\n\n' + userText }]
+          }],
+          generationConfig: { maxOutputTokens: 8192 }
+        })
+      });
+    } finally {
+      clearTimeout(abortTimer);
+    }
+
+    if (!aiRes.ok) {
+      const errData = await aiRes.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Gemini error ${aiRes.status}`);
+    }
+
+    const apiResult = await aiRes.json();
+    let code = apiResult.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!code) throw new Error('AI returned empty response');
+
+    // Strip any markdown code fences Gemini may add despite instructions
+    code = code.replace(/^```(?:javascript|js)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
+    console.error(`[Subsrf AI Import] Generated ${code.length} chars for ${auth.user.email}`);
+    res.json({ ok: true, code, balance: newBalance });
+
+  } catch (e) {
+    // Refund both credits on failure
+    try {
+      if (supabase) {
+        await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 2 });
+      } else {
+        const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+        const token = req.headers.authorization?.slice(7);
+        await fetch(`${supabaseUrl}/rest/v1/rpc/refund_credits`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: auth.user.id, amount: 2 })
+        });
+      }
+    } catch (_) {}
+    const msg = e.message?.includes('aborted') ? 'Request timed out — please try again' : e.message;
+    console.error(`[Subsrf AI Import] Error for ${auth.user.email}: ${e.message}`);
+    res.status(500).json({ error: msg });
+  }
+});
+
 app.get("/api/state", async (req, res) => {
   let figmaRestAvailable = isFigmaRestAvailable();
   let userCredits = null;

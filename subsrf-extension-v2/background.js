@@ -320,17 +320,17 @@ async function processQueue() {
     await new Promise(r => setTimeout(r, wait));
   }
 
-  chrome.tabs.captureVisibleTab(null, { format: 'png' }, (dataUrl) => {
+  chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 }, (dataUrl) => {
     lastCaptureTime = Date.now();
     isCapturing = false;
-    
+
     if (chrome.runtime.lastError) {
       console.error('[Subsrf Background] Capture Error:', chrome.runtime.lastError.message);
       callback(null);
     } else {
       callback(dataUrl);
     }
-    
+
     // Process next in line
     setTimeout(processQueue, 100);
   });
@@ -442,7 +442,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     case 'ELEMENTS_UPDATE': {
       lastElements = msg.elements || [];
       lastPrompt = msg.prompt || "";
-      lastScreenshot = msg.screenshot || lastScreenshot;
       lastContext = {
         url: sender.tab?.url,
         title: sender.tab?.title,
@@ -459,7 +458,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // Persist so the popup and prompt page can read current state when they open
       chrome.storage.local.set({ selectedElements: lastElements, lastPageContext: lastContext });
 
-      notifyBridge();
+      if (msg.screenshot) {
+        // Explicit screenshot provided (Screenshot/Full Page Capture) — use it directly
+        lastScreenshot = msg.screenshot;
+        notifyBridge();
+      } else {
+        // Auto-capture the visible viewport so AI Import works without a separate
+        // screenshot step — selecting elements is the only action required
+        throttleCapture((dataUrl) => {
+          if (dataUrl) lastScreenshot = dataUrl;
+          notifyBridge();
+        });
+      }
 
       // Broadcast to sidebar/popup
       chrome.runtime.sendMessage(msg).catch(() => {});

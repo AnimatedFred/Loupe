@@ -445,8 +445,9 @@
 
       </div>
 
-      <div class="tab-footer">
-        <button class="btn-primary" id="syncBtn" disabled>Sync Selection to Figma</button>
+      <div class="tab-footer" style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn-primary" id="aiImportBtn" disabled>AI Import (2 credits)</button>
+        <button class="btn-secondary" id="syncBtn" disabled>Quick Sync</button>
       </div>
     </div>
 
@@ -538,6 +539,7 @@
 
     let currentSelNodes = [];
     let isComposing = false;
+    let isImporting = false;
 
     // SVG snippets for dynamic icon injection
     const ICO = {
@@ -621,8 +623,7 @@
         now.getHours().toString().padStart(2, '0') + ':' +
         now.getMinutes().toString().padStart(2, '0') + ':' +
         now.getSeconds().toString().padStart(2, '0') + ']';
-      const isHighlight = type === 'ai' || type === 'ok';
-      const color = isHighlight ? 'var(--neon)' : 'var(--t2)';
+      const color = (type === 'ai' || type === 'ok') ? 'var(--neon)' : type === 'err' ? 'var(--err)' : 'var(--t2)';
       row.innerHTML = '<span class="feed-time">' + t + '</span><span class="feed-msg" style="color:' + color + '">' + msg + '</span>';
       list.appendChild(row);
       list.scrollTop = list.scrollHeight;
@@ -634,23 +635,43 @@
       const tier = data.tier || 'free';
       const isPaid = tier === 'starter' || tier === 'pro';
       const elements = data.elements || [];
+      const credits = getCredits();
       const syncBtn = document.getElementById('syncBtn');
+      const aiImportBtn = document.getElementById('aiImportBtn');
 
       if (isPaid && elements.length > 0) {
         document.getElementById('extDot').className = 'dot on';
         document.getElementById('extStatus').className = 'card-status ok';
         document.getElementById('extStatus').textContent = elements.length + ' elements ready';
         document.getElementById('extCard').classList.add('active');
-        syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync ' + elements.length + ' elements to Figma';
+
+        // Quick Sync button
+        syncBtn.disabled = isImporting;
+        syncBtn.textContent = 'Quick Sync (' + elements.length + ')';
         syncBtn.classList.remove('locked');
         syncBtn.onclick = function() {
           parent.postMessage({ pluginMessage: {
             type: 'IMPORT_ELEMENTS', elements: elements, context: data.page || {}, tier: tier
           } }, '*');
-          addLog('Synced ' + elements.length + ' elements to canvas', 'ok');
+          addLog('Quick Synced ' + elements.length + ' elements', 'ok');
           syncBtn.disabled = true;
         };
+
+        // AI Import button
+        aiImportBtn.classList.remove('locked', 'loading');
+        if (isImporting) {
+          aiImportBtn.disabled = true;
+          aiImportBtn.classList.add('loading');
+          aiImportBtn.textContent = 'Generating…';
+        } else if (credits < 2) {
+          aiImportBtn.disabled = true;
+          aiImportBtn.textContent = 'AI Import (no credits)';
+        } else {
+          aiImportBtn.disabled = false;
+          aiImportBtn.textContent = 'AI Import (2 credits)';
+          aiImportBtn.onclick = () => runAiImport(lastData?.elements || [], lastData?.screenshot || null, lastData?.page || {});
+        }
+
         const syncId = (elements[0]?.rect?.top || 0) + '-' + elements.length;
         if (syncId !== lastProcessedSyncId) {
           lastProcessedSyncId = syncId;
@@ -661,19 +682,101 @@
         document.getElementById('extStatus').className = 'card-status warn';
         document.getElementById('extStatus').textContent = 'Upgrade to sync elements';
         document.getElementById('extCard').classList.remove('active');
+
         syncBtn.disabled = false;
         syncBtn.textContent = '⚡ Upgrade to Sync';
         syncBtn.classList.add('locked');
         syncBtn.onclick = function() { window.open(BRIDGE + '/#pricing', '_blank'); };
+
+        aiImportBtn.disabled = false;
+        aiImportBtn.classList.add('locked');
+        aiImportBtn.textContent = '⚡ Upgrade for AI Import';
+        aiImportBtn.onclick = function() { window.open(BRIDGE + '/#pricing', '_blank'); };
       } else {
         document.getElementById('extDot').className = 'dot warn';
         document.getElementById('extStatus').className = 'card-status warn';
         document.getElementById('extStatus').textContent = 'Waiting for selection...';
         document.getElementById('extCard').classList.remove('active');
+
         syncBtn.disabled = true;
-        syncBtn.textContent = 'Sync Selection to Figma';
+        syncBtn.textContent = 'Quick Sync';
         syncBtn.classList.remove('locked');
         syncBtn.onclick = null;
+
+        aiImportBtn.disabled = true;
+        aiImportBtn.classList.remove('locked', 'loading');
+        aiImportBtn.textContent = 'AI Import (2 credits)';
+        aiImportBtn.onclick = null;
+      }
+    }
+
+    async function runAiImport(elements, screenshot, context) {
+      if (isImporting) return;
+      isImporting = true;
+      if (lastData) updateSyncTab(lastData);
+
+      addLog('AI Import: generating Figma code…', 'ai');
+
+      try {
+        // Always re-fetch the latest state to get the most current screenshot,
+        // bypassing the 2-second poll cache. Retry once after a short wait in case
+        // the auto-capture is still in flight from background.js.
+        let imageData = screenshot || null;
+        for (let attempt = 0; attempt < 2 && !imageData; attempt++) {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 1200));
+          try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
+            const freshRes = await fetch(BRIDGE + '/api/state?source=figma', { headers });
+            if (freshRes.ok) {
+              const freshData = await freshRes.json();
+              lastData = freshData;
+              imageData = freshData.screenshot || null;
+              elements = freshData.elements || elements;
+              context = freshData.page || context;
+            }
+          } catch (_) {}
+        }
+
+        if (!imageData) {
+          addLog('No screenshot — running DOM-only import', 'ai');
+        }
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
+
+        const res = await fetch(BRIDGE + '/api/ai/figma-import', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ image: imageData, elements, context })
+        });
+
+        if (res.status === 402) {
+          updateCredits(0, getTier());
+          throw new Error('No credits remaining');
+        }
+        if (res.status === 403) { throw new Error('Upgrade required'); }
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          throw new Error(e.error || `Server error ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (typeof data.balance === 'number') {
+          updateCredits(data.balance, getTier());
+          if (session) { session.credits = data.balance; storageSet('subsrf_session', session); }
+        }
+
+        if (!data.code) throw new Error('No code returned from AI');
+
+        parent.postMessage({ pluginMessage: { type: 'EVAL', code: data.code } }, '*');
+        addLog('AI Import: executed on canvas', 'ai');
+
+      } catch (e) {
+        addLog('AI Import error: ' + e.message, 'err');
+      } finally {
+        isImporting = false;
+        if (lastData) updateSyncTab(lastData);
       }
     }
 
