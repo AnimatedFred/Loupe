@@ -99,23 +99,22 @@
 /* Floating Selection Toolbar */
 .uipb-toolbar {
   position: fixed !important;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  background: #0C0C12 !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 16px !important;
-  padding: 8px !important;
+  bottom: 32px !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(20px) !important;
+  background: #111118 !important;
+  border: 1px solid rgba(242, 242, 244, 0.12) !important;
+  border-radius: 9999px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
   z-index: 2147483647 !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 255, 135, 0.08) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75) !important;
   opacity: 0;
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden !important;
+  flex-wrap: nowrap !important;
+  font-family: 'Manrope', sans-serif !important;
 }
 
 .uipb-toolbar.show {
@@ -124,67 +123,177 @@
   pointer-events: auto !important;
 }
 
-.uipb-toolbar-btn {
-  background: transparent !important;
-  color: rgba(242, 242, 244, 0.55) !important;
-  border: none !important;
-  padding: 10px 16px !important;
-  border-radius: 10px !important;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
+.uipb-toolbar-counter {
   display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
   align-items: center !important;
-  gap: 8px !important;
-  transition: all 0.2s ease !important;
-  white-space: nowrap !important;
+  padding: 8px 32px !important;
+  border-right: 1px solid rgba(242, 242, 244, 0.12) !important;
+  background: #0C0C12 !important;
+  height: 100% !important;
+  min-width: 140px !important;
+  align-self: stretch !important;
 }
 
-.uipb-toolbar-btn:hover {
-  background: rgba(242, 242, 244, 0.06) !important;
+.uipb-toolbar-count {
+  font-family: 'Azeret Mono', monospace !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #00FF87 !important;
+  line-height: 1.8 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 135, 0.4) !important;
+}
+
+.uipb-toolbar-label {
+  font-family: 'Azeret Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  color: rgba(242, 242, 244, 0.55) !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  line-height: 1 !important;
+  margin-top: 4px !important;
+}
+
+.uipb-toolbar-group {
+  display: flex !important;
+  align-items: center !important;
+  padding: 8px 16px !important;
+  gap: 8px !important;
+  border-right: 1px solid rgba(242, 242, 244, 0.12) !important;
+  flex-wrap: nowrap !important;
+  height: 100% !important;
+}
+
+.uipb-toolbar-actions {
+  border-right: none !important;
+  gap: 16px !important;
+}
+
+.uipb-toolbar-tool {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 8px 16px !important;
+  border-radius: 9999px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: rgba(242, 242, 244, 0.55) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.uipb-toolbar-tool:hover {
+  background: #202028 !important;
   color: #F2F2F4 !important;
 }
 
-.uipb-toolbar-btn.primary {
+.uipb-toolbar-tool.active {
   background: #00FF87 !important;
   color: #050508 !important;
+  box-shadow: 0 0 8px rgba(0, 255, 135, 0.12) !important;
 }
 
-.uipb-toolbar-btn.primary:hover {
-  background: #00e87a !important;
-  box-shadow: 0 4px 12px rgba(0, 255, 135, 0.25) !important;
+.uipb-toolbar-tool.active:active {
+  transform: scale(0.95) !important;
 }
 
-.uipb-toolbar-btn.secondary {
+.uipb-icon {
+  width: 18px !important;
+  height: 18px !important;
+  fill: currentColor !important;
+  transition: color 0.2s ease !important;
+}
+
+.uipb-text {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+}
+
+.uipb-toolbar-tool.active .uipb-text {
+  font-weight: 500 !important;
+}
+
+.uipb-toolbar-action {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 8px !important;
+  color: rgba(242, 242, 244, 0.55) !important;
   background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease !important;
+  white-space: nowrap !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+.uipb-toolbar-action:hover {
+  color: #FF4D4D !important;
+}
+
+.uipb-toolbar-action .uipb-icon {
+  opacity: 0.7 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.uipb-toolbar-action:hover .uipb-icon {
+  opacity: 1 !important;
+}
+
+.uipb-primary-action {
   color: #00FF87 !important;
-  border: 1px solid rgba(0, 255, 135, 0.35) !important;
 }
 
-.uipb-toolbar-btn.secondary:hover {
-  background: rgba(0, 255, 135, 0.08) !important;
-  border-color: rgba(0, 255, 135, 0.6) !important;
+.uipb-primary-action:hover {
+  color: #60ff98 !important;
 }
 
-.uipb-toolbar-btn.secondary:disabled {
-  color: rgba(0, 255, 135, 0.3) !important;
-  border-color: rgba(0, 255, 135, 0.12) !important;
+.uipb-toolbar-action:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
 }
 
-.uipb-toolbar-divider {
+.uipb-toolbar-sep {
   width: 1px !important;
-  height: 20px !important;
-  background: rgba(242, 242, 244, 0.08) !important;
+  height: 24px !important;
+  background: rgba(242, 242, 244, 0.12) !important;
   margin: 0 4px !important;
 }
 
-.uipb-toolbar-info {
+.uipb-toolbar-close {
+  all: unset !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px !important;
   color: rgba(242, 242, 244, 0.55) !important;
-  font-family: 'Azeret Mono', monospace !important;
-  font-size: 12px !important;
-  margin-left: 8px !important;
-  margin-right: 12px !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin-left: 4px !important;
+  margin-right: 8px !important;
+}
+
+.uipb-toolbar-close:hover {
+  color: #F2F2F4 !important;
+  background: #202028 !important;
+  border-color: rgba(242, 242, 244, 0.12) !important;
+}
+
+.uipb-toolbar-close .uipb-icon {
+  width: 20px !important;
+  height: 20px !important;
 }
 
 /* Prompt Preview Modal */

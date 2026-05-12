@@ -31,40 +31,93 @@
     const s = document.createElement('style');
     s.id = 'uipb-styles';
     s.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+      /* ── Toolbar shell ── */
       .uipb-toolbar {
-        position: fixed !important;
-        bottom: 32px; left: 50%;
-        transform: translateX(-50%) translateY(20px);
-        background: #111118 !important;
-        border: 1px solid rgba(242,242,244,0.08) !important;
-        padding: 4px !important;
-        display: flex !important; align-items: center !important; gap: 2px !important;
-        z-index: 2147483647 !important;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.6) !important;
-        opacity: 0; pointer-events: none;
-        transition: opacity 0.25s ease, transform 0.25s ease !important;
+        position: fixed !important; bottom: 32px !important; left: 50% !important;
+        transform: translateX(-50%) translateY(16px) !important;
+        display: flex !important; align-items: stretch !important; flex-wrap: nowrap !important;
+        background: #111118 !important; border: 1px solid rgba(242,242,244,0.12) !important;
+        border-radius: 12px !important; overflow: hidden !important;
+        box-shadow: 0 24px 60px rgba(0,0,0,0.7) !important;
+        z-index: 2147483647 !important; opacity: 0 !important; pointer-events: none !important;
+        transition: opacity 0.22s ease, transform 0.22s ease !important;
       }
       .uipb-toolbar.show { opacity: 1 !important; transform: translateX(-50%) translateY(0) !important; pointer-events: auto !important; }
-      .uipb-toolbar-btn {
-        background: transparent !important; color: rgba(242,242,244,0.55) !important;
-        border: none !important; padding: 8px 14px !important;
-        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 12px !important;
-        font-weight: 600 !important; cursor: pointer !important;
-        display: flex !important; align-items: center !important; gap: 6px !important;
-        transition: background 0.15s, color 0.15s !important; white-space: nowrap !important;
+
+      /* ── Counter section ── */
+      .uipb-counter {
+        display: flex !important; flex-direction: column !important; justify-content: center !important;
+        padding: 8px 32px !important; min-width: 120px !important;
+        background: #0C0C12 !important; border-right: 1px solid rgba(242,242,244,0.12) !important;
       }
-      .uipb-toolbar-btn:hover { background: rgba(242,242,244,0.06) !important; color: #F2F2F4 !important; }
-      .uipb-toolbar-btn.primary { background: #00FF87 !important; color: #050508 !important; }
-      .uipb-toolbar-btn.primary:hover { opacity: 0.9 !important; }
-      .uipb-toolbar-btn.secondary { background: transparent !important; color: #00FF87 !important; border: none !important; }
-      .uipb-toolbar-btn.secondary:hover { background: rgba(0,255,135,0.08) !important; }
-      .uipb-toolbar-btn.secondary:disabled { color: rgba(0,255,135,0.3) !important; }
-      .uipb-toolbar-divider { width: 1px !important; height: 20px !important; background: rgba(242,242,244,0.08) !important; margin: 0 4px !important; flex-shrink: 0 !important; }
-      .uipb-toolbar-info { color: rgba(242,242,244,0.28) !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; margin-left: 8px !important; margin-right: 4px !important; }
+      .uipb-count {
+        font-family: 'Azeret Mono', monospace !important; font-size: 13px !important;
+        font-weight: 700 !important; line-height: 1.4 !important; color: #00FF87 !important;
+        text-shadow: 0 0 8px rgba(0,255,135,0.4) !important;
+      }
+      .uipb-count-label {
+        font-family: 'Azeret Mono', monospace !important; font-size: 10px !important;
+        letter-spacing: 2px !important; text-transform: uppercase !important;
+        color: rgba(242,242,244,0.55) !important; margin-top: 2px !important;
+      }
+
+      /* ── Tool buttons section ── */
+      .uipb-tools {
+        display: flex !important; align-items: center !important; gap: 8px !important;
+        padding: 8px 16px !important; border-right: 1px solid rgba(242,242,244,0.12) !important;
+      }
+      .uipb-tool {
+        display: flex !important; align-items: center !important; gap: 4px !important;
+        padding: 8px 16px !important; border-radius: 12px !important;
+        background: transparent !important; border: 1px solid transparent !important;
+        color: rgba(242,242,244,0.55) !important; cursor: pointer !important;
+        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 14px !important;
+        font-weight: 400 !important; white-space: nowrap !important;
+        transition: background 0.15s, color 0.15s !important;
+      }
+      .uipb-tool:hover { background: #202028 !important; color: #F2F2F4 !important; }
+      .uipb-tool.active { background: #00FF87 !important; color: #050508 !important; }
+      .uipb-tool.active:hover { background: #60ff98 !important; }
+      .uipb-icon { font-size: 18px !important; font-variation-settings: 'FILL' 0 !important; }
+      .uipb-icon-fill { font-variation-settings: 'FILL' 1 !important; }
+
+      /* ── Actions section ── */
+      .uipb-actions {
+        display: flex !important; align-items: center !important; gap: 16px !important;
+        padding: 8px 16px !important;
+      }
+      .uipb-action-btn {
+        display: flex !important; align-items: center !important; gap: 4px !important;
+        padding: 8px !important; background: transparent !important; border: none !important;
+        cursor: pointer !important; white-space: nowrap !important;
+        font-family: 'Manrope', -apple-system, sans-serif !important; font-size: 14px !important;
+        transition: color 0.15s !important;
+      }
+      .uipb-action-btn:disabled { opacity: 0.3 !important; cursor: default !important; }
+      .uipb-action-danger { color: rgba(242,242,244,0.55) !important; }
+      .uipb-action-danger:hover:not(:disabled) { color: #FF4D4D !important; }
+      .uipb-action-neon { color: #00FF87 !important; }
+      .uipb-action-neon:hover:not(:disabled) { color: #60ff98 !important; }
+      .uipb-sep { width: 1px !important; height: 24px !important; background: rgba(242,242,244,0.12) !important; flex-shrink: 0 !important; }
+      .uipb-close-btn {
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        padding: 8px !important; border-radius: 12px !important;
+        background: transparent !important; border: 1px solid transparent !important;
+        color: rgba(242,242,244,0.55) !important; cursor: pointer !important;
+        transition: background 0.15s, color 0.15s, border-color 0.15s !important;
+        margin-left: 4px !important; margin-right: 4px !important;
+      }
+      .uipb-close-btn:hover { background: #202028 !important; color: #F2F2F4 !important; border-color: rgba(242,242,244,0.12) !important; }
+
+      /* ── Selection overlays ── */
       .uipb-highlight-box { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.05) !important; pointer-events: none !important; z-index: 2147483646 !important; box-sizing: border-box !important; }
       .uipb-badge { position: absolute !important; background: #111118 !important; color: #00FF87 !important; font-family: 'Azeret Mono', monospace !important; font-size: 10px !important; font-weight: 700 !important; padding: 2px 6px !important; z-index: 2147483647 !important; pointer-events: none !important; border: 1px solid rgba(0,255,135,0.35) !important; transform: translate(-50%,-50%) !important; }
       .uipb-region-overlay { position: absolute !important; border: 1px solid #00FF87 !important; background: rgba(0,255,135,0.05) !important; pointer-events: none !important; z-index: 2147483645 !important; box-sizing: border-box !important; }
-      #uipb-toast { position: fixed; bottom: 24px; right: 24px; background: #111118; color: #F2F2F4; font-family: 'Azeret Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 10px 16px; z-index: 2147483647; opacity: 0; transform: translateY(8px); transition: all 0.25s ease; border: 1px solid rgba(242,242,244,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; }
+
+      /* ── Toast ── */
+      #uipb-toast { position: fixed; bottom: 24px; right: 24px; background: #111118; color: #F2F2F4; font-family: 'Azeret Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 10px 16px; z-index: 2147483647; opacity: 0; transform: translateY(8px); transition: all 0.25s ease; border: 1px solid rgba(242,242,244,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.5); pointer-events: none; border-radius: 8px; }
       #uipb-toast.show { opacity: 1; transform: translateY(0); }
     `;
     document.head.appendChild(s);
@@ -236,28 +289,51 @@
 
   function updateToolbar() {
     if (!toolbar) return;
+    const count = highlightedElements.length;
+    const noItems = count === 0 ? 'disabled' : '';
     toolbar.innerHTML = `
-      <div class="uipb-toolbar-info">
-        <span style="color: #00FF87; font-weight: 600;">${highlightedElements.length}</span> ELEMENTS
+      <div class="uipb-counter">
+        <span class="uipb-count">${count}</span>
+        <span class="uipb-count-label">ELEMENTS</span>
       </div>
-      <div class="uipb-toolbar-divider"></div>
-      <button class="uipb-toolbar-btn ${currentMode === 'click' ? 'primary' : ''}" id="uipb-btn-click">Smart Select</button>
-      <button class="uipb-toolbar-btn ${currentMode === 'region' ? 'primary' : ''}" id="uipb-btn-area">Region Tool</button>
-      <button class="uipb-toolbar-btn ${currentMode === 'screenshot' ? 'primary' : ''}" id="uipb-btn-screenshot">Screenshot</button>
-      <div class="uipb-toolbar-divider"></div>
-      <button class="uipb-toolbar-btn" id="uipb-clear-all" ${highlightedElements.length === 0 ? 'disabled' : ''} style="${highlightedElements.length === 0 ? 'opacity:0.35;cursor:not-allowed;' : ''}">Clear All</button>
-      <button class="uipb-toolbar-btn secondary" id="uipb-preview" ${highlightedElements.length === 0 ? 'disabled' : ''}>Show AI Prompt</button>
-      <button class="uipb-toolbar-btn secondary" id="uipb-audit" ${(highlightedElements.length === 0 || cachedTier === 'free') ? 'disabled' : ''} style="${(highlightedElements.length === 0 || cachedTier === 'free') ? 'opacity:0.35;cursor:not-allowed;' : ''}">${cachedTier === 'free' ? 'Accessibility Audit 🔒' : 'Accessibility Audit'}</button>
-      <button class="uipb-toolbar-btn" id="uipb-exit" style="color: rgba(242,242,244,0.28);">Exit</button>
+      <div class="uipb-tools">
+        <button id="uipb-btn-click" class="uipb-tool ${currentMode === 'click' ? 'active' : ''}">
+          <span class="material-symbols-outlined uipb-icon ${currentMode === 'click' ? 'uipb-icon-fill' : ''}">ads_click</span>
+          Smart Select
+        </button>
+        <button id="uipb-btn-area" class="uipb-tool ${currentMode === 'region' ? 'active' : ''}">
+          <span class="material-symbols-outlined uipb-icon ${currentMode === 'region' ? 'uipb-icon-fill' : ''}">crop</span>
+          Region Tool
+        </button>
+      </div>
+      <div class="uipb-actions">
+        <button id="uipb-clear-all" class="uipb-action-btn uipb-action-danger" ${noItems}>
+          <svg class="uipb-icon" viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+          </svg>
+          Clear All
+        </button>
+        <button id="uipb-preview" class="uipb-action-btn uipb-action-neon" ${noItems}>
+          <svg class="uipb-icon" viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+            <path d="M320-280v-80h400v80H320ZM226-424l-56-56 164-164-164-164 56-56 220 220-220 220Z"/>
+          </svg>
+          Show AI Prompt
+        </button>
+        <div class="uipb-sep"></div>
+        <button id="uipb-exit" class="uipb-close-btn" title="Exit Inspector">
+          <svg viewBox="0 -960 960 960" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor">
+            <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z"/>
+          </svg>
+        </button>
+      </div>
     `;
 
     const btnClick = toolbar.querySelector('#uipb-btn-click');
     const btnArea  = toolbar.querySelector('#uipb-btn-area');
-    const btnShot  = toolbar.querySelector('#uipb-btn-screenshot');
     const btnExit  = toolbar.querySelector('#uipb-exit');
+    
     if (btnClick) btnClick.onclick = (e) => { e.stopPropagation(); currentMode = 'click'; updateToolbar(); };
     if (btnArea)  btnArea.onclick  = (e) => { e.stopPropagation(); currentMode = 'region'; updateToolbar(); };
-    if (btnShot)  btnShot.onclick  = (e) => { e.stopPropagation(); currentMode = 'screenshot'; updateToolbar(); };
     if (btnExit)  btnExit.onclick  = (e) => { e.stopPropagation(); exitSelection(); };
 
     const clearAllBtn = toolbar.querySelector('#uipb-clear-all');
@@ -274,27 +350,6 @@
     const prevBtn = toolbar.querySelector('#uipb-preview');
     if (prevBtn && highlightedElements.length > 0) {
       prevBtn.onclick = (e) => { e.stopPropagation(); showPreviewModal(); };
-    }
-
-    const auditBtn = toolbar.querySelector('#uipb-audit');
-    if (auditBtn && highlightedElements.length > 0 && cachedTier !== 'free') {
-      auditBtn.onclick = (e) => {
-        e.stopPropagation();
-        const bbox = getSelectionBoundingBox();
-        if (!bbox) return;
-        if (toolbar) toolbar.style.opacity = '0';
-        document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
-        safeSendMessage({
-          type: 'CAPTURE_ACCESSIBILITY_AUDIT',
-          rect: bbox,
-          viewportWidth: window.innerWidth
-        });
-        setTimeout(() => {
-          if (toolbar) toolbar.style.opacity = '';
-          document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
-          showToast('Opening accessibility audit…');
-        }, 1200);
-      };
     }
   }
 
