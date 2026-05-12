@@ -1068,6 +1068,120 @@ function parseAiJson(rawText) {
   }
 }
 
+// Subsrf Compose — generates target-specific implementation prompts from
+// Figma node data. Supports Claude, Lovable, v0, Bolt, Cursor, and Raw output.
+// Costs 1 credit. Requires Starter or Pro tier.
+app.post('/api/ai/compose', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const isPaid = auth.tier === 'starter' || auth.tier === 'pro';
+  if (!isPaid) return res.status(403).json({ error: 'Compose requires a paid plan' });
+  if (auth.credits < 1) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
+
+  const { target = 'raw', nodes = [], options = {} } = req.body;
+  const validTargets = ['claude', 'lovable', 'v0', 'bolt', 'cursor', 'raw'];
+  const resolvedTarget = validTargets.includes(target) ? target : 'raw';
+
+  let newBalance;
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: 1 });
+      if (error) throw new Error(error.message);
+      newBalance = data;
+    } else {
+      const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+      const token = req.headers.authorization?.slice(7);
+      const r = await fetch(`${supabaseUrl}/rest/v1/rpc/deduct_credits`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: auth.user.id, amount: 1 })
+      });
+      if (!r.ok) throw new Error(`Deduct RPC failed: ${r.status}`);
+      newBalance = await r.json();
+    }
+  } catch (e) {
+    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
+    return res.status(500).json({ error: e.message });
+  }
+
+  const TARGET_INSTRUCTIONS = {
+    claude: `You are generating a prompt the user will paste into Claude. Write a detailed, conversational implementation prompt. Describe the component clearly — layout, colors (exact hex), typography (family, weight, size), spacing, border-radius, shadows, and hierarchy. End with a concrete instruction like "Build this as a React component with Tailwind CSS." Write in second person ("Build a card component...").`,
+    lovable: `You are generating a prompt for Lovable (a React AI app builder at lovable.dev). Write a focused component prompt optimized for Lovable's strengths: React functional components, Tailwind CSS classes, and clean state management. Include exact visual specs. Start with "Create a React component that..." and list the key visual and interaction requirements.`,
+    v0: `You are generating a prompt for v0 by Vercel (v0.dev — an AI UI generator). Write a precise, structured prompt that v0 can turn into a React + Tailwind component. Include: component name, visual description, exact color values, layout (flex/grid), spacing values, typography, interactive states if any. Keep it concise but complete. Start with the component type.`,
+    bolt: `You are generating a prompt for Bolt.new (a full-stack AI code generator). Write a prompt that covers both the visual UI and any implied interactivity or functionality. Include component structure, exact styles (colors, spacing, typography), and describe any hover states, animations, or data requirements suggested by the design. Be specific about the tech stack: React + Tailwind.`,
+    cursor: `You are generating a prompt for Cursor (an AI code editor). Write a code-centric implementation prompt. Include: suggested file/component name, exact style values to use as constants or CSS variables, component structure (which sub-components to create), props interface if TypeScript, and specific implementation notes. Format it as a direct instruction a developer pastes into Cursor chat.`,
+    raw: `You are a design specification writer. Extract and document this Figma design with precision. Produce a structured specification covering: component name and purpose, visual hierarchy, exact colors (hex), typography (family/weight/size/line-height), spacing (padding/margin/gap), border-radius, shadows, layout mode (flex/grid/absolute), and any notable visual treatments. No tool framing. Pure design spec.`
+  };
+
+  const systemPrompt = `${TARGET_INSTRUCTIONS[resolvedTarget]}
+
+Analyze the provided Figma node tree and output a single, ready-to-use prompt string. Return ONLY the prompt text — no JSON, no markdown fences, no preamble like "Here is your prompt:". Just the raw prompt the user will copy and paste.`;
+
+  const depthNote = options.depth === 'full' ? 'Include all nested child components.' : 'Focus on the top-level component and its immediate children.';
+  const variablesNote = options.includeVariables ? 'Include design variable/token names where referenced.' : '';
+
+  const userContent = `Target tool: ${resolvedTarget.toUpperCase()}
+${depthNote} ${variablesNote}
+
+Figma selection (${nodes.length} node${nodes.length !== 1 ? 's' : ''}):
+${JSON.stringify(nodes, null, 2)}`;
+
+  try {
+    const abortCtrl = new AbortController();
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 25000);
+    let aiRes;
+    try {
+      aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        signal: abortCtrl.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userContent }] }],
+          generationConfig: { maxOutputTokens: 2000 }
+        })
+      });
+    } finally {
+      clearTimeout(abortTimer);
+    }
+
+    if (!aiRes.ok) {
+      const errData = await aiRes.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Gemini error ${aiRes.status}`);
+    }
+
+    const result = await aiRes.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!rawText) throw new Error('AI returned empty response');
+
+    console.error(`[Subsrf Compose] ${resolvedTarget} prompt for ${auth.user.email} — ${rawText.length} chars`);
+    res.json({ ok: true, prompt: rawText.trim(), balance: newBalance });
+
+  } catch (e) {
+    console.error('[Subsrf Compose] Error:', e.message);
+    // Refund the credit
+    try {
+      if (supabase) {
+        await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 });
+      } else {
+        const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+        const token = req.headers.authorization?.slice(7);
+        await fetch(`${supabaseUrl}/rest/v1/rpc/refund_credits`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: auth.user.id, amount: 1 })
+        });
+      }
+    } catch (_) {}
+    const msg = e.message?.includes('aborted') ? 'Request timed out — please try again' : e.message;
+    res.status(500).json({ error: msg });
+  }
+});
+
 // Smart Prompt Engine — interprets captured DOM elements and returns
 // structured semantic JSON. The extension assembles the final prompt from that data.
 // GEMINI_API_KEY must be set in Railway env.
