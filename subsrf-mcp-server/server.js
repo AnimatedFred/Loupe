@@ -1051,6 +1051,26 @@ app.post('/api/auth/refresh', async (req, res) => {
   }
 });
 
+// Brain header prepended to all Subsrf AI outputs so the receiving AI knows exactly
+// how to implement the UI — stack, fidelity, motion, and accessibility requirements.
+const IMPLEMENTATION_BRAIN = `\
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧠  Subsrf — Frontend Implementation Brief
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Goal: Rebuild this UI with 1:1 visual fidelity using production-grade engineering.
+
+Visual Fidelity: Match every color, spacing, typography, and layout value exactly as specified in the design system below. Do NOT change the aesthetic direction — the source is the ground truth.
+
+Stack: React 18+ · Tailwind CSS · shadcn/ui (Radix UI primitives) · TypeScript
+
+Motion & Depth: Add subtle, high-quality micro-interactions that complement the existing design — staggered reveals, smooth transitions, hover states. Never add motion that conflicts with the source aesthetic.
+
+Accessibility: Use Radix UI / shadcn primitives for all interactive elements. Keyboard navigable, correct ARIA roles and labels, WCAG AA contrast on all text.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
 // Robustly parse AI-generated JSON: strip fences, remove trailing commas, extract first {...}
 function parseAiJson(rawText) {
   function sanitize(s) {
@@ -1168,7 +1188,7 @@ Output structured markdown in EXACTLY this format:
 [Technical details: tricky layout parts, responsive behavior, animation/transition specs, data/state requirements, accessibility notes]
 
 ## Build
-Build this as a React application with Tailwind CSS. Define the design tokens as CSS custom properties. [1–2 sentences calling out the most critical technical requirement based on the detected UI type — e.g. sticky header behavior, grid layout specifics, animation requirements, etc.]
+Implement with React 18+, Tailwind CSS, shadcn/ui (Radix UI primitives), and TypeScript. Define all design tokens as CSS custom properties. [1–2 sentences calling out the single most critical technical requirement for this specific UI — e.g. scroll-driven sticky header, CSS grid with named areas, staggered animation sequence, etc.]
 
 ---
 
@@ -1213,8 +1233,10 @@ ${JSON.stringify(nodes, null, 1)}`;
     // Strip markdown code fences Gemini sometimes adds despite instructions
     rawText = rawText.replace(/^```(?:markdown)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
 
-    console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${rawText.length} chars`);
-    res.json({ ok: true, prompt: rawText, balance: newBalance });
+    const finalPrompt = IMPLEMENTATION_BRAIN + rawText;
+
+    console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${finalPrompt.length} chars`);
+    res.json({ ok: true, prompt: finalPrompt, balance: newBalance });
 
   } catch (e) {
     console.error('[Subsrf Compose] Error:', e.message);
