@@ -216,7 +216,7 @@ export default function AiAnalysis({ tokens, mode, inline }) {
             fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 1,
             color: 'var(--neon)', background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
             borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
-          }}>Gemini 1.5 Flash</span>
+          }}>Gemini 2.5 Flash</span>
         </div>
         <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
           Each action costs 1 credit from your monthly allowance.
@@ -237,7 +237,7 @@ export default function AiAnalysis({ tokens, mode, inline }) {
             fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 1,
             color: 'var(--neon)', background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
             borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
-          }}>Gemini 1.5 Flash</span>
+          }}>Gemini 2.5 Flash</span>
         </div>
         <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
           Each action costs 1 credit from your monthly allowance.
