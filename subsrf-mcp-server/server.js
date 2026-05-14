@@ -1731,6 +1731,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["token"]
         },
       },
+      {
+        name: "subsrf_extract_tokens",
+        description: "Extract design tokens from any live URL. Returns colors, typography, spacing, radius, shadows, and transitions as structured data. Requires Pro tier.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            url: { type: "string", description: "Full URL to extract tokens from (e.g. https://stripe.com)" },
+            format: {
+              type: "string",
+              enum: ["css", "tailwind", "json", "style_dictionary", "figma", "ai_prompt"],
+              description: "Export format (default: json)"
+            },
+            mode: {
+              type: "string",
+              enum: ["dark", "light", "both"],
+              description: "Which color mode to extract (default: both)"
+            }
+          },
+          required: ["url"]
+        },
+      },
     ],
   };
 });
@@ -1975,6 +1996,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     } catch (e) {
       return { content: [{ type: "text", text: `Error configuring auth: ${e.message}` }] };
+    }
+  }
+
+  if (name === "subsrf_extract_tokens") {
+    const { url, format = 'json', mode = 'both' } = args;
+    const extractorUrl = process.env.TOKEN_EXTRACTION_URL || 'http://localhost:3001';
+
+    try {
+      const extractRes = await fetch(`${extractorUrl}/extract`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, mode }),
+        signal: AbortSignal.timeout(35000),
+      });
+
+      if (!extractRes.ok) {
+        const err = await extractRes.json().catch(() => ({}));
+        return { content: [{ type: 'text', text: `EXTRACTION_ERROR: ${err.error || extractRes.statusText}` }] };
+      }
+
+      const { tokens } = await extractRes.json();
+
+      if (format === 'json' || format === 'both') {
+        return { content: [{ type: 'text', text: JSON.stringify(tokens, null, 2) }] };
+      }
+
+      const transformRes = await fetch(`${extractorUrl}/transform`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens, format, mode: mode === 'both' ? 'dark' : mode }),
+      });
+
+      const transformed = await transformRes.json();
+      return { content: [{ type: 'text', text: transformed.content || JSON.stringify(tokens, null, 2) }] };
+    } catch (e) {
+      if (e.name === 'TimeoutError') {
+        return { content: [{ type: 'text', text: 'TIMEOUT: Extraction service took >35s. Try a lighter page.' }] };
+      }
+      return { content: [{ type: 'text', text: `ERROR: ${e.message}` }] };
     }
   }
 

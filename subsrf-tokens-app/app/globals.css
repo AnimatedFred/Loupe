@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --void:      #050508;
+  --deep:      #08080E;
+  --layer:     #0E0E18;
+  --surface:   #141420;
+  --lift:      #1C1C2A;
+  --border:    rgba(255,255,255,0.07);
+  --border-md: rgba(255,255,255,0.12);
+  --neon:      #00FF87;
+  --neon-dim:  rgba(0,255,135,0.12);
+  --neon-glow: rgba(0,255,135,0.06);
+  --t1:        #F2F2F4;
+  --t2:        rgba(242,242,244,0.55);
+  --t3:        rgba(242,242,244,0.28);
+  --t4:        rgba(242,242,244,0.10);
+  --display:   'Manrope', sans-serif;
+  --mono:      'Azeret Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--t1);
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,135,0.008) 2px, rgba(0,255,135,0.008) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+button { cursor: pointer; font-family: inherit; }
+a { text-decoration: none; color: inherit; }

@@ -190,14 +190,9 @@ figma.ui.onmessage = async (msg) => {
     await figma.loadFontAsync({ family: "Inter", style: "Semi Bold" });
     await figma.loadFontAsync({ family: "Inter", style: "Bold" });
 
-    // ── Main wrapper frame ───────────────────────────────────────────────────
-    var mainFrame = figma.createFrame();
-    mainFrame.name = 'Subsrf: ' + (context.title || 'UI Capture') + ' (' + new Date().toLocaleTimeString() + ')';
-    mainFrame.x = figma.viewport.center.x - (maxX - minX) / 2;
-    mainFrame.y = figma.viewport.center.y - (maxY - minY) / 2;
-    mainFrame.resize(Math.max(200, maxX - minX), Math.max(200, maxY - minY));
-    mainFrame.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    mainFrame.clipsContent = false;
+    // ── Canvas origin — elements placed directly, no wrapper frame ─────────
+    var canvasOffsetX = figma.viewport.center.x - (maxX - minX) / 2;
+    var canvasOffsetY = figma.viewport.center.y - (maxY - minY) / 2;
 
     // ── Create element frames ────────────────────────────────────────────────
     var frames = new Array(sorted.length).fill(null);
@@ -473,9 +468,19 @@ figma.ui.onmessage = async (msg) => {
       }
     }
 
-    buildHierarchy(mainFrame, rootList, -1);
+    buildHierarchy(figma.currentPage, rootList, -1);
 
-    figma.viewport.scrollAndZoomIntoView([mainFrame]);
+    // Position root-level elements on the canvas using the computed offset
+    for (var ri = 0; ri < rootList.length; ri++) {
+      var rc = rootList[ri];
+      if (!frames[rc]) continue;
+      var rcRect = sorted[rc].rect;
+      frames[rc].x = canvasOffsetX + (rcRect.left - minX);
+      frames[rc].y = canvasOffsetY + (rcRect.top  - minY);
+    }
+
+    var allRootFrames = rootList.map(function(r) { return frames[r]; }).filter(Boolean);
+    figma.viewport.scrollAndZoomIntoView(allRootFrames);
     figma.notify('Sync complete — ' + sorted.length + ' elements, nested by hierarchy.');
   }
 

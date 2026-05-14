@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Subsrf Tokens — Extract any design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Tokens ── */
+:root {
+  --void:      #050508;
+  --deep:      #08080E;
+  --layer:     #0E0E18;
+  --surface:   #141420;
+  --lift:      #1C1C2A;
+  --border:    rgba(255,255,255,0.07);
+  --border-md: rgba(255,255,255,0.12);
+  --neon:      #00FF87;
+  --neon-dim:  rgba(0,255,135,0.12);
+  --neon-glow: rgba(0,255,135,0.06);
+  --t1:        #F2F2F4;
+  --t2:        rgba(242,242,244,0.55);
+  --t3:        rgba(242,242,244,0.28);
+  --t4:        rgba(242,242,244,0.10);
+  --display:   'Manrope', sans-serif;
+  --mono:      'Azeret Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--t1);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scan lines ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,135,0.008) 2px, rgba(0,255,135,0.008) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Nav ── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 32px;
+  background: rgba(5,5,8,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--t1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.nav-logo-mark {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nav-logo-mark span {
+  display: block;
+  height: 2px;
+  background: var(--neon);
+  border-radius: 1px;
+  transition: width 0.3s;
+}
+
+.nav-logo-mark span:nth-child(1) { width: 16px; }
+.nav-logo-mark span:nth-child(2) { width: 10px; opacity: 0.4; }
+
+.nav-logo:hover .nav-logo-mark span:nth-child(2) { width: 16px; opacity: 1; }
+
+.nav-pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--neon);
+  background: var(--neon-dim);
+  border: 1px solid rgba(0,255,135,0.2);
+  border-radius: 3px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-link {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--t3);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.nav-link:hover { color: var(--t1); }
+
+.nav-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--neon);
+  color: var(--void);
+  border: none;
+  border-radius: 5px;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.nav-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+body { padding-top: 52px; }
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  padding: 100px 32px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,135,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,135,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 100% at 50% 0%, black 0%, transparent 80%);
+}
+
+.hero-glow {
+  position: absolute;
+  top: -100px; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 500px;
+  background: radial-gradient(ellipse at center, rgba(0,255,135,0.05) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--neon);
+  margin-bottom: 24px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-eyebrow::before,
+.hero-eyebrow::after {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon));
+}
+.hero-eyebrow::after { transform: scaleX(-1); }
+
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(48px, 8vw, 88px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -3px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.hero-title .line1 { display: block; color: var(--t1); }
+.hero-title .line2 {
+  display: block;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(242,242,244,0.18);
+}
+.hero-title .accent { color: var(--neon); -webkit-text-fill-color: var(--neon); text-shadow: 0 0 60px rgba(0,255,135,0.4); }
+
+.hero-sub {
+  font-size: 17px;
+  font-weight: 300;
+  color: var(--t2);
+  max-width: 480px;
+  line-height: 1.75;
+  margin-bottom: 48px;
+  position: relative;
+}
+
+/* ── URL Input ── */
+.url-form {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  margin-bottom: 16px;
+}
+
+.url-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--layer);
+  border: 1px solid var(--border-md);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 0 0 var(--neon-glow);
+}
+
+.url-input-wrap:focus-within {
+  border-color: rgba(0,255,135,0.35);
+  box-shadow: 0 0 0 3px rgba(0,255,135,0.08);
+}
+
+.url-prefix {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t3);
+  padding: 0 0 0 18px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--t1);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 14px 12px;
+}
+
+.url-input::placeholder { color: var(--t3); }
+
+.url-btn {
+  background: var(--neon);
+  color: var(--void);
+  border: none;
+  padding: 10px 20px;
+  margin: 6px;
+  border-radius: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.url-btn:hover { opacity: 0.88; }
+
+.hero-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.3px;
+}
+
+/* ── Main layout ── */
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: 0;
+  min-height: calc(100vh - 52px - 400px);
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Sidebar left — categories ── */
+.sidebar-left {
+  background: var(--deep);
+  border-right: 1px solid var(--border);
+  padding: 20px 0;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  padding: 0 16px 16px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebar-section-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 8px;
+  padding: 8px 0 0;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+  margin-bottom: 2px;
+}
+.sidebar-item:hover { background: var(--surface); }
+.sidebar-item.active {
+  background: var(--neon-dim);
+  border: 1px solid rgba(0,255,135,0.15);
+}
+
+.sidebar-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sidebar-item-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t1);
+}
+.sidebar-item.active .sidebar-item-name { color: var(--neon); }
+
+.sidebar-count {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  background: var(--lift);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.sidebar-item.active .sidebar-count {
+  background: rgba(0,255,135,0.15);
+  color: var(--neon);
+}
+
+/* ── Main panel ── */
+.main-panel {
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.panel-title {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.panel-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.5px;
+}
+
+.source-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 28px;
+}
+
+.source-favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #6366f1, #4338ca);
+  flex-shrink: 0;
+}
+
+.source-url {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--t2);
+  flex: 1;
+}
+
+.source-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--neon);
+  background: var(--neon-dim);
+  border: 1px solid rgba(0,255,135,0.2);
+  border-radius: 3px;
+  padding: 2px 8px;
+  letter-spacing: 1px;
+}
+
+/* ── Token grid ── */
+.token-section { margin-bottom: 36px; }
+
+.token-section-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.token-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Color swatches */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.color-swatch {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.color-swatch:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.swatch-preview {
+  height: 60px;
+  width: 100%;
+  position: relative;
+}
+
+.swatch-preview::after {
+  content: 'click to copy';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.6);
+  opacity: 0;
+  background: rgba(0,0,0,0.3);
+  transition: opacity 0.15s;
+  text-transform: uppercase;
+}
+.color-swatch:hover .swatch-preview::after { opacity: 1; }
+
+.swatch-info {
+  background: var(--surface);
+  padding: 8px 10px;
+}
+
+.swatch-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t2);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swatch-value {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swatch-count {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--t4);
+  margin-top: 2px;
+}
+
+/* Typography specimens */
+.type-grid { display: flex; flex-direction: column; gap: 2px; }
+
+.type-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.type-row:hover { border-color: var(--border-md); }
+
+.type-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  line-height: 1.7;
+}
+
+.type-preview {
+  color: var(--t1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.type-count {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  background: var(--surface);
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Spacing visual */
+.spacing-grid { display: flex; flex-direction: column; gap: 6px; }
+
+.spacing-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.spacing-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--surface);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.spacing-bar {
+  height: 100%;
+  background: rgba(0,255,135,0.25);
+  border-radius: 2px;
+  border-right: 2px solid var(--neon);
+}
+
+.spacing-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  width: 80px;
+}
+
+.spacing-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--neon);
+  width: 50px;
+  text-align: right;
+}
+
+.spacing-count {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  width: 50px;
+  text-align: right;
+}
+
+/* Radius grid */
+.radius-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radius-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  min-width: 80px;
+}
+.radius-item:hover { border-color: var(--border-md); }
+
+.radius-preview {
+  width: 36px;
+  height: 36px;
+  background: rgba(0,255,135,0.15);
+  border: 1.5px solid var(--neon);
+}
+
+.radius-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 1px;
+}
+
+.radius-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--neon);
+}
+
+/* Shadow grid */
+.shadow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.shadow-item {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.shadow-item:hover { transform: translateY(-2px); }
+
+.shadow-preview {
+  width: 48px;
+  height: 48px;
+  background: var(--lift);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.shadow-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t2);
+  margin-bottom: 4px;
+}
+
+.shadow-val {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+/* ── Sidebar right — export ── */
+.sidebar-right {
+  background: var(--deep);
+  border-left: 1px solid var(--border);
+  padding: 24px 20px;
+  position: sticky;
+  top: 52px;
+  height: calc(100vh - 52px);
+  overflow-y: auto;
+}
+
+.export-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin-bottom: 16px;
+}
+
+.format-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+
+.format-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.format-item:hover { border-color: var(--border-md); background: var(--surface); }
+.format-item.selected {
+  background: var(--neon-dim);
+  border-color: rgba(0,255,135,0.25);
+}
+
+.format-icon {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--t3);
+  width: 28px;
+  text-align: center;
+}
+.format-item.selected .format-icon { color: var(--neon); }
+
+.format-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--t1);
+  flex: 1;
+}
+
+.format-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--t3);
+  background: var(--surface);
+  border-radius: 3px;
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+}
+
+.format-badge.pro {
+  color: rgba(0,255,135,0.7);
+  background: rgba(0,255,135,0.08);
+  border-color: rgba(0,255,135,0.15);
+}
+
+/* Code preview */
+.code-preview {
+  background: var(--void);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--layer);
+  border-bottom: 1px solid var(--border);
+}
+
+.code-lang {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--t3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.code-copy {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--neon);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.code-copy:hover { opacity: 1; }
+
+.code-body {
+  padding: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.85;
+  color: var(--t2);
+  overflow-x: auto;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.code-body .k { color: rgba(0,255,135,0.8); }
+.code-body .v { color: var(--t1); }
+.code-body .c { color: var(--t3); font-style: italic; }
+.code-body .s { color: rgba(0,255,135,0.55); }
+
+.export-btn {
+  width: 100%;
+  background: var(--neon);
+  color: var(--void);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s, transform 0.15s;
+  margin-bottom: 10px;
+}
+.export-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.export-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--t2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.export-secondary:hover { border-color: var(--border-md); color: var(--t1); }
+
+/* Stats bar */
+.stats-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.stat-pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--layer);
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-pill strong {
+  color: var(--t1);
+  font-weight: 600;
+}
+
+/* ── Footer ── */
+.footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--deep);
+}
+
+.footer-brand {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--neon);
+  letter-spacing: -0.5px;
+}
+
+.footer-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--t3);
+  letter-spacing: 0.5px;
+}
+
+/* ── Divider ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Tooltip ── */
+.tooltip {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--neon);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.tooltip.show { opacity: 1; }
+
+</style>
+</head>
+<body>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ── Nav ── -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-logo-mark">
+      <span></span>
+      <span></span>
+    </div>
+    subsrf tokens
+  </div>
+  <div class="nav-pill">beta</div>
+  <div class="nav-links">
+    <a href="#" class="nav-link">Docs</a>
+    <a href="#" class="nav-link">Pricing</a>
+    <a href="#" class="nav-link">Sign in</a>
+  </div>
+  <button class="nav-btn">Get Pro — $5/mo</button>
+</nav>
+
+<!-- ── Hero ── -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-eyebrow">Design token extraction</div>
+  <h1 class="hero-title">
+    <span class="line1">Every design system</span>
+    <span class="line2">is <span class="accent">already there.</span></span>
+  </h1>
+  <p class="hero-sub">Point at any URL. Get the full token set — colors, typography, spacing, shadows, radii — cleaned, named, and exported into any format your stack uses.</p>
+
+  <div class="url-form">
+    <div class="url-input-wrap">
+      <span class="url-prefix">https://</span>
+      <input class="url-input" type="text" placeholder="linear.app" value="subsrf.dev" id="urlInput"/>
+      <button class="url-btn" onclick="simulateExtract()">Extract tokens →</button>
+    </div>
+  </div>
+  <div class="hero-note">subsrf.dev extracted in 1.2s · 47 tokens found</div>
+</div>
+
+<!-- ── App ── -->
+<div class="app">
+
+  <!-- Left sidebar -->
+  <aside class="sidebar-left">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Token categories</div>
+
+      <div class="sidebar-item active" onclick="switchCategory(this, 'colors')">
+        <div class="sidebar-item-left">
+          <div class="sidebar-dot" style="background:#00FF87"></div>
+          <span class="sidebar-item-name">Colors</span>
+        </div>
+        <span class="sidebar-count">18</span>
+      </div>
+
+      <div class="sidebar-item" onclick="switchCategory(this, 'typography')">
+        <div class="sidebar-item-left">
+          <div class="sidebar-dot" style="background:#818cf8"></div>
+          <span class="sidebar-item-name">Typography</span>
+        </div>
+        <span class="sidebar-count">12</span>
+      </div>
+
+      <div class="sidebar-item" onclick="switchCategory(this, 'spacing')">
+        <div class="sidebar-item-left">
+          <div class="sidebar-dot" style="background:#38bdf8"></div>
+          <span class="sidebar-item-name">Spacing</span>
+        </div>
+        <span class="sidebar-count">9</span>
+      </div>
+
+      <div class="sidebar-item" onclick="switchCategory(this, 'radius')">
+        <div class="sidebar-item-left">
+          <div class="sidebar-dot" style="background:#fb923c"></div>
+          <span class="sidebar-item-name">Radius</span>
+        </div>
+        <span class="sidebar-count">5</span>
+      </div>
+
+      <div class="sidebar-item" onclick="switchCategory(this, 'shadows')">
+        <div class="sidebar-item-left">
+          <div class="sidebar-dot" style="background:#e879f9"></div>
+          <span class="sidebar-item-name">Shadows</span>
+        </div>
+        <span class="sidebar-count">3</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Filters</div>
+      <div class="sidebar-item" style="opacity:0.5;cursor:not-allowed;">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-name" style="font-size:11px">Dark mode only</span>
+        </div>
+      </div>
+      <div class="sidebar-item" style="opacity:0.5;cursor:not-allowed;">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-name" style="font-size:11px">High frequency</span>
+        </div>
+      </div>
+      <div class="sidebar-item" style="opacity:0.5;cursor:not-allowed;">
+        <div class="sidebar-item-left">
+          <span class="sidebar-item-name" style="font-size:11px">Core tokens only</span>
+        </div>
+      </div>
+      <div style="padding:8px 10px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--neon);cursor:pointer;">↑ Filters require Pro</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Source</div>
+      <div style="padding:4px 10px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--t2);margin-bottom:4px;">subsrf.dev</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t3);">47 tokens · 1.2s</div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--t3);margin-top:2px;">Extracted just now</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main panel -->
+  <main class="main-panel">
+
+    <div class="panel-header">
+      <div class="panel-title" id="panelTitle">Colors</div>
+      <div class="panel-meta" id="panelMeta">18 tokens · subsrf.dev</div>
+    </div>
+
+    <div class="source-bar">
+      <div class="source-favicon"></div>
+      <div class="source-url">subsrf.dev</div>
+      <div class="source-badge">LIVE EXTRACTION</div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-pill"><strong>47</strong> total tokens</div>
+      <div class="stat-pill"><strong>18</strong> colors</div>
+      <div class="stat-pill"><strong>4px</strong> base unit</div>
+      <div class="stat-pill"><strong>2</strong> font families</div>
+      <div class="stat-pill">dark mode <strong>detected</strong></div>
+    </div>
+
+    <!-- Colors panel -->
+    <div id="panel-colors">
+      <div class="token-section">
+        <div class="token-section-title">Text</div>
+        <div class="color-grid">
+          <div class="color-swatch" onclick="copyToken('#F2F2F4', this)">
+            <div class="swatch-preview" style="background:#F2F2F4"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">text-primary</div>
+              <div class="swatch-value">#F2F2F4</div>
+              <div class="swatch-count">847 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('rgba(242,242,244,0.55)', this)">
+            <div class="swatch-preview" style="background:rgba(242,242,244,0.55)"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">text-muted</div>
+              <div class="swatch-value">rgba(242..0.55)</div>
+              <div class="swatch-count">312 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('rgba(242,242,244,0.28)', this)">
+            <div class="swatch-preview" style="background:rgba(242,242,244,0.28)"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">text-subtle</div>
+              <div class="swatch-value">rgba(242..0.28)</div>
+              <div class="swatch-count">186 uses</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="token-section">
+        <div class="token-section-title">Backgrounds</div>
+        <div class="color-grid">
+          <div class="color-swatch" onclick="copyToken('#050508', this)">
+            <div class="swatch-preview" style="background:#050508;border-bottom:1px solid #1a1a28"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">bg-void</div>
+              <div class="swatch-value">#050508</div>
+              <div class="swatch-count">1 use</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#0E0E18', this)">
+            <div class="swatch-preview" style="background:#0E0E18"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">bg-layer</div>
+              <div class="swatch-value">#0E0E18</div>
+              <div class="swatch-count">234 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#141420', this)">
+            <div class="swatch-preview" style="background:#141420"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">bg-surface</div>
+              <div class="swatch-value">#141420</div>
+              <div class="swatch-count">198 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#1C1C2A', this)">
+            <div class="swatch-preview" style="background:#1C1C2A"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">bg-lift</div>
+              <div class="swatch-value">#1C1C2A</div>
+              <div class="swatch-count">112 uses</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="token-section">
+        <div class="token-section-title">Accent & Status</div>
+        <div class="color-grid">
+          <div class="color-swatch" onclick="copyToken('#00FF87', this)">
+            <div class="swatch-preview" style="background:#00FF87;box-shadow:inset 0 0 20px rgba(0,255,135,0.3)"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">accent-neon</div>
+              <div class="swatch-value">#00FF87</div>
+              <div class="swatch-count">89 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#39D98A', this)">
+            <div class="swatch-preview" style="background:#39D98A"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">status-success</div>
+              <div class="swatch-value">#39D98A</div>
+              <div class="swatch-count">23 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#FFB020', this)">
+            <div class="swatch-preview" style="background:#FFB020"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">status-warning</div>
+              <div class="swatch-value">#FFB020</div>
+              <div class="swatch-count">14 uses</div>
+            </div>
+          </div>
+          <div class="color-swatch" onclick="copyToken('#FF4D4D', this)">
+            <div class="swatch-preview" style="background:#FF4D4D"></div>
+            <div class="swatch-info">
+              <div class="swatch-name">status-error</div>
+              <div class="swatch-value">#FF4D4D</div>
+              <div class="swatch-count">8 uses</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typography panel -->
+    <div id="panel-typography" style="display:none;">
+      <div class="token-section">
+        <div class="token-section-title">Font Families</div>
+        <div class="type-grid">
+          <div class="type-row" onclick="copyToken('Manrope, sans-serif', this)">
+            <div class="type-meta">font-display<br/>weight: 200–800</div>
+            <div class="type-preview" style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;">The quick brown fox</div>
+            <div class="type-count">display</div>
+          </div>
+          <div class="type-row" onclick="copyToken('Azeret Mono, monospace', this)">
+            <div class="type-meta">font-mono<br/>weight: 300–600</div>
+            <div class="type-preview" style="font-family:'Azeret Mono',monospace;font-size:14px;">subsrf_get_tokens()</div>
+            <div class="type-count">mono</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="token-section">
+        <div class="token-section-title">Font Sizes</div>
+        <div class="type-grid">
+          <div class="type-row" onclick="copyToken('12px', this)">
+            <div class="type-meta">text-xs<br/>12px / 1.5</div>
+            <div class="type-preview" style="font-size:12px;">Caption and labels</div>
+            <div class="type-count">62 uses</div>
+          </div>
+          <div class="type-row" onclick="copyToken('14px', this)">
+            <div class="type-meta">text-sm<br/>14px / 1.6</div>
+            <div class="type-preview" style="font-size:14px;">Secondary body text</div>
+            <div class="type-count">134 uses</div>
+          </div>
+          <div class="type-row" onclick="copyToken('16px', this)">
+            <div class="type-meta">text-base<br/>16px / 1.75</div>
+            <div class="type-preview" style="font-size:16px;">Primary body text</div>
+            <div class="type-count">287 uses</div>
+          </div>
+          <div class="type-row" onclick="copyToken('22px', this)">
+            <div class="type-meta">text-xl<br/>22px / 1.3</div>
+            <div class="type-preview" style="font-size:22px;font-weight:500;">Subheading level</div>
+            <div class="type-count">44 uses</div>
+          </div>
+          <div class="type-row" onclick="copyToken('40px', this)">
+            <div class="type-meta">text-4xl<br/>40px / 1.1</div>
+            <div class="type-preview" style="font-size:28px;font-weight:700;letter-spacing:-1px;">Section heading</div>
+            <div class="type-count">18 uses</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spacing panel -->
+    <div id="panel-spacing" style="display:none;">
+      <div class="token-section">
+        <div class="token-section-title">Scale — base unit: 4px</div>
+        <div class="spacing-grid">
+          <div class="spacing-row" onclick="copyToken('4px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-1</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:3%"></div></div>
+            <div class="spacing-val">4px</div>
+            <div class="spacing-count">34 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('8px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-2</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:6%"></div></div>
+            <div class="spacing-val">8px</div>
+            <div class="spacing-count">89 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('16px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-4</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:12%"></div></div>
+            <div class="spacing-val">16px</div>
+            <div class="spacing-count">156 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('24px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-6</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:18%"></div></div>
+            <div class="spacing-val">24px</div>
+            <div class="spacing-count">112 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('32px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-8</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:24%"></div></div>
+            <div class="spacing-val">32px</div>
+            <div class="spacing-count">78 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('48px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-12</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:36%"></div></div>
+            <div class="spacing-val">48px</div>
+            <div class="spacing-count">45 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('64px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-16</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:48%"></div></div>
+            <div class="spacing-val">64px</div>
+            <div class="spacing-count">28 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('96px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-24</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:72%"></div></div>
+            <div class="spacing-val">96px</div>
+            <div class="spacing-count">12 uses</div>
+          </div>
+          <div class="spacing-row" onclick="copyToken('128px', this)">
+            <div class="spacing-label" style="font-family:var(--mono);font-size:10px;color:var(--t3);">space-32</div>
+            <div class="spacing-bar-wrap"><div class="spacing-bar" style="width:96%"></div></div>
+            <div class="spacing-val">128px</div>
+            <div class="spacing-count">6 uses</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radius panel -->
+    <div id="panel-radius" style="display:none;">
+      <div class="token-section">
+        <div class="token-section-title">Border radius scale</div>
+        <div class="radius-grid">
+          <div class="radius-item" onclick="copyToken('0px', this)">
+            <div class="radius-preview" style="border-radius:0px"></div>
+            <div class="radius-name">NONE</div>
+            <div class="radius-val">0px</div>
+          </div>
+          <div class="radius-item" onclick="copyToken('4px', this)">
+            <div class="radius-preview" style="border-radius:4px"></div>
+            <div class="radius-name">SM</div>
+            <div class="radius-val">4px</div>
+          </div>
+          <div class="radius-item" onclick="copyToken('8px', this)">
+            <div class="radius-preview" style="border-radius:8px"></div>
+            <div class="radius-name">MD</div>
+            <div class="radius-val">8px</div>
+          </div>
+          <div class="radius-item" onclick="copyToken('16px', this)">
+            <div class="radius-preview" style="border-radius:16px"></div>
+            <div class="radius-name">LG</div>
+            <div class="radius-val">16px</div>
+          </div>
+          <div class="radius-item" onclick="copyToken('9999px', this)">
+            <div class="radius-preview" style="border-radius:9999px"></div>
+            <div class="radius-name">FULL</div>
+            <div class="radius-val">9999px</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shadows panel -->
+    <div id="panel-shadows" style="display:none;">
+      <div class="token-section">
+        <div class="token-section-title">Elevation scale</div>
+        <div class="shadow-grid">
+          <div class="shadow-item" onclick="copyToken('0 1px 3px rgba(0,0,0,0.12)', this)" style="box-shadow: 0 1px 3px rgba(0,0,0,0.5)">
+            <div class="shadow-preview" style="box-shadow:0 1px 3px rgba(0,0,0,0.8)"></div>
+            <div class="shadow-name">shadow-sm</div>
+            <div class="shadow-val">0 1px 3px rgba(0,0,0,0.12)</div>
+          </div>
+          <div class="shadow-item" onclick="copyToken('0 4px 14px rgba(0,0,0,0.2)', this)" style="box-shadow: 0 4px 14px rgba(0,0,0,0.6)">
+            <div class="shadow-preview" style="box-shadow:0 4px 14px rgba(0,0,0,0.8)"></div>
+            <div class="shadow-name">shadow-md</div>
+            <div class="shadow-val">0 4px 14px rgba(0,0,0,0.2)</div>
+          </div>
+          <div class="shadow-item" onclick="copyToken('0 0 30px rgba(0,255,135,0.2)', this)" style="box-shadow: 0 0 30px rgba(0,255,135,0.3)">
+            <div class="shadow-preview" style="background:rgba(0,255,135,0.1);box-shadow:0 0 20px rgba(0,255,135,0.4);border:1px solid rgba(0,255,135,0.2)"></div>
+            <div class="shadow-name">shadow-accent</div>
+            <div class="shadow-val">0 0 30px rgba(0,255,135,0.2)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Right sidebar — export -->
+  <aside class="sidebar-right">
+
+    <div class="export-title">Export format</div>
+
+    <div class="format-list">
+      <div class="format-item selected" onclick="selectFormat(this, 'css')">
+        <span class="format-icon">CSS</span>
+        <span class="format-name">CSS Variables</span>
+      </div>
+      <div class="format-item" onclick="selectFormat(this, 'tailwind')">
+        <span class="format-icon">TW</span>
+        <span class="format-name">Tailwind Config</span>
+        <span class="format-badge pro">PRO</span>
+      </div>
+      <div class="format-item" onclick="selectFormat(this, 'json')">
+        <span class="format-icon">{}</span>
+        <span class="format-name">JSON</span>
+      </div>
+      <div class="format-item" onclick="selectFormat(this, 'sd')">
+        <span class="format-icon">SD</span>
+        <span class="format-name">Style Dictionary</span>
+        <span class="format-badge pro">PRO</span>
+      </div>
+      <div class="format-item" onclick="selectFormat(this, 'figma')">
+        <span class="format-icon">Fig</span>
+        <span class="format-name">Figma Variables</span>
+        <span class="format-badge pro">PRO</span>
+      </div>
+      <div class="format-item" onclick="selectFormat(this, 'ai')">
+        <span class="format-icon">AI</span>
+        <span class="format-name">AI Prompt</span>
+        <span class="format-badge pro">1 credit</span>
+      </div>
+    </div>
+
+    <div class="code-preview">
+      <div class="code-header">
+        <span class="code-lang" id="codeLang">css</span>
+        <button class="code-copy" onclick="copyCode()">⎘ copy</button>
+      </div>
+      <div class="code-body" id="codeBody">
+<span class="c">/* subsrf.dev — extracted tokens */</span>
+<span class="k">:root</span> {
+  <span class="c">/* Colors */</span>
+  <span class="k">--color-text-primary</span>: <span class="s">#F2F2F4</span>;
+  <span class="k">--color-text-muted</span>: <span class="s">rgba(242,242,244,0.55)</span>;
+  <span class="k">--color-bg-void</span>: <span class="s">#050508</span>;
+  <span class="k">--color-bg-layer</span>: <span class="s">#0E0E18</span>;
+  <span class="k">--color-accent</span>: <span class="s">#00FF87</span>;
+  <span class="k">--color-success</span>: <span class="s">#39D98A</span>;
+
+  <span class="c">/* Spacing */</span>
+  <span class="k">--space-1</span>: <span class="s">4px</span>;
+  <span class="k">--space-2</span>: <span class="s">8px</span>;
+  <span class="k">--space-4</span>: <span class="s">16px</span>;
+  <span class="k">--space-8</span>: <span class="s">32px</span>;
+
+  <span class="c">/* Radius */</span>
+  <span class="k">--radius-sm</span>: <span class="s">4px</span>;
+  <span class="k">--radius-md</span>: <span class="s">8px</span>;
+  <span class="k">--radius-lg</span>: <span class="s">16px</span>;
+}
+      </div>
+    </div>
+
+    <button class="export-btn" onclick="handleExport()">
+      ↓ Download tokens
+    </button>
+    <button class="export-secondary" onclick="handleShare()">
+      ⎘ Copy shareable link
+    </button>
+
+    <hr class="divider"/>
+
+    <div class="export-title">Token stats</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">Total tokens</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t1);">47</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">Base unit</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--neon);">4px</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">Dark mode</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--neon);">detected</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">Font families</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t1);">2</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t3);">Extracted in</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--t1);">1.2s</span>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-brand">subsrf tokens</div>
+  <div class="footer-note">tokens.subsrf.dev · part of the subsrf ecosystem · 2025</div>
+</footer>
+
+<script>
+// ── Category switching ────────────────────────────────────────────────────
+const panels = ['colors', 'typography', 'spacing', 'radius', 'shadows'];
+const panelTitles = {
+  colors: { title: 'Colors', meta: '18 tokens · subsrf.dev' },
+  typography: { title: 'Typography', meta: '12 tokens · subsrf.dev' },
+  spacing: { title: 'Spacing', meta: '9 tokens · subsrf.dev' },
+  radius: { title: 'Radius', meta: '5 tokens · subsrf.dev' },
+  shadows: { title: 'Shadows', meta: '3 tokens · subsrf.dev' },
+};
+
+function switchCategory(el, category) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  panels.forEach(p => {
+    const panel = document.getElementById('panel-' + p);
+    if (panel) panel.style.display = p === category ? '' : 'none';
+  });
+  document.getElementById('panelTitle').textContent = panelTitles[category].title;
+  document.getElementById('panelMeta').textContent = panelTitles[category].meta;
+}
+
+// ── Format switching ──────────────────────────────────────────────────────
+const codeSnippets = {
+  css: {
+    lang: 'css',
+    code: `<span class="c">/* subsrf.dev — extracted tokens */</span>
+<span class="k">:root</span> {
+  <span class="k">--color-text-primary</span>: <span class="s">#F2F2F4</span>;
+  <span class="k">--color-text-muted</span>: <span class="s">rgba(242,242,244,0.55)</span>;
+  <span class="k">--color-bg-void</span>: <span class="s">#050508</span>;
+  <span class="k">--color-accent</span>: <span class="s">#00FF87</span>;
+  <span class="k">--space-4</span>: <span class="s">16px</span>;
+  <span class="k">--radius-md</span>: <span class="s">8px</span>;
+}`
+  },
+  tailwind: {
+    lang: 'js',
+    code: `<span class="c">// tailwind.config.js</span>
+<span class="k">module.exports</span> = {
+  theme: { extend: {
+    colors: {
+      accent: <span class="s">'#00FF87'</span>,
+      bg: { void: <span class="s">'#050508'</span> }
+    },
+    spacing: {
+      <span class="s">'4'</span>: <span class="s">'16px'</span>,
+      <span class="s">'8'</span>: <span class="s">'32px'</span>
+    }
+  }}
+}`
+  },
+  json: {
+    lang: 'json',
+    code: `{
+  <span class="k">"color"</span>: {
+    <span class="k">"accent"</span>: { <span class="k">"value"</span>: <span class="s">"#00FF87"</span> },
+    <span class="k">"text"</span>: {
+      <span class="k">"primary"</span>: { <span class="k">"value"</span>: <span class="s">"#F2F2F4"</span> }
+    }
+  },
+  <span class="k">"space"</span>: {
+    <span class="k">"4"</span>: { <span class="k">"value"</span>: <span class="s">"16px"</span> }
+  }
+}`
+  },
+  sd: {
+    lang: 'json',
+    code: `<span class="c">// Style Dictionary format</span>
+{
+  <span class="k">"color"</span>: {
+    <span class="k">"accent"</span>: {
+      <span class="k">"value"</span>: <span class="s">"#00FF87"</span>,
+      <span class="k">"type"</span>: <span class="s">"color"</span>
+    }
+  }
+}`
+  },
+  figma: {
+    lang: 'json',
+    code: `<span class="c">// Figma Variables import</span>
+{
+  <span class="k">"name"</span>: <span class="s">"subsrf.dev tokens"</span>,
+  <span class="k">"variables"</span>: [{
+    <span class="k">"name"</span>: <span class="s">"color/accent"</span>,
+    <span class="k">"type"</span>: <span class="s">"COLOR"</span>,
+    <span class="k">"values"</span>: {
+      <span class="k">"r"</span>: 0, <span class="k">"g"</span>: 1,
+      <span class="k">"b"</span>: 0.529, <span class="k">"a"</span>: 1
+    }
+  }]
+}`
+  },
+  ai: {
+    lang: 'text',
+    code: `DESIGN TOKENS — subsrf.dev
+
+COLORS
+Primary text:  #F2F2F4
+Muted text:    rgba(242,242,244,0.55)
+Background:    #050508
+Accent:        #00FF87
+Success:       #39D98A
+
+TYPOGRAPHY
+Display: Manrope 800
+Body:    Manrope 300–500
+Mono:    Azeret Mono
+Base:    16px / 1.75
+
+SPACING (base: 4px)
+4 / 8 / 16 / 24 / 32 / 48px
+
+RADIUS
+sm:4px md:8px lg:16px full:9999px`
+  },
+};
+
+function selectFormat(el, format) {
+  document.querySelectorAll('.format-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  const snippet = codeSnippets[format];
+  document.getElementById('codeLang').textContent = snippet.lang;
+  document.getElementById('codeBody').innerHTML = snippet.code;
+}
+
+// ── Copy token ────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+
+function copyToken(value, el) {
+  navigator.clipboard.writeText(value).catch(() => {});
+  tooltip.textContent = 'Copied: ' + value;
+  tooltip.classList.add('show');
+  const rect = el.getBoundingClientRect();
+  tooltip.style.left = rect.left + 'px';
+  tooltip.style.top = (rect.top - 36) + 'px';
+  setTimeout(() => tooltip.classList.remove('show'), 1600);
+}
+
+function copyCode() {
+  const text = document.getElementById('codeBody').innerText;
+  navigator.clipboard.writeText(text).catch(() => {});
+  tooltip.textContent = '✓ Copied to clipboard';
+  tooltip.classList.add('show');
+  tooltip.style.left = '50%';
+  tooltip.style.top = '80px';
+  tooltip.style.transform = 'translateX(-50%)';
+  setTimeout(() => { tooltip.classList.remove('show'); tooltip.style.transform = ''; }, 1800);
+}
+
+function handleExport() {
+  tooltip.textContent = '↓ Download started';
+  tooltip.classList.add('show');
+  tooltip.style.left = '50%';
+  tooltip.style.top = '80px';
+  tooltip.style.transform = 'translateX(-50%)';
+  setTimeout(() => { tooltip.classList.remove('show'); tooltip.style.transform = ''; }, 1600);
+}
+
+function handleShare() {
+  navigator.clipboard.writeText('https://tokens.subsrf.dev/s/abc123').catch(() => {});
+  tooltip.textContent = '✓ Link copied: tokens.subsrf.dev/s/abc123';
+  tooltip.classList.add('show');
+  tooltip.style.left = '50%';
+  tooltip.style.top = '80px';
+  tooltip.style.transform = 'translateX(-50%)';
+  setTimeout(() => { tooltip.classList.remove('show'); tooltip.style.transform = ''; }, 2000);
+}
+
+function simulateExtract() {
+  const btn = document.querySelector('.url-btn');
+  btn.textContent = 'Extracting...';
+  btn.style.opacity = '0.6';
+  setTimeout(() => {
+    btn.textContent = '✓ 47 tokens found';
+    btn.style.background = '#39D98A';
+    setTimeout(() => {
+      btn.textContent = 'Extract tokens →';
+      btn.style.background = 'var(--neon)';
+      btn.style.opacity = '1';
+    }, 2000);
+  }, 1200);
+}
+</script>
+</body>
+</html>
