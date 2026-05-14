@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 const raw = process.env.EXTRACTOR_URL || 'http://localhost:3001';
 const EXTRACTOR_URL = raw.startsWith('http') ? raw : `https://${raw}`;
 
