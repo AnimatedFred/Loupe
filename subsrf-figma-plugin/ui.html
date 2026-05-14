@@ -398,6 +398,7 @@
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="sync">SYNC</button>
       <button class="tab-btn" data-tab="compose">COMPOSE</button>
+      <button class="tab-btn" data-tab="vars">VARS</button>
       <button class="tab-btn" data-tab="settings">SETTINGS</button>
     </div>
 
@@ -525,6 +526,37 @@
       </div>
     </div>
 
+    <!-- ═══════════ TAB: VARS ═══════════ -->
+    <div class="tab-panel" id="tab-vars">
+      <div class="scroll-area">
+
+        <div>
+          <div class="sec-label">Import source</div>
+          <button id="btnImportFile" class="btn-secondary" style="width:100%;gap:7px;margin-bottom:10px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Import JSON file
+          </button>
+          <div style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Or paste JSON</div>
+          <textarea id="importVarsInput" placeholder='{"name":"…","modes":[…],"variables":[…]}' style="
+            width:100%;height:96px;resize:none;
+            background:var(--void);border:1px solid var(--border);border-radius:4px;
+            color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
+            line-height:1.6;padding:8px 10px;outline:none;
+            transition:border-color 0.15s;
+          " oninput="checkImportBtn()"></textarea>
+        </div>
+
+        <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;"></div>
+
+      </div>
+
+      <div class="tab-footer">
+        <button class="btn-primary" id="btnImportVars" disabled onclick="importVariables()">Import Variables</button>
+      </div>
+    </div>
+
     <!-- ═══════════ TAB: SETTINGS ═══════════ -->
     <div class="tab-panel" id="tab-settings">
       <div class="scroll-area">
@@ -547,31 +579,14 @@
         </div>
 
         <button class="btn-secondary" id="btnSignOut" style="width:100%;margin-top:4px;">Sign out</button>
-        <div style="height:16px;"></div>
-
-        <div class="settings-card">
-          <div class="settings-title">Import Variables from Subsrf Scan</div>
-          <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px;">
-            Export "Figma Variables" from Subsrf Scan, then paste the JSON below to import colors, spacing, and radius as native Figma variables.
-          </div>
-          <textarea id="importVarsInput" placeholder='Paste Figma Variables JSON here…' style="
-            width:100%;height:88px;resize:none;
-            background:var(--void);border:1px solid var(--border);border-radius:6px;
-            color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
-            line-height:1.6;padding:8px 10px;outline:none;
-            transition:border-color 0.15s;
-          " oninput="checkImportBtn()"></textarea>
-          <div style="height:8px;"></div>
-          <button class="btn-primary" id="btnImportVars" disabled onclick="importVariables()">Import Variables</button>
-          <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;margin-top:8px;min-height:16px;text-align:center;"></div>
-        </div>
-
         <div style="height:8px;"></div>
 
       </div>
     </div>
 
   </div>
+
+  <input type="file" id="filePickerInput" accept=".json" style="display:none">
 
   <script>
     const BRIDGE = 'https://api.subsrf.dev';
@@ -1051,6 +1066,23 @@
       if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
       window.open(target, '_blank');
     }
+
+    document.getElementById('btnImportFile').addEventListener('click', () => {
+      document.getElementById('filePickerInput').click();
+    });
+
+    document.getElementById('filePickerInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        document.getElementById('importVarsInput').value = ev.target.result;
+        checkImportBtn();
+        importVariables();
+      };
+      reader.readAsText(file);
+    });
 
     function checkImportBtn() {
       const val = document.getElementById('importVarsInput').value.trim();
