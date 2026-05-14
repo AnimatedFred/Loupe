@@ -142,6 +142,17 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
         })}
       </div>
 
+      {format === 'figma' && (
+        <div style={{
+          fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t3)',
+          background: 'var(--layer)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: '8px 12px', marginBottom: 12, lineHeight: 1.7,
+        }}>
+          Import with the free Figma plugin<br />
+          <span style={{ color: 'var(--neon)' }}>"Variables Import &amp; Export"</span>
+        </div>
+      )}
+
       {/* Code preview */}
       <div style={{
         background: 'var(--void)', border: '1px solid var(--border)',

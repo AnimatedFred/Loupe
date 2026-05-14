@@ -156,44 +156,78 @@ function figmaTransformer(tokenSet) {
   const primary = dark || light;
   if (!primary) return '{}';
 
-  const modes = tokenSet.hasDark && tokenSet.hasLight ? ['Dark', 'Light'] : [tokenSet.hasDark ? 'Dark' : 'Light'];
-
-  const variables = [];
-
-  const addVar = (name, type, values) => variables.push({ name, type, values });
+  const hasBoth = !!dark && !!light;
+  const colorModes = hasBoth ? ['Dark', 'Light'] : [dark ? 'Dark' : 'Light'];
 
   const parseRgb = (css) => {
-    const m = css.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d+(?:\.\d+)?))?\)/);
+    const m = css?.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d+(?:\.\d+)?))?\)/);
     if (!m) return null;
     return {
-      r: parseFloat(m[1]) / 255,
-      g: parseFloat(m[2]) / 255,
-      b: parseFloat(m[3]) / 255,
-      a: m[4] !== undefined ? parseFloat(m[4]) : 1,
+      r: Math.round((parseFloat(m[1]) / 255) * 1000) / 1000,
+      g: Math.round((parseFloat(m[2]) / 255) * 1000) / 1000,
+      b: Math.round((parseFloat(m[3]) / 255) * 1000) / 1000,
+      a: m[4] !== undefined ? Math.round(parseFloat(m[4]) * 1000) / 1000 : 1,
     };
   };
 
-  for (const t of primary.colors || []) {
-    const vals = {};
-    if (dark) vals['Dark'] = parseRgb(dark.colors.find(c => c.name === t.name)?.value || t.value) || t.value;
-    if (light) vals['Light'] = parseRgb(light.colors.find(c => c.name === t.name)?.value || t.value) || t.value;
-    if (Object.values(vals).some(Boolean)) {
-      addVar(t.name, 'COLOR', vals);
+  const stripPrefix = (name, prefix) => name.replace(new RegExp(`^${prefix}/`), '');
+
+  // ── Colors collection (supports Dark / Light modes) ──────────────────────
+  const colorVars = (primary.colors || []).map(t => {
+    const values = {};
+    if (hasBoth) {
+      const dVal = dark.colors.find(c => c.name === t.name)?.value;
+      const lVal = light.colors.find(c => c.name === t.name)?.value;
+      values['Dark']  = parseRgb(dVal)  ?? parseRgb(t.value) ?? t.hex;
+      values['Light'] = parseRgb(lVal)  ?? parseRgb(t.value) ?? t.hex;
+    } else {
+      values[colorModes[0]] = parseRgb(t.value) ?? t.hex;
     }
-  }
+    return { name: stripPrefix(t.name, 'color'), type: 'COLOR', values };
+  });
 
-  for (const t of primary.spacing || []) {
-    addVar(t.name, 'FLOAT', { Default: parseFloat(t.value) });
-  }
+  // ── Spacing collection ────────────────────────────────────────────────────
+  const spacingVars = (primary.spacing || [])
+    .filter(t => !isNaN(parseFloat(t.value)))
+    .map(t => ({
+      name: stripPrefix(t.name, 'space'),
+      type: 'FLOAT',
+      values: { Default: parseFloat(t.value) },
+    }));
 
-  for (const t of primary.radius || []) {
-    addVar(t.name, 'FLOAT', { Default: parseFloat(t.value) });
-  }
+  // ── Radius collection ─────────────────────────────────────────────────────
+  const radiusVars = (primary.radius || [])
+    .filter(t => !isNaN(parseFloat(t.value)))
+    .map(t => ({
+      name: stripPrefix(t.name, 'radius'),
+      type: 'FLOAT',
+      values: { Default: parseFloat(t.value) },
+    }));
+
+  // ── Shadows collection (STRING — Figma has no native effect variable yet) ─
+  const shadowVars = (primary.shadows || []).map(t => ({
+    name: stripPrefix(t.name, 'shadow'),
+    type: 'STRING',
+    values: { Default: t.value },
+  }));
+
+  const collections = [
+    colorVars.length  && { name: 'Colors',  modes: colorModes,    variables: colorVars  },
+    spacingVars.length && { name: 'Spacing', modes: ['Default'],   variables: spacingVars },
+    radiusVars.length  && { name: 'Radius',  modes: ['Default'],   variables: radiusVars  },
+    shadowVars.length  && { name: 'Shadows', modes: ['Default'],   variables: shadowVars  },
+  ].filter(Boolean);
+
+  const hostname = (() => {
+    try { return new URL(tokenSet.url.startsWith('http') ? tokenSet.url : 'https://' + tokenSet.url).hostname; }
+    catch { return tokenSet.url; }
+  })();
 
   return JSON.stringify({
-    name: new URL(tokenSet.url.startsWith('http') ? tokenSet.url : 'https://' + tokenSet.url).hostname + ' tokens',
-    modes,
-    variables,
+    _generator: 'Subsrf Scan',
+    _source: hostname,
+    _plugin: 'Import with "Variables Import & Export" (Figma Community)',
+    collections,
   }, null, 2);
 }
 
