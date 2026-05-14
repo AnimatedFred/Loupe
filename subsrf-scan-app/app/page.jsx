@@ -127,7 +127,9 @@ export default function Home() {
               background: '#0C0C12', border: '1px solid rgba(242,242,244,0.12)',
               padding: '6px 12px', borderRadius: 2,
             }}>
-              <span style={{ color: '#00FF87', fontSize: 16 }}>⚡</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#00FF87" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                <path d="M13 2L3 14h8l-1 8 11-12h-8l1-8z"/>
+              </svg>
               <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: '#F2F2F4' }}>
                 {credits ?? '—'} <span style={{ color: 'rgba(242,242,244,0.28)' }}>CR</span>
               </span>
