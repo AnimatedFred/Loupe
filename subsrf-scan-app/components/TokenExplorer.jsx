@@ -9,6 +9,7 @@ import ShadowsPanel from './panels/ShadowsPanel';
 import AnimationsPanel from './panels/AnimationsPanel';
 import HealthPanel from './panels/HealthPanel';
 import ComponentPanel from './panels/ComponentPanel';
+import AiAnalysis from './AiAnalysis';
 import ExportSidebar from './ExportSidebar';
 
 const CATEGORIES = [
@@ -20,6 +21,7 @@ const CATEGORIES = [
   { id: 'animations', label: 'Animations', dot: '#34d399' },
   { id: 'health',     label: 'Health',     dot: '#FFB020' },
   { id: 'component',  label: 'Components', dot: '#c084fc' },
+  { id: 'ai',         label: 'AI Analysis', dot: '#00FF87' },
 ];
 
 function tokenCount(tokens, mode, category) {
@@ -33,6 +35,7 @@ function tokenCount(tokens, mode, category) {
   if (category === 'animations') return t.animations?.length || 0;
   if (category === 'health') return tokens?.healthScore?.issues?.length || 0;
   if (category === 'component') return tokens?.componentDetection?.customTokens?.length || 0;
+  if (category === 'ai') return 4;
   return 0;
 }
 
@@ -59,7 +62,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
 
   const panelTitles = {
     colors: 'Colors', typography: 'Typography', spacing: 'Spacing', radius: 'Radius', shadows: 'Shadows',
-    animations: 'Animations', health: 'Health Score', component: 'Components',
+    animations: 'Animations', health: 'Health Score', component: 'Components', ai: 'AI Analysis',
   };
 
   const totalTokens = tokenData?.meta?.totalTokens || 0;
@@ -202,6 +205,8 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
           <ShadowsPanel shadows={tokenData.shadows} onCopy={copyToken} copied={copied} />
         ) : activeCategory === 'animations' ? (
           <AnimationsPanel animations={tokenData.animations} onCopy={copyToken} copied={copied} />
+        ) : activeCategory === 'ai' ? (
+          <AiAnalysis tokens={tokens} mode={activeMode} inline />
         ) : null}
       </main>
 

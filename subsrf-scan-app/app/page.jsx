@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
+import { useUser } from '../context/UserContext';
 
 export default function Home() {
   const [tokens, setTokens] = useState(null);
@@ -10,6 +11,8 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [sourceUrl, setSourceUrl] = useState('');
   const [urlInput, setUrlInput] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const { user, signOut, credits, tier } = useUser() || {};
 
   async function handleExtract(url) {
     const target = url || urlInput;
@@ -55,18 +58,22 @@ export default function Home() {
           padding: '16px 32px', position: 'sticky', top: 0, zIndex: 50, flexShrink: 0,
         }}>
           {/* Brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-            <div style={{ width: 16, height: 4, background: '#00FF87', boxShadow: '0 0 12px rgba(0,255,135,0.4)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            <img
+              src="/subsrf-icon.png"
+              width={28} height={28}
+              alt="Subsrf"
+              style={{ borderRadius: 6, display: 'block', flexShrink: 0 }}
+            />
             <span style={{
-              fontFamily: "'Manrope', sans-serif", fontSize: 32, fontWeight: 700,
-              lineHeight: 1.1, letterSpacing: '-0.8px', color: '#F2F2F4',
-            }}>Scan.subsrf.dev</span>
+              fontFamily: "'Azeret Mono', monospace", fontSize: 18, fontWeight: 700,
+              letterSpacing: '-0.02em', color: '#F2F2F4',
+            }}>subsrf</span>
             <span style={{
-              background: '#2d372e', color: '#00FF87',
-              padding: '2px 6px', borderRadius: 2, fontSize: 9,
-              fontFamily: "'Azeret Mono', monospace",
-              border: '1px solid rgba(0,255,135,0.2)', marginLeft: 8, marginTop: 4,
-            }}>BETA</span>
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+              color: 'rgba(242,242,244,0.28)', letterSpacing: 2,
+              textTransform: 'uppercase', marginLeft: 4,
+            }}>SCAN</span>
           </div>
 
           {/* URL Scan Input */}
@@ -113,15 +120,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexShrink: 0 }}>
-            <nav style={{
-              display: 'flex', alignItems: 'center', gap: 16,
-              fontFamily: "'Azeret Mono', monospace", fontSize: 11, letterSpacing: 2,
-            }}>
-              <a href="#" style={{ color: 'rgba(242,242,244,0.55)', transition: 'color 0.2s' }}>DOCS</a>
-              <a href="#" style={{ color: 'rgba(242,242,244,0.55)', transition: 'color 0.2s' }}>PRICING</a>
-            </nav>
+          {/* Right: credits + avatar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               background: '#0C0C12', border: '1px solid rgba(242,242,244,0.12)',
@@ -129,14 +129,84 @@ export default function Home() {
             }}>
               <span style={{ color: '#00FF87', fontSize: 16 }}>⚡</span>
               <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: '#F2F2F4' }}>
-                294 / 300 <span style={{ color: 'rgba(242,242,244,0.28)' }}>CR</span>
+                {credits ?? '—'} <span style={{ color: 'rgba(242,242,244,0.28)' }}>CR</span>
               </span>
             </div>
-            <div style={{
-              width: 32, height: 32, borderRadius: 2,
-              border: '1px solid rgba(242,242,244,0.12)',
-              background: '#111118', overflow: 'hidden', opacity: 0.8,
-            }} />
+
+            {/* Avatar + dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowUserMenu(v => !v)}
+                style={{
+                  width: 32, height: 32, borderRadius: 2, padding: 0,
+                  border: '1px solid rgba(242,242,244,0.12)',
+                  background: '#111118', overflow: 'hidden', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {user?.user_metadata?.avatar_url ? (
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt={user.user_metadata.full_name || 'User'}
+                    width={32} height={32}
+                    style={{ objectFit: 'cover', display: 'block' }}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: 'rgba(242,242,244,0.4)' }}>
+                    {(user?.email || '?')[0].toUpperCase()}
+                  </span>
+                )}
+              </button>
+
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute', top: 40, right: 0,
+                  background: '#111118', border: '1px solid rgba(242,242,244,0.12)',
+                  borderRadius: 4, padding: 8, minWidth: 200,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                  zIndex: 100,
+                }}>
+                  <div style={{
+                    padding: '8px 12px', borderBottom: '1px solid rgba(242,242,244,0.08)',
+                    marginBottom: 8,
+                  }}>
+                    <div style={{
+                      fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 600,
+                      color: '#F2F2F4', marginBottom: 2,
+                    }}>
+                      {user?.user_metadata?.full_name || 'User'}
+                    </div>
+                    <div style={{
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+                      color: 'rgba(242,242,244,0.4)',
+                    }}>
+                      {user?.email || ''}
+                    </div>
+                    <div style={{
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                      color: '#00FF87', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6,
+                    }}>
+                      {tier || 'free'} plan
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setShowUserMenu(false); signOut?.(); }}
+                    style={{
+                      width: '100%', padding: '8px 12px',
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+                      color: 'rgba(242,242,244,0.55)', textAlign: 'left',
+                      borderRadius: 3, transition: 'background 0.15s, color 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(242,242,244,0.06)'; e.currentTarget.style.color = '#F2F2F4'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(242,242,244,0.55)'; }}
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

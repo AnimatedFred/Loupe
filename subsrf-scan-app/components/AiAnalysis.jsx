@@ -193,9 +193,38 @@ function QueryCard({ tokens, mode, accessToken, onCreditsChange }) {
   );
 }
 
-export default function AiAnalysis({ tokens, mode }) {
+export default function AiAnalysis({ tokens, mode, inline }) {
   const { session, updateCredits } = useUser() || {};
   const accessToken = session?.access_token;
+
+  const cardGrid = (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
+      {FEATURES.map(f => (
+        <AiCard key={f.id} feature={f} tokens={tokens} mode={mode}
+          accessToken={accessToken} onCreditsChange={updateCredits} />
+      ))}
+      <QueryCard tokens={tokens} mode={mode}
+        accessToken={accessToken} onCreditsChange={updateCredits} />
+    </div>
+  );
+
+  if (inline) {
+    return (
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 1,
+            color: 'var(--neon)', background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
+            borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
+          }}>Gemini 1.5 Flash</span>
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
+          Each action costs 1 credit from your monthly allowance.
+        </div>
+        {cardGrid}
+      </div>
+    );
+  }
 
   return (
     <div style={{ borderTop: '1px solid var(--border)', padding: '40px 32px', background: 'var(--deep)' }}>
@@ -213,14 +242,7 @@ export default function AiAnalysis({ tokens, mode }) {
         <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
           Each action costs 1 credit from your monthly allowance.
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
-          {FEATURES.map(f => (
-            <AiCard key={f.id} feature={f} tokens={tokens} mode={mode}
-              accessToken={accessToken} onCreditsChange={updateCredits} />
-          ))}
-          <QueryCard tokens={tokens} mode={mode}
-            accessToken={accessToken} onCreditsChange={updateCredits} />
-        </div>
+        {cardGrid}
       </div>
     </div>
   );
