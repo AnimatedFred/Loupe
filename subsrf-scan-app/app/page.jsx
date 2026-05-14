@@ -54,11 +54,16 @@ export default function Home() {
         }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <div style={{ width: 16, height: 3, background: '#00FF87', borderRadius: 1, boxShadow: '0 0 12px rgba(0,255,135,0.4)', flexShrink: 0 }} />
+            <img
+              src="/subsrf-icon.png"
+              width={28} height={28}
+              alt="Subsrf"
+              style={{ borderRadius: 6, display: 'block', flexShrink: 0 }}
+            />
             <span style={{
-              fontFamily: "'Manrope', sans-serif", fontSize: 20, fontWeight: 700,
-              letterSpacing: '-0.8px', color: '#F2F2F4',
-            }}>Scan.subsrf.dev</span>
+              fontFamily: "'Azeret Mono', monospace", fontSize: 18, fontWeight: 700,
+              letterSpacing: '-0.02em', color: '#F2F2F4',
+            }}>subsrf</span>
             <span style={{
               fontFamily: "'Azeret Mono', monospace", fontSize: 9,
               color: '#00FF87', letterSpacing: 1.5,
