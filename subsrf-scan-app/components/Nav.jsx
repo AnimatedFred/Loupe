@@ -8,14 +8,17 @@ const TIER_COLORS = {
   free:    { bg: 'rgba(255,255,255,0.05)', color: 'rgba(242,242,244,0.28)', border: 'rgba(242,242,244,0.08)' },
 };
 
+const MAX_CREDITS = { pro: 300, starter: 75, free: 0 };
+
 export default function Nav() {
   const { user, tier, credits, signOut } = useUser() || {};
   const tierStyle = TIER_COLORS[tier] || TIER_COLORS.free;
+  const maxCr = MAX_CREDITS[tier] || 0;
 
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      height: 52, display: 'flex', alignItems: 'center', padding: '0 32px', gap: 32,
+      height: 52, display: 'flex', alignItems: 'center', padding: '0 32px', gap: 24,
       background: 'rgba(5,5,8,0.88)', backdropFilter: 'blur(20px)',
       borderBottom: '1px solid var(--border)',
     }}>
@@ -36,7 +39,7 @@ export default function Nav() {
       }}>beta</span>
 
       {user ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Tier badge */}
           <span style={{
             fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: '1.5px',
@@ -47,13 +50,23 @@ export default function Nav() {
             {tier}
           </span>
 
-          {/* Credits */}
-          <span style={{
-            fontFamily: "'Azeret Mono', monospace", fontSize: 10,
-            color: credits > 0 ? 'var(--neon)' : 'rgba(242,242,244,0.28)',
-          }}>
-            {credits} credits
-          </span>
+          {/* Credits — bolt icon + pill */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'var(--deep)', border: '1px solid var(--border)',
+            borderRadius: 4, padding: '4px 10px',
+          }} title="AI credits available">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--neon)" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+              <path d="M13 2L3 14h8l-1 8 11-12h-8l1-8z"/>
+            </svg>
+            <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 11, color: 'var(--t1)' }}>
+              {credits ?? 0}
+              {maxCr > 0 && (
+                <span style={{ color: 'var(--t3)' }}> / {maxCr}</span>
+              )}
+              {' '}<span style={{ color: 'var(--t3)' }}>CR</span>
+            </span>
+          </div>
 
           {/* Sign out */}
           <button
