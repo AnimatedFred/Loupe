@@ -550,9 +550,9 @@ figma.ui.onmessage = async (msg) => {
         var col = figma.variables.createVariableCollection(name);
         // Rename the default mode to the first named mode
         col.renameMode(col.modes[0].modeId, modes[0]);
-        // Add remaining modes
+        // Add remaining modes — silently skip on free Figma plan (1-mode limit)
         for (var i = 1; i < modes.length; i++) {
-          col.addMode(modes[i]);
+          try { col.addMode(modes[i]); } catch (_) {}
         }
         return col;
       }
@@ -569,7 +569,8 @@ figma.ui.onmessage = async (msg) => {
               var modeName = modeEntries[j][0];
               var modeValue = modeEntries[j][1];
               var mode = collection.modes.find(function(m) { return m.name === modeName; });
-              if (!mode && modeName === 'Default') mode = collection.modes[0];
+              // Fallback: if mode wasn't created (free plan), use the first available mode
+              if (!mode) mode = collection.modes[0];
               if (!mode) continue;
               figmaVar.setValueForMode(mode.modeId, modeValue);
             }
