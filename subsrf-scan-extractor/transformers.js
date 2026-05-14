@@ -163,17 +163,17 @@ function figmaTransformer(tokenSet) {
     const m = css?.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d+(?:\.\d+)?))?\)/);
     if (!m) return null;
     return {
-      r: Math.round((parseFloat(m[1]) / 255) * 1000) / 1000,
-      g: Math.round((parseFloat(m[2]) / 255) * 1000) / 1000,
-      b: Math.round((parseFloat(m[3]) / 255) * 1000) / 1000,
-      a: m[4] !== undefined ? Math.round(parseFloat(m[4]) * 1000) / 1000 : 1,
+      r: parseFloat(m[1]) / 255,
+      g: parseFloat(m[2]) / 255,
+      b: parseFloat(m[3]) / 255,
+      a: m[4] !== undefined ? parseFloat(m[4]) : 1,
     };
   };
 
-  const stripPrefix = (name, prefix) => name.replace(new RegExp(`^${prefix}/`), '');
+  const variables = [];
 
-  // ── Colors collection (supports Dark / Light modes) ──────────────────────
-  const colorVars = (primary.colors || []).map(t => {
+  // Colors — Dark/Light modes
+  for (const t of primary.colors || []) {
     const values = {};
     if (hasBoth) {
       const dVal = dark.colors.find(c => c.name === t.name)?.value;
@@ -183,40 +183,34 @@ function figmaTransformer(tokenSet) {
     } else {
       values[colorModes[0]] = parseRgb(t.value) ?? t.hex;
     }
-    return { name: stripPrefix(t.name, 'color'), type: 'COLOR', values };
-  });
+    variables.push({ name: t.name, type: 'COLOR', values });
+  }
 
-  // ── Spacing collection ────────────────────────────────────────────────────
-  const spacingVars = (primary.spacing || [])
-    .filter(t => !isNaN(parseFloat(t.value)))
-    .map(t => ({
-      name: stripPrefix(t.name, 'space'),
-      type: 'FLOAT',
-      values: { Default: parseFloat(t.value) },
-    }));
+  // Spacing — use actual px value in name to prevent duplicate names
+  const seenSpacing = new Set();
+  for (const t of primary.spacing || []) {
+    const px = parseFloat(t.value);
+    if (isNaN(px)) continue;
+    const name = `space/${px}`;
+    if (seenSpacing.has(name)) continue;
+    seenSpacing.add(name);
+    variables.push({ name, type: 'FLOAT', values: { Default: px } });
+  }
 
-  // ── Radius collection ─────────────────────────────────────────────────────
-  const radiusVars = (primary.radius || [])
-    .filter(t => !isNaN(parseFloat(t.value)))
-    .map(t => ({
-      name: stripPrefix(t.name, 'radius'),
-      type: 'FLOAT',
-      values: { Default: parseFloat(t.value) },
-    }));
+  // Radius — deduplicate by name
+  const seenRadius = new Set();
+  for (const t of primary.radius || []) {
+    const px = parseFloat(t.value);
+    if (isNaN(px)) continue;
+    if (seenRadius.has(t.name)) continue;
+    seenRadius.add(t.name);
+    variables.push({ name: t.name, type: 'FLOAT', values: { Default: px } });
+  }
 
-  // ── Shadows collection (STRING — Figma has no native effect variable yet) ─
-  const shadowVars = (primary.shadows || []).map(t => ({
-    name: stripPrefix(t.name, 'shadow'),
-    type: 'STRING',
-    values: { Default: t.value },
-  }));
-
-  const collections = [
-    colorVars.length  && { name: 'Colors',  modes: colorModes,    variables: colorVars  },
-    spacingVars.length && { name: 'Spacing', modes: ['Default'],   variables: spacingVars },
-    radiusVars.length  && { name: 'Radius',  modes: ['Default'],   variables: radiusVars  },
-    shadowVars.length  && { name: 'Shadows', modes: ['Default'],   variables: shadowVars  },
-  ].filter(Boolean);
+  // Shadows — STRING (Figma has no native effect variable type)
+  for (const t of primary.shadows || []) {
+    variables.push({ name: t.name, type: 'STRING', values: { Default: t.value } });
+  }
 
   const hostname = (() => {
     try { return new URL(tokenSet.url.startsWith('http') ? tokenSet.url : 'https://' + tokenSet.url).hostname; }
@@ -224,10 +218,9 @@ function figmaTransformer(tokenSet) {
   })();
 
   return JSON.stringify({
-    _generator: 'Subsrf Scan',
-    _source: hostname,
-    _plugin: 'Import with "Variables Import & Export" (Figma Community)',
-    collections,
+    name: `${hostname} tokens`,
+    modes: colorModes,
+    variables,
   }, null, 2);
 }
 
