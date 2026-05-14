@@ -243,8 +243,8 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
         }}>
           {generating ? '⟳ Generating...' : '★ Generate AI Prompt (1 credit)'}
         </button>
-      ) : (
-        <button onClick={handleDownload} disabled={!tokens} style={{
+      ) : format !== 'figma' ? (
+        <button onClick={() => handleDownload()} disabled={!tokens} style={{
           width: '100%', background: 'var(--neon)', color: 'var(--void)',
           border: 'none', borderRadius: 8, padding: 12,
           fontFamily: "'Azeret Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
@@ -253,7 +253,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
         }}>
           ↓ Download tokens
         </button>
-      )}
+      ) : null}
 
       <button onClick={handleCopy} disabled={!preview} style={{
         width: '100%', background: 'transparent', color: 'var(--t2)',
