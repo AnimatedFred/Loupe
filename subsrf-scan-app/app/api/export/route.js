@@ -75,29 +75,69 @@ function styleDictionaryTransformer(tokenSet, mode) {
   return JSON.stringify(sd, null, 2);
 }
 
-function figmaTransformer(tokenSet) {
-  const primary = tokenSet.dark || tokenSet.light;
+function figmaTransformer(tokenSet, subset = 'all') {
+  const dark = tokenSet.dark;
+  const light = tokenSet.light;
+  const primary = dark || light;
   if (!primary) return '{}';
-  const modes = (tokenSet.hasDark && tokenSet.hasLight) ? ['Dark', 'Light'] : [tokenSet.hasDark ? 'Dark' : 'Light'];
+  const hasBoth = !!dark && !!light;
+  const colorModes = hasBoth ? ['Dark', 'Light'] : [(dark ? 'Dark' : 'Light')];
   const variables = [];
   const parseRgb = (css) => {
-    const m = css.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d+(?:\.\d+)?))?\)/);
+    const m = css?.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)(?:,\s*(\d+(?:\.\d+)?))?\)/);
     if (!m) return null;
     return { r: +m[1]/255, g: +m[2]/255, b: +m[3]/255, a: m[4] !== undefined ? +m[4] : 1 };
   };
-  for (const t of primary.colors || []) {
-    const vals = {};
-    if (tokenSet.dark) vals['Dark'] = parseRgb(tokenSet.dark.colors?.find(c => c.name === t.name)?.value || t.value);
-    if (tokenSet.light) vals['Light'] = parseRgb(tokenSet.light.colors?.find(c => c.name === t.name)?.value || t.value);
-    variables.push({ name: t.name, type: 'COLOR', values: vals });
+
+  const incColors  = subset === 'all' || subset === 'colors';
+  const incSpacing = subset === 'all' || subset === 'spacing';
+  const incRadius  = subset === 'all' || subset === 'radius';
+  const incShadows = subset === 'all' || subset === 'shadows';
+
+  if (incColors) {
+    for (const t of primary.colors || []) {
+      const vals = {};
+      if (hasBoth) {
+        vals['Dark']  = parseRgb(dark.colors?.find(c => c.name === t.name)?.value) ?? parseRgb(t.value);
+        vals['Light'] = parseRgb(light.colors?.find(c => c.name === t.name)?.value) ?? parseRgb(t.value);
+      } else {
+        vals[colorModes[0]] = parseRgb(t.value);
+      }
+      variables.push({ name: t.name, type: 'COLOR', values: vals });
+    }
   }
-  for (const t of primary.spacing || []) variables.push({ name: t.name, type: 'FLOAT', values: { Default: parseFloat(t.value) } });
-  for (const t of primary.radius || []) variables.push({ name: t.name, type: 'FLOAT', values: { Default: parseFloat(t.value) } });
+  if (incSpacing) {
+    const seen = new Set();
+    for (const t of primary.spacing || []) {
+      const px = parseFloat(t.value);
+      if (isNaN(px)) continue;
+      const name = `space/${px}`;
+      if (seen.has(name)) continue;
+      seen.add(name);
+      variables.push({ name, type: 'FLOAT', values: { Default: px } });
+    }
+  }
+  if (incRadius) {
+    const seen = new Set();
+    for (const t of primary.radius || []) {
+      const px = parseFloat(t.value);
+      if (isNaN(px) || seen.has(t.name)) continue;
+      seen.add(t.name);
+      variables.push({ name: t.name, type: 'FLOAT', values: { Default: px } });
+    }
+  }
+  if (incShadows) {
+    for (const t of primary.shadows || []) {
+      variables.push({ name: t.name, type: 'STRING', values: { Default: t.value } });
+    }
+  }
 
   let hostname = tokenSet.url || 'tokens';
   try { hostname = new URL(tokenSet.url.startsWith('http') ? tokenSet.url : 'https://' + tokenSet.url).hostname; } catch {}
 
-  return JSON.stringify({ name: `${hostname} tokens`, modes, variables }, null, 2);
+  const modes = (subset === 'all' || subset === 'colors') ? colorModes : ['Default'];
+  const collectionLabel = subset === 'all' ? 'tokens' : subset;
+  return JSON.stringify({ name: `${hostname} ${collectionLabel}`, modes, variables }, null, 2);
 }
 
 function jsonTransformer(tokenSet, mode) {
@@ -106,7 +146,7 @@ function jsonTransformer(tokenSet, mode) {
 }
 
 export async function POST(request) {
-  const { tokens, format, mode = 'dark' } = await request.json();
+  const { tokens, format, mode = 'dark', subset = 'all' } = await request.json();
   if (!tokens) return NextResponse.json({ error: 'tokens required' }, { status: 400 });
 
   let content;
@@ -115,7 +155,7 @@ export async function POST(request) {
       case 'css':              content = cssTransformer(tokens, mode); break;
       case 'tailwind':         content = tailwindTransformer(tokens, mode); break;
       case 'style_dictionary': content = styleDictionaryTransformer(tokens, mode); break;
-      case 'figma':            content = figmaTransformer(tokens); break;
+      case 'figma':            content = figmaTransformer(tokens, subset); break;
       default:                 content = jsonTransformer(tokens, mode);
     }
   } catch (err) {

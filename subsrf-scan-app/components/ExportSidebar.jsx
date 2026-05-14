@@ -49,7 +49,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
     loadPreview(fmt);
   }
 
-  async function handleDownload() {
+  async function handleDownload(subset = 'all') {
     if (!tokens) return;
     if (format === 'ai_prompt') {
       await handleAiPrompt(true);
@@ -59,15 +59,16 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
     const res = await fetch('/api/export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tokens, format, mode }),
+      body: JSON.stringify({ tokens, format, mode, subset }),
     });
     const data = await res.json();
     const ext = FORMATS.find(f => f.id === format)?.ext || 'txt';
+    const suffix = (format === 'figma' && subset !== 'all') ? `-${subset}` : '-tokens';
     const blob = new Blob([data.content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${hostname}-tokens.${ext}`;
+    a.download = `${hostname}${suffix}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -150,16 +151,53 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
         })}
       </div>
 
-      {format === 'figma' && (
-        <div style={{
-          fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t3)',
-          background: 'var(--layer)', border: '1px solid var(--border)',
-          borderRadius: 6, padding: '8px 12px', marginBottom: 12, lineHeight: 1.7,
-        }}>
-          Import with the free Figma plugin<br />
-          <span style={{ color: 'var(--neon)' }}>"Variables Import &amp; Export"</span>
-        </div>
-      )}
+      {format === 'figma' && (() => {
+        const primary = tokens?.dark || tokens?.light;
+        const counts = {
+          colors:  primary?.colors?.length  || 0,
+          spacing: primary?.spacing?.length || 0,
+          radius:  primary?.radius?.length  || 0,
+          shadows: primary?.shadows?.length || 0,
+        };
+        const total = counts.colors + counts.spacing + counts.radius + counts.shadows;
+        const subsets = [
+          { id: 'all',     label: 'Full collection', count: total },
+          { id: 'colors',  label: 'Colors',          count: counts.colors },
+          { id: 'spacing', label: 'Spacing',         count: counts.spacing },
+          { id: 'radius',  label: 'Radius',          count: counts.radius },
+          { id: 'shadows', label: 'Shadows',         count: counts.shadows },
+        ].filter(s => s.id === 'all' || s.count > 0);
+
+        return (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 1.5,
+              textTransform: 'uppercase', color: 'var(--t3)', marginBottom: 8,
+            }}>Download collection</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {subsets.map(s => (
+                <button key={s.id} onClick={() => tokens && handleDownload(s.id)} disabled={!tokens} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: s.id === 'all' ? 'var(--neon)' : 'var(--layer)',
+                  color: s.id === 'all' ? 'var(--void)' : 'var(--t1)',
+                  border: s.id === 'all' ? 'none' : '1px solid var(--border)',
+                  borderRadius: 7, padding: '9px 13px',
+                  fontFamily: "'Azeret Mono', monospace", fontSize: 11, fontWeight: s.id === 'all' ? 600 : 400,
+                  opacity: !tokens ? 0.4 : 1, cursor: tokens ? 'pointer' : 'default',
+                  transition: 'opacity 0.15s',
+                }}>
+                  <span>{s.id === 'all' ? '↓ ' : ''}{s.label}</span>
+                  <span style={{
+                    fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                    opacity: s.id === 'all' ? 0.65 : 1,
+                    color: s.id === 'all' ? 'var(--void)' : 'var(--t3)',
+                  }}>{s.count} vars</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Code preview */}
       <div style={{

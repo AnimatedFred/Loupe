@@ -150,7 +150,7 @@ function styleDictionaryTransformer(tokenSet, mode = 'dark') {
   return JSON.stringify(sd, null, 2);
 }
 
-function figmaTransformer(tokenSet) {
+function figmaTransformer(tokenSet, subset = 'all') {
   const dark = tokenSet.dark;
   const light = tokenSet.light;
   const primary = dark || light;
@@ -172,44 +172,57 @@ function figmaTransformer(tokenSet) {
 
   const variables = [];
 
+  const inc = subset === 'all' || subset === 'colors';
+  const incSpacing = subset === 'all' || subset === 'spacing';
+  const incRadius  = subset === 'all' || subset === 'radius';
+  const incShadows = subset === 'all' || subset === 'shadows';
+
   // Colors — Dark/Light modes
-  for (const t of primary.colors || []) {
-    const values = {};
-    if (hasBoth) {
-      const dVal = dark.colors.find(c => c.name === t.name)?.value;
-      const lVal = light.colors.find(c => c.name === t.name)?.value;
-      values['Dark']  = parseRgb(dVal)  ?? parseRgb(t.value) ?? t.hex;
-      values['Light'] = parseRgb(lVal)  ?? parseRgb(t.value) ?? t.hex;
-    } else {
-      values[colorModes[0]] = parseRgb(t.value) ?? t.hex;
+  if (inc) {
+    for (const t of primary.colors || []) {
+      const values = {};
+      if (hasBoth) {
+        const dVal = dark.colors.find(c => c.name === t.name)?.value;
+        const lVal = light.colors.find(c => c.name === t.name)?.value;
+        values['Dark']  = parseRgb(dVal)  ?? parseRgb(t.value) ?? t.hex;
+        values['Light'] = parseRgb(lVal)  ?? parseRgb(t.value) ?? t.hex;
+      } else {
+        values[colorModes[0]] = parseRgb(t.value) ?? t.hex;
+      }
+      variables.push({ name: t.name, type: 'COLOR', values });
     }
-    variables.push({ name: t.name, type: 'COLOR', values });
   }
 
   // Spacing — use actual px value in name to prevent duplicate names
-  const seenSpacing = new Set();
-  for (const t of primary.spacing || []) {
-    const px = parseFloat(t.value);
-    if (isNaN(px)) continue;
-    const name = `space/${px}`;
-    if (seenSpacing.has(name)) continue;
-    seenSpacing.add(name);
-    variables.push({ name, type: 'FLOAT', values: { Default: px } });
+  if (incSpacing) {
+    const seenSpacing = new Set();
+    for (const t of primary.spacing || []) {
+      const px = parseFloat(t.value);
+      if (isNaN(px)) continue;
+      const name = `space/${px}`;
+      if (seenSpacing.has(name)) continue;
+      seenSpacing.add(name);
+      variables.push({ name, type: 'FLOAT', values: { Default: px } });
+    }
   }
 
   // Radius — deduplicate by name
-  const seenRadius = new Set();
-  for (const t of primary.radius || []) {
-    const px = parseFloat(t.value);
-    if (isNaN(px)) continue;
-    if (seenRadius.has(t.name)) continue;
-    seenRadius.add(t.name);
-    variables.push({ name: t.name, type: 'FLOAT', values: { Default: px } });
+  if (incRadius) {
+    const seenRadius = new Set();
+    for (const t of primary.radius || []) {
+      const px = parseFloat(t.value);
+      if (isNaN(px)) continue;
+      if (seenRadius.has(t.name)) continue;
+      seenRadius.add(t.name);
+      variables.push({ name: t.name, type: 'FLOAT', values: { Default: px } });
+    }
   }
 
   // Shadows — STRING (Figma has no native effect variable type)
-  for (const t of primary.shadows || []) {
-    variables.push({ name: t.name, type: 'STRING', values: { Default: t.value } });
+  if (incShadows) {
+    for (const t of primary.shadows || []) {
+      variables.push({ name: t.name, type: 'STRING', values: { Default: t.value } });
+    }
   }
 
   const hostname = (() => {
@@ -217,9 +230,13 @@ function figmaTransformer(tokenSet) {
     catch { return tokenSet.url; }
   })();
 
+  // Subset collections use a single Default mode (no dark/light needed)
+  const modes = (subset === 'all' || subset === 'colors') ? colorModes : ['Default'];
+  const collectionLabel = subset === 'all' ? 'tokens' : subset;
+
   return JSON.stringify({
-    name: `${hostname} tokens`,
-    modes: colorModes,
+    name: `${hostname} ${collectionLabel}`,
+    modes,
     variables,
   }, null, 2);
 }
@@ -230,7 +247,7 @@ function transform(tokenSet, format, mode = 'dark') {
     case 'tailwind': return { content: tailwindTransformer(tokenSet, mode), ext: 'js', lang: 'js' };
     case 'json': return { content: jsonTransformer(tokenSet, mode), ext: 'json', lang: 'json' };
     case 'style_dictionary': return { content: styleDictionaryTransformer(tokenSet, mode), ext: 'json', lang: 'json' };
-    case 'figma': return { content: figmaTransformer(tokenSet), ext: 'json', lang: 'json' };
+    case 'figma': return { content: figmaTransformer(tokenSet, mode), ext: 'json', lang: 'json' };
     default: return { content: jsonTransformer(tokenSet, mode), ext: 'json', lang: 'json' };
   }
 }
