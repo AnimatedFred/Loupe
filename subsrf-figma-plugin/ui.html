@@ -521,6 +521,25 @@
         </div>
 
         <button class="btn-secondary" id="btnSignOut" style="width:100%;margin-top:4px;">Sign out</button>
+        <div style="height:16px;"></div>
+
+        <div class="settings-card">
+          <div class="settings-title">Import Variables from Subsrf Scan</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:12px;">
+            Export "Figma Variables" from Subsrf Scan, then paste the JSON below to import colors, spacing, and radius as native Figma variables.
+          </div>
+          <textarea id="importVarsInput" placeholder='Paste Figma Variables JSON here…' style="
+            width:100%;height:88px;resize:none;
+            background:var(--void);border:1px solid var(--border);border-radius:6px;
+            color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
+            line-height:1.6;padding:8px 10px;outline:none;
+            transition:border-color 0.15s;
+          " oninput="checkImportBtn()"></textarea>
+          <div style="height:8px;"></div>
+          <button class="btn-primary" id="btnImportVars" disabled onclick="importVariables()">Import Variables</button>
+          <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;margin-top:8px;min-height:16px;text-align:center;"></div>
+        </div>
+
         <div style="height:8px;"></div>
 
       </div>
@@ -989,6 +1008,33 @@
       if (document.getElementById('view-loading').style.display !== 'none') showView('signin');
     }, 4000);
 
+    function checkImportBtn() {
+      const val = document.getElementById('importVarsInput').value.trim();
+      document.getElementById('btnImportVars').disabled = !val;
+    }
+
+    function importVariables() {
+      const raw = document.getElementById('importVarsInput').value.trim();
+      const statusEl = document.getElementById('importVarsStatus');
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        statusEl.style.color = 'var(--err)';
+        statusEl.textContent = '✗ Invalid JSON';
+        return;
+      }
+      if (!parsed.variables || !Array.isArray(parsed.variables)) {
+        statusEl.style.color = 'var(--err)';
+        statusEl.textContent = '✗ Missing "variables" array';
+        return;
+      }
+      statusEl.style.color = 'var(--t3)';
+      statusEl.textContent = 'Importing…';
+      document.getElementById('btnImportVars').disabled = true;
+      parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data: parsed } }, '*');
+    }
+
     window.onmessage = async (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
@@ -1034,6 +1080,19 @@
             body: JSON.stringify({ queryId: msg.queryId, result: msg.result, error: msg.error })
           });
         } catch (_) {}
+        return;
+      }
+
+      if (msg.type === 'IMPORT_VARIABLES_RESULT') {
+        const statusEl = document.getElementById('importVarsStatus');
+        document.getElementById('btnImportVars').disabled = false;
+        if (msg.error) {
+          statusEl.style.color = 'var(--err)';
+          statusEl.textContent = '✗ ' + msg.error;
+        } else {
+          statusEl.style.color = 'var(--ok)';
+          statusEl.textContent = `✓ ${msg.created} created, ${msg.skipped} skipped`;
+        }
         return;
       }
 
