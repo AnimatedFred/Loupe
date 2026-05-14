@@ -150,7 +150,7 @@ export default function Home() {
         )}
 
         {/* ── Main workspace ─────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', minHeight: 0 }}>
           {/* Ambient gradient bg */}
           <div style={{
             position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,

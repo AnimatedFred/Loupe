@@ -68,13 +68,13 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
     <div style={{
       display: 'grid', gridTemplateColumns: '240px 1fr 300px',
       borderTop: '1px solid var(--border)', position: 'relative', zIndex: 1,
-      minHeight: 600,
+      flex: 1, minHeight: 0, width: '100%', height: '100%',
     }}>
       {/* Left sidebar */}
       <aside style={{
         background: 'var(--deep)', borderRight: '1px solid var(--border)',
-        padding: '20px 0', position: 'sticky', top: 52,
-        height: 'calc(100vh - 52px)', overflowY: 'auto',
+        padding: '20px 0', overflowY: 'auto',
+        display: 'flex', flexDirection: 'column',
       }}>
         {/* Categories */}
         <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
@@ -150,7 +150,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
       </aside>
 
       {/* Main panel */}
-      <main style={{ padding: '28px 32px', overflowY: 'auto' }}>
+      <main style={{ padding: '28px 32px', overflowY: 'auto', minHeight: 0 }}>
         {/* Panel header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}>

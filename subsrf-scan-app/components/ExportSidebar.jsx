@@ -115,8 +115,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
   return (
     <aside style={{
       background: 'var(--deep)', borderLeft: '1px solid var(--border)',
-      padding: '24px 20px', position: 'sticky', top: 52,
-      height: 'calc(100vh - 52px)', overflowY: 'auto',
+      padding: '24px 20px', overflowY: 'auto',
     }}>
       <div style={{
         fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 2,
