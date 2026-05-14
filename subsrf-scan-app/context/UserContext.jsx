@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
-  const [session, setSession] = useState(undefined); // undefined = loading
+  const [session, setSession] = useState(undefined); // undefined = still loading
   const [profile, setProfile] = useState(null);
 
   async function fetchProfile(userId) {
@@ -19,10 +19,30 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    async function init() {
+      // SSO: Figma plugin passes token + refresh in the URL — establish session first
+      const params = new URLSearchParams(window.location.search);
+      const tokenParam   = params.get('token');
+      const refreshParam = params.get('refresh');
+
+      if (tokenParam) {
+        await supabase.auth.setSession({
+          access_token:  tokenParam,
+          refresh_token: refreshParam || '',
+        });
+        // Clean the SSO params from the URL
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete('token');
+        clean.searchParams.delete('refresh');
+        window.history.replaceState({}, '', clean.toString());
+      }
+
+      const { data: { session: s } } = await supabase.auth.getSession();
       setSession(s ?? null);
       if (s?.user) fetchProfile(s.user.id);
-    });
+    }
+
+    init();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s ?? null);

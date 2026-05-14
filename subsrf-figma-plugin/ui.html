@@ -438,6 +438,32 @@
           <div class="dot" id="aiDot"></div>
         </div>
 
+        <!-- ── Subsrf Scan row ── -->
+        <div style="margin-top:2px;">
+          <div class="sec-label">Subsrf Scan</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
+              <input id="scanUrlInput" type="text" placeholder="stripe.com" style="
+                flex:1;background:transparent;border:none;outline:none;
+                color:var(--t1);font-family:'Azeret Mono',monospace;
+                font-size:10px;padding:9px 0;
+              " oninput="this.dataset.userEdited='1'" />
+            </div>
+            <button onclick="openScan()" style="
+              background:var(--neon-dim);border:1px solid rgba(0,255,135,0.2);border-radius:2px;
+              padding:0 12px;height:36px;cursor:pointer;
+              display:inline-flex;align-items:center;gap:5px;
+              font-family:'Azeret Mono',monospace;font-size:9px;color:var(--neon);
+              white-space:nowrap;letter-spacing:0.5px;
+            ">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              Scan →
+            </button>
+          </div>
+        </div>
+
         <div class="feed">
           <div class="feed-title">Activity Feed</div>
           <div class="feed-list" id="feedList">
@@ -698,6 +724,14 @@
         syncBtn.textContent = 'Sync to Figma';
         syncBtn.classList.remove('locked');
         syncBtn.onclick = null;
+      }
+
+      // Auto-fill the scan URL input from the active page URL
+      if (data.page?.url) {
+        const inp = document.getElementById('scanUrlInput');
+        if (inp && !inp.dataset.userEdited) {
+          inp.value = data.page.url.replace(/^https?:\/\//, '');
+        }
       }
     }
 
@@ -1007,6 +1041,16 @@
     setTimeout(() => {
       if (document.getElementById('view-loading').style.display !== 'none') showView('signin');
     }, 4000);
+
+    function openScan() {
+      const raw = document.getElementById('scanUrlInput').value.trim();
+      if (!raw) return;
+      const clean = raw.replace(/^https?:\/\//, '');
+      let target = 'https://scan.subsrf.dev/?url=' + encodeURIComponent(clean);
+      if (session?.accessToken)  target += '&token='   + encodeURIComponent(session.accessToken);
+      if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
+      window.open(target, '_blank');
+    }
 
     function checkImportBtn() {
       const val = document.getElementById('importVarsInput').value.trim();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import LoginGate from '../components/LoginGate';
 import Nav from '../components/Nav';
 import Hero from '../components/Hero';
@@ -19,6 +19,18 @@ export default function Home() {
   const [diff, setDiff] = useState(null);
   const [diffLoading, setDiffLoading] = useState(false);
   const [diffError, setDiffError] = useState(null);
+
+  // Auto-extract when opened from the Figma plugin with ?url= param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlParam = params.get('url');
+    if (urlParam) {
+      const clean = new URL(window.location.href);
+      clean.searchParams.delete('url');
+      window.history.replaceState({}, '', clean.toString());
+      handleExtract(urlParam);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleExtract(url) {
     setLoading(true);
