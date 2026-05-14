@@ -7,6 +7,10 @@ export default function LoginGate({ children }) {
   const { user, loading } = useUser();
 
   async function handleGoogleLogin() {
+    if (!supabase) {
+      alert('Supabase is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local');
+      return;
+    }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },

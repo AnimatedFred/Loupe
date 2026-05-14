@@ -10,6 +10,7 @@ export function UserProvider({ children }) {
   const [profile, setProfile] = useState(null);
 
   async function fetchProfile(userId) {
+    if (!supabase) return;
     const { data } = await supabase
       .from('profiles')
       .select('tier, credits')
@@ -19,6 +20,12 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
+    if (!supabase) {
+      // No Supabase configured — skip auth, set session to null
+      setSession(null);
+      return;
+    }
+
     async function init() {
       // SSO: Figma plugin passes token + refresh in the URL — establish session first
       const params = new URLSearchParams(window.location.search);
@@ -58,7 +65,7 @@ export function UserProvider({ children }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
   }
 
   const loading = session === undefined;
