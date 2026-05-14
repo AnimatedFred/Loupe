@@ -236,11 +236,11 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
           <div className="flex flex-col items-center text-center gap-md">
             <div className="flex items-center gap-sm">
               <span className="w-1.5 h-1.5 bg-neon rounded-full animate-pulse"></span>
-              <span className="font-label-caps text-label-caps text-neon uppercase tracking-widest">New · tokens.subsrf.dev</span>
+              <span className="font-label-caps text-label-caps text-neon uppercase tracking-widest">New · scan.subsrf.dev</span>
             </div>
             <h2 className="font-heading-md text-heading-md text-white-primary">Extract any design system</h2>
             <p className="font-body text-body text-white-secondary max-w-xl">
-              Every live website runs on a design system. Subsrf Tokens reads the computed CSS of any URL and surfaces it as clean, exportable tokens — colors, typography, spacing, shadows, and radii.
+              Every live website runs on a design system. Subsrf Scan reads the computed CSS of any URL and surfaces it as clean, exportable tokens — colors, typography, spacing, shadows, and radii.
             </p>
           </div>
 
@@ -369,9 +369,9 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
           </div>
 
           <div className="flex justify-center">
-            <a href="https://tokens.subsrf.dev" target="_blank" rel="noopener noreferrer"
+            <a href="https://scan.subsrf.dev" target="_blank" rel="noopener noreferrer"
               className="bg-neon text-void px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95">
-              Try Subsrf Tokens →
+              Try Subsrf Scan →
             </a>
           </div>
         </section>
