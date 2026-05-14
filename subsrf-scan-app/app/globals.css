@@ -49,3 +49,34 @@ body::before {
 
 button { cursor: pointer; font-family: inherit; }
 a { text-decoration: none; color: inherit; }
+
+/* Token cards — Stitch-aligned hover effects */
+.token-card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: crosshair;
+  transition: border-color 0.15s;
+}
+.token-card:hover { border-color: var(--neon); }
+.token-card:hover .token-swatch-overlay { opacity: 1; }
+.token-card:hover .token-copy-icon { color: var(--neon); }
+
+.token-swatch-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.06), transparent);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.token-copy-icon {
+  color: rgba(242,242,244,0.12);
+  transition: color 0.15s;
+  flex-shrink: 0;
+}

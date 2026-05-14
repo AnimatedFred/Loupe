@@ -130,8 +130,8 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '10px 12px', borderRadius: 4, cursor: 'pointer',
               transition: 'border-color 0.15s, background 0.15s',
-              background: selected ? 'var(--neon-dim)' : 'var(--layer)',
-              border: selected ? '1px solid rgba(0,255,135,0.25)' : '1px solid var(--border)',
+              background: selected ? 'var(--layer)' : 'var(--void)',
+              border: selected ? '1px solid rgba(0,255,135,0.4)' : '1px solid var(--border)',
             }}>
               <span style={{
                 fontFamily: "'Azeret Mono', monospace", fontSize: 10, fontWeight: 600,
@@ -252,7 +252,10 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
           marginBottom: 10, opacity: !tokens ? 0.4 : 1,
           boxShadow: !tokens ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
         }}>
-          ↓ Download tokens
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download Tokens
         </button>
       ) : null}
 

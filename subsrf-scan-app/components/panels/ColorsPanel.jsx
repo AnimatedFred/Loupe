@@ -37,18 +37,12 @@ export default function ColorsPanel({ tokens, onCopy, copied }) {
               {items.map(token => {
                 const isCopied = copied === token.value;
                 return (
-                  <div key={token.name} onClick={() => onCopy(token.value)} style={{
-                    borderRadius: 4, overflow: 'hidden',
-                    border: '1px solid var(--border)', cursor: 'pointer',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                  >
+                  <div key={token.name} onClick={() => onCopy(token.value)} className="token-card">
                     <div style={{
-                      height: 60, width: '100%', background: token.value, position: 'relative',
-                      boxShadow: token.name.includes('accent') ? 'inset 0 0 20px rgba(0,255,135,0.2)' : undefined,
+                      height: 80, width: '100%', background: token.value, position: 'relative',
+                      borderRadius: 2, border: '1px solid rgba(242,242,244,0.08)', overflow: 'hidden',
                     }}>
+                      <div className="token-swatch-overlay" />
                       {isCopied && (
                         <div style={{
                           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -58,20 +52,26 @@ export default function ColorsPanel({ tokens, onCopy, copied }) {
                         }}>✓ copied</div>
                       )}
                     </div>
-                    <div style={{ background: 'var(--surface)', padding: '8px 10px' }}>
-                      <div style={{
-                        fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t2)',
-                        marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>{token.name.split('/').pop()}</div>
-                      <div style={{
-                        fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t3)',
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '0 2px' }}>
+                      <span style={{
+                        fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: 'var(--t1)',
                         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>{token.hex || token.value}</div>
-                      {token.frequency > 0 && (
-                        <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 8, color: 'var(--t4)', marginTop: 2 }}>
-                          {token.frequency} uses
-                        </div>
-                      )}
+                      }}>{token.name.split('/').pop()}</span>
+                      <span style={{
+                        fontFamily: "'Azeret Mono', monospace", fontSize: 10, color: 'var(--t3)',
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                      }}>{token.hex || token.value}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                        {token.frequency > 0 ? (
+                          <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'rgba(242,242,244,0.4)' }}>
+                            {token.frequency} uses
+                          </span>
+                        ) : <span />}
+                        <svg className="token-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 );

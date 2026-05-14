@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
 import { useUser } from '../context/UserContext';
@@ -37,11 +37,6 @@ export default function Home() {
     }
   }
 
-  const hostname = (() => {
-    try { return new URL(sourceUrl.startsWith('http') ? sourceUrl : 'https://' + sourceUrl).hostname; }
-    catch { return sourceUrl; }
-  })();
-
   return (
     <LoginGate>
       <div style={{
@@ -59,21 +54,17 @@ export default function Home() {
         }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <img
-              src="/subsrf-icon.png"
-              width={28} height={28}
-              alt="Subsrf"
-              style={{ borderRadius: 6, display: 'block', flexShrink: 0 }}
-            />
+            <div style={{ width: 16, height: 3, background: '#00FF87', borderRadius: 1, boxShadow: '0 0 12px rgba(0,255,135,0.4)', flexShrink: 0 }} />
             <span style={{
-              fontFamily: "'Azeret Mono', monospace", fontSize: 18, fontWeight: 700,
-              letterSpacing: '-0.02em', color: '#F2F2F4',
-            }}>subsrf</span>
+              fontFamily: "'Manrope', sans-serif", fontSize: 20, fontWeight: 700,
+              letterSpacing: '-0.8px', color: '#F2F2F4',
+            }}>Scan.subsrf.dev</span>
             <span style={{
               fontFamily: "'Azeret Mono', monospace", fontSize: 9,
-              color: 'rgba(242,242,244,0.28)', letterSpacing: 2,
-              textTransform: 'uppercase', marginLeft: 4,
-            }}>SCAN</span>
+              color: '#00FF87', letterSpacing: 1.5,
+              background: 'rgba(0,255,135,0.10)', border: '1px solid rgba(0,255,135,0.2)',
+              borderRadius: 3, padding: '2px 6px',
+            }}>BETA</span>
           </div>
 
           {/* URL Scan Input */}

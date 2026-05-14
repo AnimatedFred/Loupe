@@ -92,20 +92,25 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
             return (
               <div key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '7px 10px', borderRadius: 6, cursor: 'pointer',
+                padding: '7px 10px', borderRadius: 4, cursor: 'pointer',
                 marginBottom: 2, transition: 'background 0.12s',
-                background: active ? 'var(--neon-dim)' : 'transparent',
-                border: active ? '1px solid rgba(0,255,135,0.15)' : '1px solid transparent',
+                background: active ? 'rgba(0,255,135,0.06)' : 'transparent',
+                border: active ? '1px solid rgba(0,255,135,0.2)' : '1px solid transparent',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: cat.dot, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, fontWeight: 500, color: active ? 'var(--neon)' : 'var(--t1)' }}>{cat.label}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--neon)' : cat.dot, flexShrink: 0,
+                    boxShadow: active ? '0 0 8px rgba(0,255,135,0.6)' : 'none',
+                    transition: 'box-shadow 0.15s',
+                  }} />
+                  <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: active ? 'var(--neon)' : 'rgba(242,242,244,0.55)' }}>{cat.label}</span>
                 </div>
                 <span style={{
                   fontFamily: "'Azeret Mono', monospace", fontSize: 9,
                   color: active ? 'var(--neon)' : 'var(--t3)',
-                  background: active ? 'rgba(0,255,135,0.15)' : 'var(--lift)',
+                  background: active ? 'rgba(0,255,135,0.1)' : 'var(--layer)',
                   padding: '1px 6px', borderRadius: 3,
+                  border: active ? '1px solid rgba(0,255,135,0.1)' : '1px solid var(--border)',
                 }}>{count}</span>
               </div>
             );
@@ -186,33 +191,33 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
       {/* Main panel */}
       <main style={{ padding: '28px 32px', overflowY: 'auto', minHeight: 0 }}>
         {/* Panel header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}>
-            {panelTitles[activeCategory]}
+        <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 16, marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
+            <h1 style={{
+              fontFamily: "'Manrope', sans-serif", fontSize: 36, fontWeight: 700,
+              letterSpacing: '-1px', lineHeight: 1.1, color: 'var(--t1)',
+            }}>
+              {panelTitles[activeCategory]}
+            </h1>
+            <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, color: 'var(--t3)', letterSpacing: 0.5, flexShrink: 0, paddingBottom: 4 }}>
+              {tokenCount(tokens, activeMode, activeCategory)} tokens · {hostname}
+            </div>
           </div>
-          <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, color: 'var(--t3)', letterSpacing: 0.5 }}>
-            {tokenCount(tokens, activeMode, activeCategory)} tokens · {hostname}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: 'var(--layer)', border: '1px solid var(--border)',
+              borderRadius: 4, padding: '6px 12px',
+            }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2, background: 'linear-gradient(135deg, #6366f1, #4338ca)', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: 'var(--t2)' }}>{hostname}</span>
+            </div>
+            <span style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--neon)',
+              background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
+              borderRadius: 3, padding: '3px 8px', letterSpacing: 1,
+            }}>EXTRACTED</span>
           </div>
-        </div>
-
-        {/* Source bar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          background: 'var(--layer)', border: '1px solid var(--border)',
-          borderRadius: 8, padding: '10px 16px', marginBottom: 28,
-        }}>
-          <div style={{
-            width: 16, height: 16, borderRadius: 3, flexShrink: 0,
-            background: 'linear-gradient(135deg, #6366f1, #4338ca)',
-          }} />
-          <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 11, color: 'var(--t2)', flex: 1 }}>
-            {hostname}
-          </div>
-          <div style={{
-            fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--neon)',
-            background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
-            borderRadius: 3, padding: '2px 8px', letterSpacing: 1,
-          }}>EXTRACTED</div>
         </div>
 
         {/* Token panels */}
