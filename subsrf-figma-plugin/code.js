@@ -518,6 +518,90 @@ figma.ui.onmessage = async (msg) => {
     figma.ui.postMessage({ type: 'SELECTION_DATA', nodes: nodes });
     return;
   }
+
+  // ── Import Variables from Subsrf Scan JSON ─────────────────────────────────
+  if (msg.type === 'IMPORT_VARIABLES') {
+    try {
+      var data = msg.data; // { name, modes, variables }
+
+      if (!figma.variables) {
+        figma.ui.postMessage({ type: 'IMPORT_VARIABLES_RESULT', error: 'Variables API not available in this Figma plan.' });
+        return;
+      }
+
+      var colorModes = data.modes || ['Default'];
+      var created = 0;
+      var skipped = 0;
+
+      // Separate COLOR variables from numeric/string ones
+      var colorVars    = data.variables.filter(function(v) { return v.type === 'COLOR'; });
+      var floatVars    = data.variables.filter(function(v) { return v.type === 'FLOAT'; });
+      var stringVars   = data.variables.filter(function(v) { return v.type === 'STRING'; });
+
+      // Group float vars into Spacing and Radius by name prefix
+      var spacingVars  = floatVars.filter(function(v) { return v.name.startsWith('space/'); });
+      var radiusVars   = floatVars.filter(function(v) { return v.name.startsWith('radius/'); });
+      var otherFloats  = floatVars.filter(function(v) { return !v.name.startsWith('space/') && !v.name.startsWith('radius/'); });
+
+      function getOrCreateCollection(name, modes) {
+        var existing = figma.variables.getLocalVariableCollections()
+          .find(function(c) { return c.name === name; });
+        if (existing) return existing;
+        var col = figma.variables.createVariableCollection(name);
+        // Rename the default mode to the first named mode
+        col.renameMode(col.modes[0].modeId, modes[0]);
+        // Add remaining modes
+        for (var i = 1; i < modes.length; i++) {
+          col.addMode(modes[i]);
+        }
+        return col;
+      }
+
+      function importVarsIntoCollection(vars, collection) {
+        for (var i = 0; i < vars.length; i++) {
+          var v = vars[i];
+          try {
+            var existing = figma.variables.getLocalVariables()
+              .find(function(lv) { return lv.name === v.name && lv.variableCollectionId === collection.id; });
+            var figmaVar = existing || figma.variables.createVariable(v.name, collection, v.type);
+            var modeEntries = Object.entries(v.values);
+            for (var j = 0; j < modeEntries.length; j++) {
+              var modeName = modeEntries[j][0];
+              var modeValue = modeEntries[j][1];
+              var mode = collection.modes.find(function(m) { return m.name === modeName; });
+              if (!mode && modeName === 'Default') mode = collection.modes[0];
+              if (!mode) continue;
+              figmaVar.setValueForMode(mode.modeId, modeValue);
+            }
+            created++;
+          } catch (_e) { skipped++; }
+        }
+      }
+
+      if (colorVars.length > 0) {
+        var colorCol = getOrCreateCollection('Colors', colorModes);
+        importVarsIntoCollection(colorVars, colorCol);
+      }
+      if (spacingVars.length > 0) {
+        var spacingCol = getOrCreateCollection('Spacing', ['Default']);
+        importVarsIntoCollection(spacingVars, spacingCol);
+      }
+      if (radiusVars.length > 0) {
+        var radiusCol = getOrCreateCollection('Radius', ['Default']);
+        importVarsIntoCollection(radiusVars, radiusCol);
+      }
+      if (otherFloats.length > 0 || stringVars.length > 0) {
+        var otherCol = getOrCreateCollection('Other', ['Default']);
+        importVarsIntoCollection(otherFloats.concat(stringVars), otherCol);
+      }
+
+      figma.ui.postMessage({ type: 'IMPORT_VARIABLES_RESULT', created: created, skipped: skipped });
+      figma.notify('Variables imported: ' + created + ' created' + (skipped ? ', ' + skipped + ' skipped' : ''));
+    } catch (err) {
+      figma.ui.postMessage({ type: 'IMPORT_VARIABLES_RESULT', error: err.message });
+    }
+    return;
+  }
 };
 
 function parseAllShadows(cssShadow) {
