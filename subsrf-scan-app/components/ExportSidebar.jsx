@@ -128,7 +128,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
           return (
             <div key={f.id} onClick={() => handleFormatSelect(f.id)} style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px', borderRadius: 7, cursor: 'pointer',
+              padding: '10px 12px', borderRadius: 4, cursor: 'pointer',
               transition: 'border-color 0.15s, background 0.15s',
               background: selected ? 'var(--neon-dim)' : 'var(--layer)',
               border: selected ? '1px solid rgba(0,255,135,0.25)' : '1px solid var(--border)',
@@ -200,8 +200,8 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
 
       {/* Code preview */}
       <div style={{
-        background: 'var(--void)', border: '1px solid var(--border)',
-        borderRadius: 8, overflow: 'hidden', marginBottom: 16,
+        background: 'var(--void)', border: '1px dashed var(--border)',
+        borderRadius: 4, overflow: 'hidden', marginBottom: 16,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -235,20 +235,22 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
       {format === 'ai_prompt' ? (
         <button onClick={() => handleAiPrompt(false)} disabled={!tokens || generating} style={{
           width: '100%', background: 'var(--neon)', color: 'var(--void)',
-          border: 'none', borderRadius: 8, padding: 12,
+          border: 'none', borderRadius: 4, padding: 12,
           fontFamily: "'Azeret Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           marginBottom: 10, opacity: (!tokens || generating) ? 0.6 : 1,
+          boxShadow: (!tokens || generating) ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
         }}>
-          {generating ? '⟳ Generating...' : '★ Generate AI Prompt (1 credit)'}
+          {generating ? '⟳ Generating...' : 'Generate AI Prompt (1 credit)'}
         </button>
       ) : format !== 'figma' ? (
         <button onClick={() => handleDownload()} disabled={!tokens} style={{
           width: '100%', background: 'var(--neon)', color: 'var(--void)',
-          border: 'none', borderRadius: 8, padding: 12,
+          border: 'none', borderRadius: 4, padding: 12,
           fontFamily: "'Azeret Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           marginBottom: 10, opacity: !tokens ? 0.4 : 1,
+          boxShadow: !tokens ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
         }}>
           ↓ Download tokens
         </button>
@@ -256,7 +258,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
 
       <button onClick={handleCopy} disabled={!preview} style={{
         width: '100%', background: 'transparent', color: 'var(--t2)',
-        border: '1px solid var(--border)', borderRadius: 8, padding: 10,
+        border: '1px solid var(--border)', borderRadius: 4, padding: 10,
         fontFamily: "'Azeret Mono', monospace", fontSize: 11,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         opacity: !preview ? 0.4 : 1,

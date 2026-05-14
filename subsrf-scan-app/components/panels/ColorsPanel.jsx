@@ -38,7 +38,7 @@ export default function ColorsPanel({ tokens, onCopy, copied }) {
                 const isCopied = copied === token.value;
                 return (
                   <div key={token.name} onClick={() => onCopy(token.value)} style={{
-                    borderRadius: 8, overflow: 'hidden',
+                    borderRadius: 4, overflow: 'hidden',
                     border: '1px solid var(--border)', cursor: 'pointer',
                     transition: 'transform 0.15s, box-shadow 0.15s',
                   }}
