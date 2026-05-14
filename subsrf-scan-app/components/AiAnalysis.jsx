@@ -115,9 +115,9 @@ function AiCard({ feature, tokens, mode, accessToken, onCreditsChange }) {
       </div>
       {result && (
         <div style={{
-          padding: '16px 20px', fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+          padding: '20px 24px', fontFamily: "'Azeret Mono', monospace", fontSize: 11,
           lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-wrap',
-          maxHeight: 320, overflowY: 'auto', scrollbarWidth: 'thin',
+          maxHeight: 800, overflowY: 'auto', scrollbarWidth: 'thin',
         }}>{result}</div>
       )}
     </div>
@@ -191,7 +191,7 @@ function QueryCard({ tokens, mode, accessToken, onCreditsChange }) {
         {error && <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, color: '#FF4D4D', marginTop: 8 }}>{error}</div>}
       </div>
       {answer && (
-        <div style={{ padding: '16px 20px', fontFamily: "'Azeret Mono', monospace", fontSize: 10, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-wrap' }}>
+        <div style={{ padding: '20px 24px', fontFamily: "'Azeret Mono', monospace", fontSize: 11, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-wrap' }}>
           {answer}
         </div>
       )}
@@ -203,16 +203,9 @@ export default function AiAnalysis({ tokens, mode, inline }) {
   const { session, updateCredits } = useUser() || {};
   const accessToken = session?.access_token;
 
-  const geminiTag = (
-    <span style={{
-      fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 1,
-      color: 'var(--neon)', background: 'var(--neon-dim)', border: '1px solid rgba(0,255,135,0.2)',
-      borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
-    }}>Gemini 1.5 Flash</span>
-  );
 
   const cardGrid = (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
       {FEATURES.map(f => (
         <AiCard key={f.id} feature={f} tokens={tokens} mode={mode}
           accessToken={accessToken} onCreditsChange={updateCredits} />
@@ -225,7 +218,7 @@ export default function AiAnalysis({ tokens, mode, inline }) {
   if (inline) {
     return (
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>{geminiTag}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}></div>
         <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
           Each action costs 1 credit from your monthly allowance.
         </div>
@@ -241,7 +234,6 @@ export default function AiAnalysis({ tokens, mode, inline }) {
           <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 22, fontWeight: 700, letterSpacing: '-0.5px' }}>
             AI Analysis
           </div>
-          {geminiTag}
         </div>
         <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 28, lineHeight: 1.6 }}>
           Each action costs 1 credit from your monthly allowance.
