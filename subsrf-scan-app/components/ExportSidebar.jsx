@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '../context/UserContext';
 
 const FORMATS = [
   { id: 'css',              icon: 'CSS',  label: 'CSS Variables',    ext: 'css'  },
@@ -12,6 +13,9 @@ const FORMATS = [
 ];
 
 export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
+  const { session, updateCredits } = useUser() || {};
+  const accessToken = session?.access_token;
+
   const [format, setFormat] = useState('css');
   const [preview, setPreview] = useState(null);
   const [generating, setGenerating] = useState(false);
@@ -71,13 +75,17 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
   async function handleAiPrompt(download = false) {
     setGenerating(true);
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
       const res = await fetch('/api/ai-prompt', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tokens, mode }),
       });
       const data = await res.json();
       const text = data.prompt || data.error || 'Error generating prompt';
+      if (typeof data.creditsRemaining === 'number') updateCredits?.(data.creditsRemaining);
       setPreview(text);
       if (download) {
         const blob = new Blob([text], { type: 'text/plain' });

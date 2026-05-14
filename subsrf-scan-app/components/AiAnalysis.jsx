@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useUser } from '../context/UserContext';
 
 const FEATURES = [
   { id: 'critique',  label: 'Design Critique',     icon: '◈', endpoint: '/api/scan/critique',  responseKey: 'critique',    desc: 'Professional analysis of your type scale, colors, spacing, and overall system maturity.' },
@@ -8,7 +9,7 @@ const FEATURES = [
   { id: 'brand',     label: 'Brand Score',           icon: '◉', endpoint: '/api/scan/brand',     responseKey: 'brandScore',  desc: 'Color harmony, type personality, radius signal, spacing density — scored 0–100.' },
 ];
 
-function AiCard({ feature, tokens, mode }) {
+function AiCard({ feature, tokens, mode, accessToken, onCreditsChange }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,14 +18,18 @@ function AiCard({ feature, tokens, mode }) {
     setLoading(true);
     setError(null);
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
       const res = await fetch(feature.endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tokens, mode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setResult(data[feature.responseKey]);
+      if (typeof data.creditsRemaining === 'number') onCreditsChange(data.creditsRemaining);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -95,7 +100,7 @@ function AiCard({ feature, tokens, mode }) {
   );
 }
 
-function QueryCard({ tokens, mode }) {
+function QueryCard({ tokens, mode, accessToken, onCreditsChange }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -106,14 +111,18 @@ function QueryCard({ tokens, mode }) {
     setLoading(true);
     setError(null);
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
       const res = await fetch('/api/scan/query', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ tokens, question, mode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setAnswer(data.answer);
+      if (typeof data.creditsRemaining === 'number') onCreditsChange(data.creditsRemaining);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -185,6 +194,9 @@ function QueryCard({ tokens, mode }) {
 }
 
 export default function AiAnalysis({ tokens, mode }) {
+  const { session, updateCredits } = useUser() || {};
+  const accessToken = session?.access_token;
+
   return (
     <div style={{ borderTop: '1px solid var(--border)', padding: '40px 32px', background: 'var(--deep)' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -203,9 +215,11 @@ export default function AiAnalysis({ tokens, mode }) {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: 16 }}>
           {FEATURES.map(f => (
-            <AiCard key={f.id} feature={f} tokens={tokens} mode={mode} />
+            <AiCard key={f.id} feature={f} tokens={tokens} mode={mode}
+              accessToken={accessToken} onCreditsChange={updateCredits} />
           ))}
-          <QueryCard tokens={tokens} mode={mode} />
+          <QueryCard tokens={tokens} mode={mode}
+            accessToken={accessToken} onCreditsChange={updateCredits} />
         </div>
       </div>
     </div>

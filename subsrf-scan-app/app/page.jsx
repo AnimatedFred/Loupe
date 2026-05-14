@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import LoginGate from '../components/LoginGate';
 import Nav from '../components/Nav';
 import Hero from '../components/Hero';
 import TokenExplorer from '../components/TokenExplorer';
@@ -72,6 +73,7 @@ export default function Home() {
   const activeMode = tokens?.hasDark ? 'dark' : 'light';
 
   return (
+    <LoginGate>
     <>
       <Nav />
       <Hero onExtract={handleExtract} loading={loading} error={error} extractedUrl={sourceUrl} tokens={tokens} />
@@ -131,5 +133,6 @@ export default function Home() {
         </div>
       )}
     </>
+    </LoginGate>
   );
 }

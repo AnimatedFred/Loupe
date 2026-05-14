@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifyAuth, deductCredit } from '../../../lib/withAuth';
 
 const SYSTEM_INSTRUCTION = `You are a design system analyst.
 Given structured JSON of extracted design tokens from a live website, produce a clean, human-readable summary optimised as context for AI coding prompts (Claude, Cursor, Lovable, v0, Bolt).
@@ -14,13 +15,18 @@ Rules:
 - Plain text only — no markdown, no code blocks, no backticks`;
 
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+  if (auth.credits < 1) return NextResponse.json({ error: 'No credits remaining. Upgrade your plan at subsrf.dev.' }, { status: 402 });
+
+  const { ok, credits: creditsRemaining } = await deductCredit(auth.user.id);
+  if (!ok) return NextResponse.json({ error: 'No credits remaining. Upgrade your plan at subsrf.dev.' }, { status: 402 });
+
   const { tokens, mode = 'dark' } = await request.json();
   if (!tokens) return NextResponse.json({ error: 'tokens required' }, { status: 400 });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 });
-  }
+  if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 });
 
   const tokenData = tokens[mode] || tokens.dark || tokens.light;
   if (!tokenData) return NextResponse.json({ error: 'No token data available' }, { status: 400 });
@@ -38,22 +44,12 @@ export async function POST(request) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
-      systemInstruction: SYSTEM_INSTRUCTION,
-    });
-
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash', systemInstruction: SYSTEM_INSTRUCTION });
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload, null, 2) }] }],
-      generationConfig: {
-        maxOutputTokens: 800,
-        temperature: 0.2,
-        thinkingConfig: { thinkingBudget: 0 },
-      },
+      generationConfig: { maxOutputTokens: 800, temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } },
     });
-
-    const prompt = result.response.text();
-    return NextResponse.json({ prompt });
+    return NextResponse.json({ prompt: result.response.text(), creditsRemaining });
   } catch (err) {
     console.error('[ai-prompt] Gemini error:', err.message);
     return NextResponse.json({ error: 'AI generation failed: ' + err.message }, { status: 500 });

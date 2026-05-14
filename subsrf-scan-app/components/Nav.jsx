@@ -1,6 +1,17 @@
 'use client';
 
+import { useUser } from '../context/UserContext';
+
+const TIER_COLORS = {
+  pro:     { bg: 'rgba(0,255,135,0.10)',   color: '#00FF87', border: 'rgba(0,255,135,0.2)' },
+  starter: { bg: 'rgba(255,171,0,0.08)',   color: '#FFAB00', border: 'rgba(255,171,0,0.25)' },
+  free:    { bg: 'rgba(255,255,255,0.05)', color: 'rgba(242,242,244,0.28)', border: 'rgba(242,242,244,0.08)' },
+};
+
 export default function Nav() {
+  const { user, tier, credits, signOut } = useUser() || {};
+  const tierStyle = TIER_COLORS[tier] || TIER_COLORS.free;
+
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
@@ -24,23 +35,53 @@ export default function Nav() {
         borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
       }}>beta</span>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-        {['Docs', 'Pricing', 'Sign in'].map(l => (
-          <a key={l} href="#" style={{
-            fontFamily: "'Azeret Mono', monospace", fontSize: 10, letterSpacing: 1,
-            textTransform: 'uppercase', color: 'var(--t3)', transition: 'color 0.15s',
-          }}
+      {user ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Tier badge */}
+          <span style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: '1.5px',
+            color: tierStyle.color, background: tierStyle.bg,
+            border: `1px solid ${tierStyle.border}`,
+            borderRadius: 3, padding: '2px 8px', textTransform: 'uppercase',
+          }}>
+            {tier}
+          </span>
+
+          {/* Credits */}
+          <span style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+            color: credits > 0 ? 'var(--neon)' : 'rgba(242,242,244,0.28)',
+          }}>
+            {credits} credits
+          </span>
+
+          {/* Sign out */}
+          <button
+            onClick={signOut}
+            style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 10, letterSpacing: 1,
+              textTransform: 'uppercase', color: 'var(--t3)', background: 'none',
+              border: 'none', cursor: 'pointer', padding: 0, transition: 'color 0.15s',
+            }}
             onMouseEnter={e => e.target.style.color = 'var(--t1)'}
             onMouseLeave={e => e.target.style.color = 'var(--t3)'}
-          >{l}</a>
-        ))}
-      </div>
-
-      <button style={{
-        fontFamily: "'Azeret Mono', monospace", fontSize: 11, fontWeight: 500,
-        background: 'var(--neon)', color: 'var(--void)', border: 'none', borderRadius: 5,
-        padding: '7px 16px', transition: 'opacity 0.15s',
-      }}>Get started</button>
+          >
+            Sign out
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          {['Docs', 'Pricing'].map(l => (
+            <a key={l} href="#" style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 10, letterSpacing: 1,
+              textTransform: 'uppercase', color: 'var(--t3)', transition: 'color 0.15s',
+            }}
+              onMouseEnter={e => e.target.style.color = 'var(--t1)'}
+              onMouseLeave={e => e.target.style.color = 'var(--t3)'}
+            >{l}</a>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

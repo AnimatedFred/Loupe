@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { verifyAuth, deductCredit } from '../../../../lib/withAuth';
 
 const SYSTEM_INSTRUCTION = `You are a design system expert.
 Answer the user's question about the extracted design tokens using only the data provided.
@@ -8,6 +9,13 @@ If the data doesn't contain enough information to answer, say so directly.
 Plain text only — no markdown, no code blocks, no backticks.`;
 
 export async function POST(request) {
+  const auth = await verifyAuth(request);
+  if (!auth) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
+  if (auth.credits < 1) return NextResponse.json({ error: 'No credits remaining. Upgrade your plan at subsrf.dev.' }, { status: 402 });
+
+  const { ok, credits: creditsRemaining } = await deductCredit(auth.user.id);
+  if (!ok) return NextResponse.json({ error: 'No credits remaining. Upgrade your plan at subsrf.dev.' }, { status: 402 });
+
   const { tokens, question, mode = 'dark' } = await request.json();
   if (!tokens || !question) return NextResponse.json({ error: 'tokens and question required' }, { status: 400 });
 
@@ -36,7 +44,7 @@ export async function POST(request) {
       contents: [{ role: 'user', parts: [{ text: JSON.stringify(payload, null, 2) }] }],
       generationConfig: { maxOutputTokens: 400, temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } },
     });
-    return NextResponse.json({ answer: result.response.text() });
+    return NextResponse.json({ answer: result.response.text(), creditsRemaining });
   } catch (err) {
     return NextResponse.json({ error: 'AI generation failed: ' + err.message }, { status: 500 });
   }
