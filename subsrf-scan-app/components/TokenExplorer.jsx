@@ -86,7 +86,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
             textTransform: 'uppercase', color: 'var(--t3)', padding: '8px 0', marginBottom: 8,
           }}>Token categories</div>
 
-          {CATEGORIES.map(cat => {
+          {CATEGORIES.filter(cat => cat.id !== 'ai').map(cat => {
             const count = tokenCount(tokens, activeMode, cat.id);
             const active = activeCategory === cat.id;
             return (
@@ -110,6 +110,37 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
               </div>
             );
           })}
+        </div>
+
+        {/* AI Intelligence section */}
+        <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 2,
+            textTransform: 'uppercase', color: 'var(--t3)', padding: '8px 0', marginBottom: 8,
+          }}>Intelligence</div>
+          {(() => {
+            const active = activeCategory === 'ai';
+            return (
+              <div onClick={() => setActiveCategory('ai')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '7px 10px', borderRadius: 6, cursor: 'pointer',
+                transition: 'background 0.12s',
+                background: active ? 'var(--neon-dim)' : 'transparent',
+                border: active ? '1px solid rgba(0,255,135,0.15)' : '1px solid transparent',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#00FF87', flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: active ? 'var(--neon)' : 'var(--t1)' }}>AI Analysis</span>
+                </div>
+                <span style={{
+                  fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                  color: active ? 'var(--neon)' : 'var(--t3)',
+                  background: active ? 'rgba(0,255,135,0.15)' : 'var(--lift)',
+                  padding: '1px 6px', borderRadius: 3,
+                }}>4</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Mode toggle */}
