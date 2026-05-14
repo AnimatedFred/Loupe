@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-const EXTRACTOR_URL = process.env.EXTRACTOR_URL || 'http://localhost:3001';
+const raw = process.env.EXTRACTOR_URL || 'http://localhost:3001';
+const EXTRACTOR_URL = raw.startsWith('http') ? raw : `https://${raw}`;
 
 export async function POST(request) {
   const { urlA, urlB, mode = 'both' } = await request.json();
