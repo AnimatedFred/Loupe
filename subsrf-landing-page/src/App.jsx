@@ -148,38 +148,39 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
     <>
       <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
-      {/* Main Canvas */}
-      <main className="flex-grow pt-3xl pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
-        {/* Hero Section */}
-        <section className="w-full flex flex-col items-center text-center mt-4xl gap-lg relative overflow-hidden rounded-3xl min-h-[500px] justify-center px-lg border border-white-border/10">
-          <video 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="absolute inset-0 w-full h-full object-cover z-0 opacity-40 pointer-events-none"
-          >
-            <source src="/Hero.mp4" type="video/mp4" />
-          </video>
-          {/* Subtle overlay to improve readability */}
-          <div className="absolute inset-0 bg-void/40 z-[1] pointer-events-none"></div>
-          
-          <div className="relative z-10 flex flex-col items-center gap-lg">
-            <h1 className="font-display-xl text-display-xl text-white-primary max-w-4xl tracking-tighter">
-              What lives beneath any interface.
-            </h1>
-            <p className="font-subheading text-subheading text-white-secondary max-w-2xl">
-              Subsrf reads computed state, extracts semantic structure, and pipes raw UI data directly to AI agents and Figma layers. Technical precision for the web's subsurface.
-            </p>
-            <div className="flex gap-md mt-md">
-              <button className="bg-neon text-void px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>Get Started</button>
-              <button className="bg-transparent border border-white-border text-white-primary px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center gap-xs">
-                <span className="material-symbols-outlined text-[16px]">play_arrow</span>
-                Watch Demo
-              </button>
-            </div>
+      {/* Hero Section - Fullscreen Background */}
+      <section className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center text-center px-lg">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-60 pointer-events-none"
+        >
+          <source src="/Hero.mp4" type="video/mp4" />
+        </video>
+        {/* Cinematic gradient overlay for depth and legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-void/60 via-void/40 to-void z-[1] pointer-events-none"></div>
+        
+        <div className="relative z-10 flex flex-col items-center gap-lg max-w-[1080px] mx-auto">
+          <h1 className="font-display-xl text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.05] text-white-primary max-w-4xl tracking-tighter">
+            What lives beneath any interface.
+          </h1>
+          <p className="font-subheading text-subheading text-white-secondary max-w-2xl">
+            Subsrf reads computed state, extracts semantic structure, and pipes raw UI data directly to AI agents and Figma layers. Technical precision for the web's subsurface.
+          </p>
+          <div className="flex gap-md mt-md">
+            <button className="bg-neon text-void px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity active:scale-95" onClick={scrollToGetStarted}>Get Started</button>
+            <button className="bg-transparent border border-white-border text-white-primary px-lg py-md rounded-DEFAULT font-label-caps text-label-caps hover:border-neon transition-colors active:scale-95 flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[16px]">play_arrow</span>
+              Watch Demo
+            </button>
           </div>
-        </section>
+        </div>
+      </section>
+
+      {/* Main Canvas */}
+      <main className="flex-grow pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
 
         {/* Stats / Social Proof */}
         <section className="w-full flex flex-col items-center gap-md">
