@@ -799,48 +799,120 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
             </div>
           </div>
 
-          {/* Tier Management (Spans 4 columns) */}
-          <div className="md:col-span-4 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative">
+          {/* Tier Management (Spans 8 columns) */}
+          <div className="md:col-span-8 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative">
+            {/* Header */}
             <div className="flex justify-between items-start">
               <span className="font-label-caps text-label-caps text-white-muted">CURRENT PLAN</span>
-              <span className={`px-sm py-xs border rounded DEFAULT font-mono-data text-mono-data flex items-center gap-sm ${isPro ? 'border-neon/30 text-neon' : 'border-white-border text-white-muted'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isPro ? 'bg-neon' : 'bg-white-muted'}`}></span> {isPro ? 'PRO' : 'FREE'}
+              <span className={`px-sm py-xs border rounded-DEFAULT font-mono-data text-mono-data flex items-center gap-sm ${
+                tier === 'pro'     ? 'border-neon/30 text-neon' :
+                tier === 'starter' ? 'border-[#fb923c]/40 text-[#fb923c]' :
+                                     'border-white-border text-white-muted'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${
+                  tier === 'pro' ? 'bg-neon' : tier === 'starter' ? 'bg-[#fb923c]' : 'bg-white-muted'
+                }`}></span>
+                {tier === 'pro' ? 'PRO' : tier === 'starter' ? 'STARTER' : 'FREE'}
               </span>
             </div>
+
+            {/* Plan name + description */}
             <div>
-              <h2 className="font-heading-sm text-heading-sm text-white-primary">{isPro ? 'Pro Tier' : 'Free Tier'}</h2>
+              <h2 className="font-heading-sm text-heading-sm text-white-primary">
+                {tier === 'pro' ? 'Pro Tier' : tier === 'starter' ? 'Starter Tier' : 'Free Tier'}
+              </h2>
               <p className="font-mono-data text-mono-data text-white-secondary mt-sm">
-                {isPro ? 'Unlimited deep scans & full API access.' : 'Basic element capture for individual developers.'}
+                {tier === 'pro'     ? 'Full MCP bridge · 300 credits / month.' :
+                 tier === 'starter' ? 'AI analysis · 75 credits / month.' :
+                                      'Basic element capture.'}
               </p>
             </div>
-            <div className="mt-auto pt-md flex gap-sm">
-              <button 
-                className="flex-1 py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
-                onClick={handleManageBilling}
-                disabled={portalLoading || !hasStripeBilling}
-              >
-                {portalLoading ? 'Wait...' : 'Manage'}
-              </button>
-              {isPro ? (
-                <button 
-                  className="flex-1 py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body font-medium"
-                  onClick={() => { window.location.hash = '#pricing' }}
+
+            {/* Renewal date */}
+            {subInfo?.periodEnd && (
+              <div className="flex justify-between items-center py-sm border-t border-white-border">
+                <span className="font-label-caps text-[9px] text-white-muted tracking-widest">RENEWS</span>
+                <span className="font-mono-data text-[12px] text-white-primary">
+                  {new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            )}
+
+            {/* Scheduled downgrade notice */}
+            {subInfo?.scheduledTier && (
+              <div className="p-sm bg-[#fb923c]/8 border border-[#fb923c]/25 rounded-DEFAULT flex flex-col gap-xs">
+                <span className="font-label-caps text-[9px] text-[#fb923c] tracking-widest">SCHEDULED CHANGE</span>
+                <span className="font-mono-data text-[11px] text-white-secondary">
+                  Downgrade to <span className="text-white-primary capitalize">{subInfo.scheduledTier}</span> begins{' '}
+                  <span className="text-white-primary">
+                    {new Date(subInfo.scheduledDate * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </span>
+              </div>
+            )}
+
+            {/* Proration preview (Starter → Pro) */}
+            {tier === 'starter' && prorationPreview && (
+              <div className="p-sm bg-neon/5 border border-neon/20 rounded-DEFAULT flex flex-col gap-xs">
+                <span className="font-label-caps text-[9px] text-neon tracking-widest">PRO UPGRADE PREVIEW</span>
+                <span className="font-mono-data text-[11px] text-white-secondary">
+                  Upgrading now charges <span className="text-neon font-medium">{prorationPreview.formatted}</span> today for the rest of your billing period. Pro starts immediately.
+                </span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="mt-auto pt-md flex flex-col gap-sm">
+              {tier === 'free' && (
+                <button
+                  className="w-full py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
+                  onClick={() => handleUpgrade('starter')}
+                  disabled={upgrading === 'starter'}
                 >
-                  Downgrade
+                  {upgrading === 'starter' ? 'Wait...' : 'Upgrade to Starter — $9/mo'}
                 </button>
-              ) : (
-                <button 
-                  className="flex-1 py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
-                  onClick={() => handleUpgrade('pro')}
-                  disabled={upgrading === 'pro'}
-                >
-                  {upgrading === 'pro' ? 'Wait...' : 'Upgrade'}
-                </button>
+              )}
+              {tier === 'starter' && (
+                <>
+                  <button
+                    className="w-full py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
+                    onClick={() => handleUpgrade('pro')}
+                    disabled={upgrading === 'pro'}
+                  >
+                    {upgrading === 'pro' ? 'Wait...' :
+                     prorationPreview ? `Upgrade to Pro · ${prorationPreview.formatted} now` : 'Upgrade to Pro — $19/mo'}
+                  </button>
+                  <button
+                    className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-secondary hover:bg-white-border transition-colors font-body text-body text-sm"
+                    onClick={handleManageBilling}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? 'Wait...' : 'Manage / Cancel Subscription'}
+                  </button>
+                </>
+              )}
+              {tier === 'pro' && (
+                <>
+                  <button
+                    className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
+                    onClick={() => handleUpgrade('starter')}
+                    disabled={upgrading === 'starter'}
+                  >
+                    {upgrading === 'starter' ? 'Wait...' : `Downgrade to Starter${subInfo?.periodEnd ? ` · starts ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
+                  </button>
+                  <button
+                    className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-secondary hover:bg-white-border transition-colors font-body text-body text-sm"
+                    onClick={handleManageBilling}
+                    disabled={portalLoading || !hasStripeBilling}
+                  >
+                    {portalLoading ? 'Wait...' : 'Cancel / Manage Billing'}
+                  </button>
+                </>
               )}
             </div>
           </div>
 
-          {/* Credit Balance (Spans 4 columns) */}
+          {/* Credit Balance (Spans 4 columns on its own row) */}
           <div className="md:col-span-4 bg-deep border border-neon rounded-lg p-lg flex flex-col gap-md shadow-[0_0_20px_rgba(0,255,135,0.06)] relative">
             <div className="absolute inset-0 bg-neon/10 opacity-20 pointer-events-none rounded-lg"></div>
             <div className="flex justify-between items-start z-10">
