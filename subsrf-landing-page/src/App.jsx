@@ -545,7 +545,7 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Figma Sync (5 elements max)</li>
               </ul>
               <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={!session ? onLogin : tier === 'free' ? null : handleManageBilling}>
-                {!session ? 'Select Free' : tier === 'free' ? 'Current Plan' : 'Downgrade'}
+                {!session ? 'Select Free' : tier === 'free' ? 'Current Plan' : 'Manage Subscription'}
               </button>
             </div>
             {/* Tier 2 (Active/Neon) */}
@@ -565,8 +565,8 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 75 Credits / month</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync</li>
               </ul>
-              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={!session ? onLogin : tier === 'starter' ? null : tier === 'free' ? () => handleUpgrade('starter') : handleManageBilling} disabled={upgrading === 'starter'}>
-                {upgrading === 'starter' ? 'Wait...' : !session ? 'Select Starter' : tier === 'starter' ? 'Current Plan' : tier === 'free' ? 'Get Starter' : 'Downgrade'}
+              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={!session ? onLogin : tier === 'starter' ? null : () => handleUpgrade('starter')} disabled={upgrading === 'starter'}>
+                {upgrading === 'starter' ? 'Wait...' : !session ? 'Select Starter' : tier === 'starter' ? 'Current Plan' : tier === 'free' ? 'Get Starter' : 'Downgrade to Starter'}
               </button>
             </div>
             {/* Tier 3 */}
@@ -717,6 +717,30 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
 
       {/* Main Content Canvas */}
       <main className="flex-grow pt-[100px] pb-3xl px-lg w-full max-w-[1080px] mx-auto flex flex-col gap-xl">
+
+        {/* Payment status banners */}
+        {paymentStatus === 'success' && (
+          <div className="flex items-start gap-md p-md bg-neon/10 border border-neon/30 rounded-DEFAULT">
+            <span className="w-2 h-2 rounded-full bg-neon mt-1 shrink-0"></span>
+            <div>
+              <div className="font-label-caps text-label-caps text-neon mb-xs">Plan updated</div>
+              <div className="font-mono-data text-mono-data text-white-secondary">
+                {tier === 'starter'
+                  ? 'Your Starter plan is now active. If you downgraded from Pro, the change takes effect at your next billing date.'
+                  : tier === 'pro'
+                  ? 'Your Pro plan is now active. Full MCP bridge and 300 credits/month are available.'
+                  : 'Your subscription has been updated.'}
+              </div>
+            </div>
+          </div>
+        )}
+        {paymentStatus === 'cancelled' && (
+          <div className="flex items-start gap-md p-md bg-white-border/10 border border-white-border rounded-DEFAULT">
+            <span className="w-2 h-2 rounded-full bg-white-muted mt-1 shrink-0"></span>
+            <div className="font-mono-data text-mono-data text-white-secondary">Checkout was cancelled — no changes were made.</div>
+          </div>
+        )}
+
         {/* Header Section */}
         <header className="flex flex-col gap-sm border-b border-white-border pb-lg">
           <h1 className="font-heading-md text-heading-md text-white-primary tracking-tight">Dashboard</h1>

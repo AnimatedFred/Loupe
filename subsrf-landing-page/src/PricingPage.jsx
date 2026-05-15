@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TopNavBar, Footer } from './App';
 
 const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
@@ -6,6 +6,46 @@ const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-
 export default function PricingPage({ onLogin, loading, session, tier, onLogout, mcpConfig }) {
   const isPaid = tier === 'pro' || tier === 'starter';
   const displayConfig = isPaid && mcpConfig ? mcpConfig : BASE_MCP;
+  const [upgrading, setUpgrading] = useState(null);
+  const [upgradeError, setUpgradeError] = useState(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleUpgrade = async (planTier) => {
+    if (!session) return onLogin();
+    setUpgrading(planTier);
+    setUpgradeError(null);
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier: planTier }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
+      window.location.href = data.url;
+    } catch (e) {
+      setUpgradeError(e.message);
+      setUpgrading(null);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    if (!session) return onLogin();
+    setPortalLoading(true);
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to open billing portal');
+      window.location.href = data.url;
+    } catch (e) {
+      setUpgradeError(e.message);
+      setPortalLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 pointer-events-none z-[-1] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-surface-container-low/20 via-void to-void"></div>
@@ -22,6 +62,12 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
             Choose the layer of access your workflow requires. From raw DOM inspection to full bidirectional AI-Figma orchestration.
           </p>
         </section>
+
+        {upgradeError && (
+          <div className="mb-xl p-md bg-red-500/10 border border-red-500/20 rounded-DEFAULT font-mono-data text-label-caps text-red-400">
+            {upgradeError}
+          </div>
+        )}
 
         {/* Pricing Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-lg mb-4xl">
@@ -53,8 +99,12 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-mono-data text-white-muted text-label-caps">Capped Figma Sync (5 elems)</span>
               </div>
             </div>
-            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">
-              {!session ? 'START BUILDING' : tier === 'free' ? 'CURRENT PLAN' : 'DOWNGRADE'}
+            <button
+              onClick={!session ? onLogin : tier === 'free' ? undefined : handleManageBilling}
+              disabled={portalLoading || tier === 'free'}
+              className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all disabled:opacity-60 disabled:cursor-default"
+            >
+              {!session ? 'START BUILDING' : tier === 'free' ? 'CURRENT PLAN' : portalLoading ? 'WAIT...' : 'MANAGE SUBSCRIPTION'}
             </button>
           </div>
 
@@ -87,8 +137,12 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-mono-data text-white-primary text-label-caps">Unlimited Figma Sync</span>
               </div>
             </div>
-            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all">
-              {!session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE'}
+            <button
+              onClick={!session ? onLogin : tier === 'starter' ? undefined : () => handleUpgrade('starter')}
+              disabled={upgrading === 'starter' || tier === 'starter'}
+              className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
+            >
+              {upgrading === 'starter' ? 'WAIT...' : !session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE TO STARTER'}
             </button>
           </div>
 
@@ -120,8 +174,12 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-mono-data text-white-primary text-label-caps">Bidirectional Figma Control</span>
               </div>
             </div>
-            <button onClick={session ? () => window.location.hash = '#dashboard' : onLogin} className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all">
-              {!session ? 'GO PRO' : tier === 'pro' ? 'CURRENT PLAN' : tier === 'starter' ? 'UPGRADE TO PRO' : 'GET PRO'}
+            <button
+              onClick={!session ? onLogin : tier === 'pro' ? undefined : () => handleUpgrade('pro')}
+              disabled={upgrading === 'pro' || tier === 'pro'}
+              className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all disabled:opacity-60 disabled:cursor-default"
+            >
+              {upgrading === 'pro' ? 'WAIT...' : !session ? 'GO PRO' : tier === 'pro' ? 'CURRENT PLAN' : tier === 'starter' ? 'UPGRADE TO PRO' : 'GET PRO'}
             </button>
           </div>
         </section>
