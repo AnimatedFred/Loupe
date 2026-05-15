@@ -180,7 +180,7 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
       </section>
 
       {/* Main Canvas */}
-      <main className="flex-grow pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
+      <main className="flex-grow pt-32 pb-4xl flex flex-col items-center w-full px-lg max-w-[1080px] mx-auto gap-4xl">
 
         {/* Stats / Social Proof */}
         <section className="w-full flex flex-col items-center gap-md">
