@@ -163,7 +163,7 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
         <div className="absolute inset-0 bg-gradient-to-b from-void/60 via-void/40 to-void z-[1] pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col items-center gap-lg max-w-[1080px] mx-auto">
-          <h1 className="font-display-xl text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.05] text-white-primary max-w-4xl tracking-tighter">
+          <h1 className="font-display-xl text-display-xl text-white-primary max-w-4xl tracking-tighter">
             What lives beneath any interface.
           </h1>
           <p className="font-subheading text-subheading text-white-secondary max-w-2xl">
