@@ -777,8 +777,8 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
 
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-lg">
-          {/* Profile Summary (Spans 3 columns) */}
-          <div className="md:col-span-3 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative overflow-hidden group">
+          {/* Profile Summary (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative overflow-hidden group">
             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0),rgba(255,255,255,0)_50%,rgba(0,0,0,0.1)_50%,rgba(0,0,0,0.1))] bg-[length:100%_4px] opacity-20 pointer-events-none"></div>
             <div className="flex items-center gap-md relative z-10">
               <div className="w-12 h-12 rounded-full bg-deep border border-white-border flex items-center justify-center overflow-hidden">
@@ -801,8 +801,8 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
             </div>
           </div>
 
-          {/* Tier Management (Spans 6 columns) */}
-          <div className="md:col-span-6 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative">
+          {/* Tier Management (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-layer border border-white-border rounded-lg p-lg flex flex-col gap-md relative">
             {/* Header */}
             <div className="flex justify-between items-start">
               <span className="font-label-caps text-label-caps text-white-muted">CURRENT PLAN</span>
@@ -914,8 +914,8 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
             </div>
           </div>
 
-          {/* Credit Balance (Spans 3 columns) */}
-          <div className="md:col-span-3 bg-deep border border-neon rounded-lg p-lg flex flex-col gap-md shadow-[0_0_20px_rgba(0,255,135,0.06)] relative">
+          {/* Credit Balance (Spans 4 columns) */}
+          <div className="md:col-span-4 bg-deep border border-neon rounded-lg p-lg flex flex-col gap-md shadow-[0_0_20px_rgba(0,255,135,0.06)] relative">
             <div className="absolute inset-0 bg-neon/10 opacity-20 pointer-events-none rounded-lg"></div>
             <div className="flex justify-between items-start z-10">
               <span className="font-label-caps text-label-caps text-neon">CREDITS</span>
