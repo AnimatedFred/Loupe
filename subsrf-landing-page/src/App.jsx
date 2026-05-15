@@ -245,7 +245,7 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
           <div className="text-center">
             <h2 className="font-heading-md text-heading-md text-white-primary">Get Started</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-md">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
 
             {/* Step 1 */}
             <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-md">
@@ -618,6 +618,8 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
 
   const [hasStripeBilling, setHasStripeBilling] = useState(false)
   const [credits, setCredits] = useState(0)
+  const [subInfo, setSubInfo] = useState(null)       // { periodEnd, scheduledTier, scheduledDate }
+  const [prorationPreview, setProrationPreview] = useState(null) // { prorationAmount, formatted }
 
   useEffect(() => {
     supabase
@@ -631,6 +633,30 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
         if (typeof data?.credits === 'number') setCredits(data.credits)
       })
   }, [user.id])
+
+  // Fetch live subscription info (renewal date, scheduled changes)
+  useEffect(() => {
+    if (!session?.access_token || tier === 'free') return
+    fetch('https://api.subsrf.dev/api/stripe/subscription', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSubInfo(data) })
+      .catch(() => {})
+  }, [session?.access_token, tier])
+
+  // Fetch proration preview when on Starter (shows upgrade cost before clicking)
+  useEffect(() => {
+    if (tier !== 'starter' || !session?.access_token) return
+    fetch('https://api.subsrf.dev/api/stripe/upgrade-preview', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier: 'pro' }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.prorationAmount) setProrationPreview(data) })
+      .catch(() => {})
+  }, [tier, session?.access_token])
 
   useEffect(() => {
     if (paymentStatus === 'success') {
