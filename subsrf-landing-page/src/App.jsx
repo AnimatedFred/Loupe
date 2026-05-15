@@ -149,7 +149,7 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
       <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       {/* Hero Section - Fullscreen Background */}
-      <section className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center text-center px-lg">
+      <section className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center text-center px-lg pt-32">
         <video 
           autoPlay 
           loop 
