@@ -849,6 +849,136 @@ app.post('/api/stripe/change-plan', async (req, res) => {
   }
 });
 
+// Returns current subscription details: renewal date and any scheduled tier change.
+// The schedule object is expanded inline so we can read the next phase without
+// a second API call. Returns 404 if the user has no active subscription.
+app.get('/api/stripe/subscription', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  let subscriptionId = null;
+  if (supabase) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('stripe_subscription_id')
+      .eq('id', auth.user.id).single();
+    subscriptionId = data?.stripe_subscription_id;
+  }
+  if (!subscriptionId) return res.status(404).json({ error: 'No active subscription' });
+
+  try {
+    const subRes = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${subscriptionId}?expand[]=schedule`,
+      { headers: { Authorization: `Bearer ${stripeKey}` } }
+    );
+    const sub = await subRes.json();
+    if (!subRes.ok) throw new Error(sub.error?.message || `Stripe error ${subRes.status}`);
+
+    let scheduledTier = null;
+    let scheduledDate = null;
+
+    // A subscription schedule is attached when the portal schedules a downgrade at period end
+    const schedule = sub.schedule;
+    if (schedule && typeof schedule === 'object' && Array.isArray(schedule.phases) && schedule.phases.length > 1) {
+      const nextPhase = schedule.phases[1];
+      const nextPriceId = nextPhase.items?.[0]?.price;
+      const proPriceId = process.env.STRIPE_PRICE_ID_PRO;
+      const starterPriceId = process.env.STRIPE_PRICE_ID_STARTER;
+      if (nextPriceId === proPriceId) scheduledTier = 'pro';
+      else if (nextPriceId === starterPriceId) scheduledTier = 'starter';
+      if (scheduledTier) scheduledDate = nextPhase.start_date;
+    }
+
+    console.error(`[Subsrf Stripe] subscription info for ${auth.user.email}: periodEnd=${sub.current_period_end} scheduledTier=${scheduledTier}`);
+    res.json({
+      periodEnd: sub.current_period_end,   // Unix timestamp
+      scheduledTier,                        // 'starter' | 'pro' | null
+      scheduledDate,                        // Unix timestamp | null
+      status: sub.status,
+      cancelAtPeriodEnd: sub.cancel_at_period_end,
+    });
+  } catch (e) {
+    console.error('[Subsrf Stripe] subscription info failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Returns the prorated charge if the user upgrades to a different tier right now.
+// The upcoming invoice API calculates exactly what Stripe will charge today for
+// the remaining days in the current billing period.
+app.post('/api/stripe/upgrade-preview', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const newTier = req.body?.tier;
+  if (!['starter', 'pro'].includes(newTier)) {
+    return res.status(400).json({ error: 'tier must be starter or pro' });
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  let subscriptionId = null;
+  let customerId = null;
+  if (supabase) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('stripe_subscription_id, stripe_customer_id')
+      .eq('id', auth.user.id).single();
+    subscriptionId = data?.stripe_subscription_id;
+    customerId = data?.stripe_customer_id;
+  }
+  if (!subscriptionId || !customerId) return res.status(404).json({ error: 'No active subscription' });
+
+  const priceId = newTier === 'pro' ? process.env.STRIPE_PRICE_ID_PRO : process.env.STRIPE_PRICE_ID_STARTER;
+  if (!priceId) return res.status(500).json({ error: `STRIPE_PRICE_ID_${newTier.toUpperCase()} not set` });
+
+  try {
+    // Fetch subscription item ID for the proration call
+    const subRes = await fetch(
+      `https://api.stripe.com/v1/subscriptions/${subscriptionId}`,
+      { headers: { Authorization: `Bearer ${stripeKey}` } }
+    );
+    const sub = await subRes.json();
+    if (!subRes.ok) throw new Error(sub.error?.message || `Stripe error ${subRes.status}`);
+    const itemId = sub.items?.data?.[0]?.id;
+    if (!itemId) throw new Error('No subscription item found');
+
+    const params = new URLSearchParams({
+      customer: customerId,
+      subscription: subscriptionId,
+      [`subscription_items[0][id]`]: itemId,
+      [`subscription_items[0][price]`]: priceId,
+      subscription_proration_behavior: 'always_invoice',
+    });
+
+    const previewRes = await fetch(
+      `https://api.stripe.com/v1/invoices/upcoming?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${stripeKey}` } }
+    );
+    const preview = await previewRes.json();
+    if (!previewRes.ok) throw new Error(preview.error?.message || `Stripe error ${previewRes.status}`);
+
+    // Sum only the proration lines (excludes the next full billing cycle charge)
+    const prorationAmount = (preview.lines?.data || [])
+      .filter(l => l.proration)
+      .reduce((sum, l) => sum + l.amount, 0);
+
+    const currency = (preview.currency || 'usd').toUpperCase();
+    const formatted = new Intl.NumberFormat('en-US', { style: 'currency', currency })
+      .format(Math.max(0, prorationAmount) / 100);
+
+    console.error(`[Subsrf Stripe] upgrade-preview for ${auth.user.email}: ${auth.tier} → ${newTier} = ${formatted}`);
+    res.json({ prorationAmount, formatted, currency });
+  } catch (e) {
+    console.error('[Subsrf Stripe] upgrade-preview failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Per-user Figma PAT — in-memory cache backed by Supabase profiles.figma_pat
 const userFigmaPats = new Map(); // Map<userId, string>
 
