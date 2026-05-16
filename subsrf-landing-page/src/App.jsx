@@ -886,12 +886,15 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               )}
               {tier === 'pro' && (
                 <>
-                  {subInfo?.scheduledTier === 'starter' && subInfo?.scheduledDate ? (
+                  {(subInfo?.cancelAtPeriodEnd || (subInfo?.scheduledTier && subInfo?.scheduledDate)) ? (
                     <>
                       <div className="flex items-center gap-sm px-sm py-xs bg-[#fb923c]/8 border border-[#fb923c]/25 rounded-DEFAULT">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#fb923c] shrink-0"></span>
                         <span className="font-mono-data text-[11px] text-[#fb923c]">
-                          Switching to Starter · {new Date(subInfo.scheduledDate * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          {subInfo?.scheduledTier
+                            ? `Switching to ${subInfo.scheduledTier.charAt(0).toUpperCase() + subInfo.scheduledTier.slice(1)} · ${new Date(subInfo.scheduledDate * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                            : `Switching to Starter · ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                          }
                         </span>
                       </div>
                       <button
