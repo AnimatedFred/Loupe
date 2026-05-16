@@ -640,9 +640,12 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
     fetch('https://api.subsrf.dev/api/stripe/subscription', {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setSubInfo(data) })
-      .catch(() => {})
+      .then(r => r.json().then(data => ({ ok: r.ok, data })))
+      .then(({ ok, data }) => {
+        console.log('[subsrf] /api/stripe/subscription', ok, data)
+        if (ok) setSubInfo(data)
+      })
+      .catch(e => console.error('[subsrf] /api/stripe/subscription failed', e))
   }, [session?.access_token, tier])
 
   // Fetch proration preview when on Starter (shows upgrade cost before clicking)
