@@ -1018,9 +1018,11 @@ app.post('/api/stripe/schedule-downgrade', async (req, res) => {
       scheduleId = schedule.id;
     }
 
-    // Two-phase schedule: Pro until current period end, then Starter indefinitely
+    // Two-phase schedule: Pro until current period end, then Starter indefinitely.
+    // start_date on phase 0 is required by Stripe to anchor the end_date.
     const updateParams = new URLSearchParams({
       end_behavior: 'release',
+      'phases[0][start_date]': 'now',
       'phases[0][items][0][price]': proPriceId,
       'phases[0][items][0][quantity]': '1',
       'phases[0][end_date]': String(sub.current_period_end),
