@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TopNavBar, Footer } from './App';
 
 const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
@@ -9,6 +9,17 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
   const [upgrading, setUpgrading] = useState(null);
   const [upgradeError, setUpgradeError] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [subInfo, setSubInfo] = useState(null);
+
+  useEffect(() => {
+    if (!session?.access_token || tier === 'free') return;
+    fetch('https://api.subsrf.dev/api/stripe/subscription', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSubInfo(data); })
+      .catch(() => {});
+  }, [session?.access_token, tier]);
 
   const handleUpgrade = async (planTier) => {
     if (!session) return onLogin();
@@ -137,13 +148,18 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-mono-data text-white-primary text-label-caps">Unlimited Figma Sync</span>
               </div>
             </div>
-            <button
-              onClick={!session ? onLogin : tier === 'starter' ? undefined : () => handleUpgrade('starter')}
-              disabled={upgrading === 'starter' || tier === 'starter'}
-              className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
-            >
-              {upgrading === 'starter' ? 'WAIT...' : !session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE TO STARTER'}
-            </button>
+            {(() => {
+              const downgradeScheduled = subInfo?.cancelAtPeriodEnd || (subInfo?.scheduledTier && subInfo?.scheduledDate);
+              return (
+                <button
+                  onClick={!session ? onLogin : (tier === 'starter' || downgradeScheduled) ? undefined : () => handleUpgrade('starter')}
+                  disabled={upgrading === 'starter' || tier === 'starter' || !!downgradeScheduled}
+                  className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
+                >
+                  {upgrading === 'starter' ? 'WAIT...' : !session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : downgradeScheduled ? 'DOWNGRADE SCHEDULED' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE TO STARTER'}
+                </button>
+              );
+            })()}
           </div>
 
           {/* Pro Tier */}

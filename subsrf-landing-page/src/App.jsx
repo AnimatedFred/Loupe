@@ -141,6 +141,17 @@ export function Footer() {
 function LandingPage({ onLogin, loading, session, tier, onLogout }) {
   const [upgrading, setUpgrading] = useState(null)
   const [upgradeError, setUpgradeError] = useState(null)
+  const [subInfo, setSubInfo] = useState(null)
+
+  useEffect(() => {
+    if (!session?.access_token || tier === 'free') return
+    fetch('https://api.subsrf.dev/api/stripe/subscription', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSubInfo(data) })
+      .catch(() => {})
+  }, [session?.access_token, tier])
 
   const scrollToGetStarted = (e) => {
     e.preventDefault();
@@ -565,9 +576,18 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 75 Credits / month</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync</li>
               </ul>
-              <button className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={!session ? onLogin : tier === 'starter' ? null : () => handleUpgrade('starter')} disabled={upgrading === 'starter'}>
-                {upgrading === 'starter' ? 'Wait...' : !session ? 'Select Starter' : tier === 'starter' ? 'Current Plan' : tier === 'free' ? 'Get Starter' : 'Downgrade to Starter'}
-              </button>
+              {(() => {
+                const downgradeScheduled = subInfo?.cancelAtPeriodEnd || (subInfo?.scheduledTier && subInfo?.scheduledDate)
+                return (
+                  <button
+                    className="mt-auto bg-neon text-void w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-default"
+                    onClick={!session ? onLogin : (tier === 'starter' || downgradeScheduled) ? undefined : () => handleUpgrade('starter')}
+                    disabled={upgrading === 'starter' || tier === 'starter' || !!downgradeScheduled}
+                  >
+                    {upgrading === 'starter' ? 'Wait...' : !session ? 'Select Starter' : tier === 'starter' ? 'Current Plan' : downgradeScheduled ? 'Downgrade Scheduled' : tier === 'free' ? 'Get Starter' : 'Downgrade to Starter'}
+                  </button>
+                )
+              })()}
             </div>
             {/* Tier 3 */}
             <div className="bg-layer border border-white-border p-lg rounded-DEFAULT flex flex-col gap-lg">
