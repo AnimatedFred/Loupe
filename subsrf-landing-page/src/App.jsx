@@ -840,18 +840,6 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               </div>
             )}
 
-            {/* Scheduled downgrade notice */}
-            {subInfo?.scheduledTier && (
-              <div className="p-sm bg-[#fb923c]/8 border border-[#fb923c]/25 rounded-DEFAULT flex flex-col gap-xs">
-                <span className="font-label-caps text-[9px] text-[#fb923c] tracking-widest">SCHEDULED CHANGE</span>
-                <span className="font-mono-data text-[11px] text-white-secondary">
-                  Downgrade to <span className="text-white-primary capitalize">{subInfo.scheduledTier}</span> begins{' '}
-                  <span className="text-white-primary">
-                    {new Date(subInfo.scheduledDate * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </span>
-                </span>
-              </div>
-            )}
 
             {/* Proration preview (Starter → Pro) */}
             {tier === 'starter' && prorationPreview && (
@@ -895,13 +883,31 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               )}
               {tier === 'pro' && (
                 <>
-                  <button
-                    className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
-                    onClick={() => handleUpgrade('starter')}
-                    disabled={upgrading === 'starter'}
-                  >
-                    {upgrading === 'starter' ? 'Wait...' : `Downgrade to Starter${subInfo?.periodEnd ? ` · starts ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
-                  </button>
+                  {subInfo?.scheduledTier === 'starter' && subInfo?.scheduledDate ? (
+                    <>
+                      <div className="flex items-center gap-sm px-sm py-xs bg-[#fb923c]/8 border border-[#fb923c]/25 rounded-DEFAULT">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#fb923c] shrink-0"></span>
+                        <span className="font-mono-data text-[11px] text-[#fb923c]">
+                          Switching to Starter · {new Date(subInfo.scheduledDate * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <button
+                        className="w-full py-sm rounded-DEFAULT bg-transparent border border-[#fb923c]/40 text-[#fb923c] hover:bg-[#fb923c]/10 transition-colors font-body text-body"
+                        onClick={handleManageBilling}
+                        disabled={portalLoading}
+                      >
+                        {portalLoading ? 'Wait...' : 'Cancel Downgrade'}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
+                      onClick={() => handleUpgrade('starter')}
+                      disabled={upgrading === 'starter'}
+                    >
+                      {upgrading === 'starter' ? 'Wait...' : `Downgrade to Starter${subInfo?.periodEnd ? ` · starts ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
+                    </button>
+                  )}
                   <button
                     className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-secondary hover:bg-white-border transition-colors font-body text-body text-sm"
                     onClick={handleManageBilling}
