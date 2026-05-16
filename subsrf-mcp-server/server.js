@@ -979,6 +979,121 @@ app.post('/api/stripe/upgrade-preview', async (req, res) => {
   }
 });
 
+// Creates a subscription schedule so Pro → Starter happens at period end automatically.
+// No portal redirect — the schedule drives the downgrade, and releasing it restores Pro renewal.
+app.post('/api/stripe/schedule-downgrade', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const starterPriceId = process.env.STRIPE_PRICE_ID_STARTER;
+  const proPriceId = process.env.STRIPE_PRICE_ID_PRO;
+  if (!stripeKey || !starterPriceId || !proPriceId) return res.status(500).json({ error: 'Stripe not configured' });
+
+  let subscriptionId = null;
+  if (supabase) {
+    const { data } = await supabase.from('profiles').select('stripe_subscription_id').eq('id', auth.user.id).single();
+    subscriptionId = data?.stripe_subscription_id;
+  }
+  if (!subscriptionId) return res.status(404).json({ error: 'No active subscription' });
+
+  try {
+    const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}?expand[]=schedule`, {
+      headers: { Authorization: `Bearer ${stripeKey}` },
+    });
+    const sub = await subRes.json();
+    if (!subRes.ok) throw new Error(sub.error?.message || `Stripe error ${subRes.status}`);
+
+    let scheduleId = sub.schedule?.id || (typeof sub.schedule === 'string' ? sub.schedule : null);
+
+    if (!scheduleId) {
+      // Convert existing subscription into a schedule (clears cancel_at_period_end too)
+      const createRes = await fetch('https://api.stripe.com/v1/subscription_schedules', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ from_subscription: subscriptionId }).toString(),
+      });
+      const schedule = await createRes.json();
+      if (!createRes.ok) throw new Error(schedule.error?.message || 'Failed to create schedule');
+      scheduleId = schedule.id;
+    }
+
+    // Two-phase schedule: Pro until current period end, then Starter indefinitely
+    const updateParams = new URLSearchParams({
+      end_behavior: 'release',
+      'phases[0][items][0][price]': proPriceId,
+      'phases[0][items][0][quantity]': '1',
+      'phases[0][end_date]': String(sub.current_period_end),
+      'phases[1][items][0][price]': starterPriceId,
+      'phases[1][items][0][quantity]': '1',
+    });
+    const updateRes = await fetch(`https://api.stripe.com/v1/subscription_schedules/${scheduleId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: updateParams.toString(),
+    });
+    const updatedSchedule = await updateRes.json();
+    if (!updateRes.ok) throw new Error(updatedSchedule.error?.message || 'Failed to update schedule');
+
+    console.error(`[Subsrf Stripe] schedule-downgrade: ${auth.user.email} Pro → Starter on ${new Date(sub.current_period_end * 1000).toISOString()}`);
+    res.json({ ok: true, scheduledDate: sub.current_period_end });
+  } catch (e) {
+    console.error('[Subsrf Stripe] schedule-downgrade failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Releases the subscription schedule, restoring normal Pro auto-renewal.
+// Also handles the simpler cancel_at_period_end=true case from the portal.
+app.post('/api/stripe/cancel-downgrade', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) return res.status(500).json({ error: 'Stripe not configured' });
+
+  let subscriptionId = null;
+  if (supabase) {
+    const { data } = await supabase.from('profiles').select('stripe_subscription_id').eq('id', auth.user.id).single();
+    subscriptionId = data?.stripe_subscription_id;
+  }
+  if (!subscriptionId) return res.status(404).json({ error: 'No subscription found' });
+
+  try {
+    const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}?expand[]=schedule`, {
+      headers: { Authorization: `Bearer ${stripeKey}` },
+    });
+    const sub = await subRes.json();
+    if (!subRes.ok) throw new Error(sub.error?.message || `Stripe error ${subRes.status}`);
+
+    const scheduleId = sub.schedule?.id || (typeof sub.schedule === 'string' ? sub.schedule : null);
+
+    if (scheduleId) {
+      const releaseRes = await fetch(`https://api.stripe.com/v1/subscription_schedules/${scheduleId}/release`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      const released = await releaseRes.json();
+      if (!releaseRes.ok) throw new Error(released.error?.message || 'Failed to release schedule');
+    } else if (sub.cancel_at_period_end) {
+      // Portal-set cancellation — undo it directly
+      const updateRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ cancel_at_period_end: 'false' }).toString(),
+      });
+      const updated = await updateRes.json();
+      if (!updateRes.ok) throw new Error(updated.error?.message || 'Failed to undo cancellation');
+    }
+
+    console.error(`[Subsrf Stripe] cancel-downgrade: ${auth.user.email} restored to normal renewal`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[Subsrf Stripe] cancel-downgrade failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Per-user Figma PAT — in-memory cache backed by Supabase profiles.figma_pat
 const userFigmaPats = new Map(); // Map<userId, string>
 

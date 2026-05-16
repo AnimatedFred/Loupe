@@ -702,6 +702,52 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
     }
   }
 
+  const handleScheduleDowngrade = async () => {
+    setUpgrading('starter')
+    setUpgradeError(null)
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/schedule-downgrade', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to schedule downgrade')
+      // Refresh subInfo so UI reflects the new schedule immediately
+      const subRes = await fetch('https://api.subsrf.dev/api/stripe/subscription', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const subData = await subRes.json()
+      if (subRes.ok) setSubInfo(subData)
+    } catch (e) {
+      setUpgradeError(e.message)
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
+  const handleCancelDowngrade = async () => {
+    setPortalLoading(true)
+    setUpgradeError(null)
+    try {
+      const res = await fetch('https://api.subsrf.dev/api/stripe/cancel-downgrade', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel downgrade')
+      // Refresh subInfo
+      const subRes = await fetch('https://api.subsrf.dev/api/stripe/subscription', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const subData = await subRes.json()
+      if (subRes.ok) setSubInfo(subData)
+    } catch (e) {
+      setUpgradeError(e.message)
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
   const mcpConfig = figmaPat
     ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
     : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } }
@@ -899,7 +945,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                       </div>
                       <button
                         className="w-full py-sm rounded-DEFAULT bg-transparent border border-[#fb923c]/40 text-[#fb923c] hover:bg-[#fb923c]/10 transition-colors font-body text-body"
-                        onClick={handleManageBilling}
+                        onClick={handleCancelDowngrade}
                         disabled={portalLoading}
                       >
                         {portalLoading ? 'Wait...' : 'Cancel Downgrade'}
@@ -908,7 +954,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                   ) : (
                     <button
                       className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-primary hover:bg-white-border transition-colors font-body text-body"
-                      onClick={() => handleUpgrade('starter')}
+                      onClick={handleScheduleDowngrade}
                       disabled={upgrading === 'starter'}
                     >
                       {upgrading === 'starter' ? 'Wait...' : `Downgrade to Starter${subInfo?.periodEnd ? ` · starts ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
