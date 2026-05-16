@@ -719,6 +719,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
       const subData = await subRes.json()
       if (subRes.ok) setSubInfo(subData)
     } catch (e) {
+      console.error('[subsrf] schedule-downgrade error:', e.message)
       setUpgradeError(e.message)
     } finally {
       setUpgrading(null)
@@ -815,6 +816,13 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
           <div className="flex items-start gap-md p-md bg-white-border/10 border border-white-border rounded-DEFAULT">
             <span className="w-2 h-2 rounded-full bg-white-muted mt-1 shrink-0"></span>
             <div className="font-mono-data text-mono-data text-white-secondary">Checkout was cancelled — no changes were made.</div>
+          </div>
+        )}
+
+        {upgradeError && (
+          <div className="flex items-start gap-md p-md bg-red-500/10 border border-red-500/20 rounded-DEFAULT">
+            <span className="w-2 h-2 rounded-full bg-red-400 mt-1 shrink-0"></span>
+            <div className="font-mono-data text-mono-data text-red-400">{upgradeError}</div>
           </div>
         )}
 
