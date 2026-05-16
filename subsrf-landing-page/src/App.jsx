@@ -965,7 +965,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                       onClick={handleScheduleDowngrade}
                       disabled={upgrading === 'starter'}
                     >
-                      {upgrading === 'starter' ? 'Wait...' : `Downgrade to Starter${subInfo?.periodEnd ? ` · starts ${new Date(subInfo.periodEnd * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
+                      {upgrading === 'starter' ? 'Wait...' : 'Downgrade to Starter'}
                     </button>
                   )}
                   <button
