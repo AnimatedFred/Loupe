@@ -1006,8 +1006,11 @@ app.post('/api/stripe/schedule-downgrade', async (req, res) => {
 
     let scheduleId = sub.schedule?.id || (typeof sub.schedule === 'string' ? sub.schedule : null);
 
+    let currentPhaseStart = null;
+
     if (!scheduleId) {
-      // Convert existing subscription into a schedule (clears cancel_at_period_end too)
+      // Convert existing subscription into a schedule (clears cancel_at_period_end too).
+      // The response contains the current phase's start_date which we must echo back on update.
       const createRes = await fetch('https://api.stripe.com/v1/subscription_schedules', {
         method: 'POST',
         headers: { Authorization: `Bearer ${stripeKey}`, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1016,13 +1019,22 @@ app.post('/api/stripe/schedule-downgrade', async (req, res) => {
       const schedule = await createRes.json();
       if (!createRes.ok) throw new Error(schedule.error?.message || 'Failed to create schedule');
       scheduleId = schedule.id;
+      currentPhaseStart = schedule.phases?.[0]?.start_date;
+    } else {
+      // Schedule already exists — fetch it to read the current phase's start_date
+      const schedRes = await fetch(`https://api.stripe.com/v1/subscription_schedules/${scheduleId}`, {
+        headers: { Authorization: `Bearer ${stripeKey}` },
+      });
+      const sched = await schedRes.json();
+      if (!schedRes.ok) throw new Error(sched.error?.message || 'Failed to fetch schedule');
+      currentPhaseStart = sched.phases?.[0]?.start_date;
     }
 
     // Two-phase schedule: Pro until current period end, then Starter indefinitely.
-    // start_date on phase 0 is required by Stripe to anchor the end_date.
+    // Stripe requires the existing start_date to be echoed back — 'now' is rejected.
     const updateParams = new URLSearchParams({
       end_behavior: 'release',
-      'phases[0][start_date]': 'now',
+      'phases[0][start_date]': String(currentPhaseStart),
       'phases[0][items][0][price]': proPriceId,
       'phases[0][items][0][quantity]': '1',
       'phases[0][end_date]': String(sub.current_period_end),
