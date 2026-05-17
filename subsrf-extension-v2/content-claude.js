@@ -518,7 +518,7 @@
       'color:rgba(242,242,244,0.7);box-shadow:0 8px 32px rgba(0,0,0,0.5)',
     ].join(';');
     el.innerHTML = `
-      <button onclick="document.getElementById('subsrf-connector-banner').remove()"
+      <button id="subsrf-banner-close"
         style="position:absolute;top:8px;right:8px;background:none;border:none;
                color:rgba(242,242,244,0.3);cursor:pointer;font-size:18px;line-height:1;padding:4px">×</button>
       <div style="color:#39D98A;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Subsrf — ready to add</div>
@@ -530,6 +530,7 @@
                   border-radius:4px;padding:6px 10px;font-size:10px;
                   color:rgba(242,242,244,0.45);word-break:break-all">${url}</div>`;
     document.body.appendChild(el);
+    el.querySelector('#subsrf-banner-close').addEventListener('click', () => el.remove());
     setTimeout(() => el.remove(), 60000);
   }
 
