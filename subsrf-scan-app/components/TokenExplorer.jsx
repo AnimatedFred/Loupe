@@ -189,7 +189,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
         </div>
 
         {/* Claude MCP setup */}
-        <div style={{ padding: '16px 16px 0', marginTop: 'auto' }}>
+        <div style={{ padding: '16px 16px 16px', borderTop: '1px solid rgba(242,242,244,0.06)', marginTop: 16 }}>
           <ClaudeSetup compact />
         </div>
       </aside>
