@@ -2757,10 +2757,15 @@ app.all('/mcp', async (req, res) => {
 
   const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
 
-  // Verify Supabase JWT (issued during OAuth flow above)
+  // Verify Supabase JWT (issued during OAuth flow above).
+  // Include resource_metadata in WWW-Authenticate so MCP clients can discover the OAuth server
+  // per the MCP spec (references RFC 9728).
   const auth = await verifyToken(req);
   if (!auth) {
-    res.setHeader('WWW-Authenticate', `Bearer realm="${base}", error="unauthorized", error_description="Sign in at ${base} to connect"`);
+    res.setHeader(
+      'WWW-Authenticate',
+      `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource", realm="${base}"`,
+    );
     return res.status(401).json({
       error: 'Unauthorized',
       error_description: 'Sign in at https://subsrf.dev, then reconnect from Claude.',
@@ -2776,16 +2781,19 @@ app.all('/mcp', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'];
   let session = sessionId ? mcpHttpSessions.get(sessionId) : null;
 
-  // POST with no (or unknown) session ID → initialize a new session
+  // POST with no (or unknown) session ID → initialize a new session.
+  // Generate the session ID before creating the transport so we can store it
+  // in the map immediately — transport.sessionId is undefined until handleRequest fires.
   if (!session && req.method === 'POST') {
     const accessToken = req.headers.authorization?.slice(7) || '';
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
+    const newSessionId = randomUUID();
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => newSessionId });
     const mcpServer = createRemoteMcpServer(auth, accessToken);
     await mcpServer.connect(transport);
     session = { transport, server: mcpServer, userId: auth.user.id };
-    transport.onclose = () => { mcpHttpSessions.delete(transport.sessionId); };
-    mcpHttpSessions.set(transport.sessionId, session);
-    console.error(`[Subsrf Remote MCP] New session for ${auth.user.email} (${auth.tier})`);
+    mcpHttpSessions.set(newSessionId, session);
+    transport.onclose = () => { mcpHttpSessions.delete(newSessionId); };
+    console.error(`[Subsrf Remote MCP] New session ${newSessionId} for ${auth.user.email} (${auth.tier})`);
   }
 
   if (!session) return res.status(404).json({ error: 'Session not found' });
