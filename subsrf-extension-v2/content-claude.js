@@ -17,6 +17,22 @@
   // Debounce timer for MutationObserver re-injection checks
   let _mutationTimer = null;
 
+  // ── Safe chrome API wrappers (guard against "Extension context invalidated") ──
+
+  function safeStorageGet(keys) {
+    return new Promise(resolve => {
+      try {
+        chrome.storage.local.get(keys, data => {
+          try { if (chrome.runtime.lastError) { resolve({}); return; } } catch (_) { resolve({}); return; }
+          resolve(data);
+        });
+      } catch (_) { resolve({}); }
+    });
+  }
+  function safeStorageSet(obj) { try { chrome.storage.local.set(obj); } catch (_) {} }
+  function safeStorageRemove(key) { try { chrome.storage.local.remove(key); } catch (_) {} }
+  function safeGetURL(path) { try { return chrome.runtime?.getURL(path) ?? ''; } catch (_) { return ''; } }
+
   // ── Styles ────────────────────────────────────────────────────────────────
 
   function injectStyles() {
@@ -270,7 +286,7 @@
     if (document.getElementById(MODAL_ID)) { closeModal(); return; }
     injectStyles();
 
-    const logoSrc = chrome.runtime?.getURL('icons/icon48.png') ?? '';
+    const logoSrc = safeGetURL('icons/icon48.png');
 
     // Show backdrop immediately with loading state
     const backdrop = document.createElement('div');
@@ -283,10 +299,10 @@
     let connected = await checkConnected();
     if (connected === null) {
       // Indeterminate: fall back to cached storage value
-      connected = !!(await new Promise(r => chrome.storage.local.get(CONNECTED_KEY, d => r(d[CONNECTED_KEY]))));
+      connected = !!((await safeStorageGet(CONNECTED_KEY))[CONNECTED_KEY]);
     } else {
       // Sync storage and pill to match reality
-      chrome.storage.local.set({ [CONNECTED_KEY]: connected });
+      safeStorageSet({ [CONNECTED_KEY]: connected });
       syncPillState(connected);
     }
 
@@ -354,7 +370,7 @@
 
   async function tryDirectAPI() {
     // If background.js captured the real endpoint from a previous manual add, use it directly
-    const stored = await new Promise(r => chrome.storage.local.get('subsrf_discovered_endpoint', r));
+    const stored = await safeStorageGet('subsrf_discovered_endpoint');
     if (stored.subsrf_discovered_endpoint) {
       const { url, body } = stored.subsrf_discovered_endpoint;
       const res = await fetch(url, {
@@ -407,7 +423,7 @@
 
     try {
       await tryDirectAPI();
-      chrome.storage.local.set({ [CONNECTED_KEY]: true });
+      safeStorageSet({ [CONNECTED_KEY]: true });
       syncPillState(true);
       const modal = document.querySelector('#subsrf-modal-backdrop .src-modal');
       if (modal) {
@@ -424,7 +440,7 @@
       closeModal();
       // Copy URL to clipboard so user can paste it if automation fails
       navigator.clipboard?.writeText(MCP_URL).catch(() => { });
-      chrome.storage.local.set({ subsrf_pending_mcp_url: MCP_URL });
+      safeStorageSet({ subsrf_pending_mcp_url: MCP_URL });
       window.location.href = 'https://claude.ai/customize/connectors';
     }
   }
@@ -432,7 +448,7 @@
   // ── Pill injection ────────────────────────────────────────────────────────
 
   function buildPill(connected) {
-    const logoSrc = chrome.runtime?.getURL('icons/icon48.png') ?? '';
+    const logoSrc = safeGetURL('icons/icon48.png');
     const pill = document.createElement('button');
     pill.id = PILL_ID;
     pill.type = 'button';
@@ -477,7 +493,7 @@
     _injecting = true;
     try {
       // Check tier
-      const data = await new Promise(r => chrome.storage.local.get(['subsrf_session', CONNECTED_KEY], r));
+      const data = await safeStorageGet(['subsrf_session', CONNECTED_KEY]);
       const tier = data.subsrf_session?.tier?.toLowerCase();
       if (!['pro', 'starter'].includes(tier)) return;
 
@@ -496,7 +512,7 @@
       // Async: verify real connection state and update pill + storage
       checkConnected().then(connected => {
         if (connected === null) return;
-        chrome.storage.local.set({ [CONNECTED_KEY]: connected });
+        safeStorageSet({ [CONNECTED_KEY]: connected });
         syncPillState(connected);
       });
     } finally {
@@ -537,7 +553,7 @@
   function tryAutoFill() {
     if (!location.pathname.startsWith('/customize/connectors')) return;
 
-    chrome.storage.local.get('subsrf_pending_mcp_url', ({ subsrf_pending_mcp_url: pending }) => {
+    safeStorageGet('subsrf_pending_mcp_url').then(({ subsrf_pending_mcp_url: pending }) => {
       if (!pending) return;
 
       let filled = false;
@@ -575,7 +591,7 @@
         setter.call(input, pending);
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
-        chrome.storage.local.remove('subsrf_pending_mcp_url');
+        safeStorageRemove('subsrf_pending_mcp_url');
 
         // Also fill name field if present
         const nameInput = input.closest('form, [role="dialog"]')
