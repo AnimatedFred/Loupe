@@ -544,12 +544,21 @@
       let clickedAdd = false;
 
       function findInput() {
+        // Log all visible text/url inputs so we can see what's on the page
+        const allInputs = [...document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"])')];
+        if (allInputs.length) console.log('[Subsrf] All inputs:', allInputs.map(i => `type=${i.type} placeholder="${i.placeholder}"`));
         return (
           document.querySelector('input[placeholder*="url" i]') ||
           document.querySelector('input[placeholder*="mcp" i]') ||
           document.querySelector('input[placeholder*="server" i]') ||
           document.querySelector('input[placeholder*="endpoint" i]') ||
-          document.querySelector('input[type="url"]')
+          document.querySelector('input[placeholder*="https" i]') ||
+          document.querySelector('input[placeholder*="http" i]') ||
+          document.querySelector('input[placeholder*="address" i]') ||
+          document.querySelector('input[type="url"]') ||
+          // Last resort: first text input inside a dialog
+          document.querySelector('[role="dialog"] input[type="text"]') ||
+          document.querySelector('[role="dialog"] input:not([type="hidden"])')
         );
       }
 
