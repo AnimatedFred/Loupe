@@ -172,8 +172,9 @@
     document.getElementById(MODAL_ID)?.remove();
   }
 
-  // Queries Claude's API to check if Subsrf MCP is actually registered.
-  // Returns true/false, or null if the check was indeterminate (fall back to storage).
+  // Checks if Subsrf MCP is registered with Claude.
+  // Tries GET first; falls back to POST (409 = already exists, both = connected).
+  // Returns true/false, or null if completely indeterminate.
   async function checkConnected() {
     try {
       const r = await fetch('https://claude.ai/api/auth/account', { credentials: 'include' });
@@ -184,7 +185,7 @@
         account?.memberships?.[0]?.organization?.uuid;
       if (!orgUuid) return null;
 
-      let gotValidResponse = false;
+      // Try GET (read-only)
       for (const path of ['integrations', 'mcp_servers']) {
         try {
           const res = await fetch(
@@ -193,22 +194,32 @@
           );
           if (!res.ok) continue;
           const data = await res.json();
-          let list = null;
-          if (Array.isArray(data)) {
-            list = data;
-          } else {
+          let list = Array.isArray(data) ? data : null;
+          if (!list) {
             for (const key of ['integrations', 'mcp_servers', 'connectors', 'data', 'results']) {
               if (Array.isArray(data[key])) { list = data[key]; break; }
             }
           }
           if (!list) continue;
-          gotValidResponse = true;
-          if (list.some(item =>
+          // Got a valid list — check presence and return definitively
+          return list.some(item =>
             (item.url || item.mcp_url || item.remote_url || item.uri || '').includes('subsrf')
-          )) return true;
+          );
         } catch (_) { continue; }
       }
-      return gotValidResponse ? false : null;
+
+      // GET didn't yield a parseable list — fall back to POST
+      // 409 = already registered, 201 = just registered; both mean connected
+      for (const path of ['integrations', 'mcp_servers']) {
+        const res = await fetch(`https://claude.ai/api/organizations/${orgUuid}/${path}`, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: MCP_URL, name: 'Subsrf Intelligence' }),
+        });
+        if (res.ok || res.status === 409) return true;
+      }
+
+      return false;
     } catch (_) {
       return null;
     }
