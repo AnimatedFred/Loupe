@@ -360,7 +360,7 @@
     try {
       await tryDirectAPI();
       chrome.storage.local.set({ [CONNECTED_KEY]: true });
-      document.getElementById(PILL_ID)?.classList.add('src-connected');
+      syncPillState(true);
       const modal = document.querySelector('#subsrf-modal-backdrop .src-modal');
       if (modal) {
         modal.innerHTML = `
@@ -372,8 +372,10 @@
         setTimeout(closeModal, 2800);
       }
     } catch (e) {
-      console.log('[Subsrf] Direct API unavailable, falling back:', e.message);
+      console.warn('[Subsrf] Direct API failed:', e.message, '— redirecting to connectors page');
       closeModal();
+      // Copy URL to clipboard so user can paste it if automation fails
+      navigator.clipboard?.writeText(MCP_URL).catch(() => {});
       chrome.storage.local.set({ subsrf_pending_mcp_url: MCP_URL });
       window.location.href = 'https://claude.ai/customize/connectors';
     }
@@ -456,18 +458,82 @@
 
   // ── Auto-fill on /customize/connectors ───────────────────────────────────
 
+  // Inject a fetch interceptor into the page context so we can capture the exact
+  // API endpoint Claude uses when a connector is added manually.
+  function injectFetchInterceptor() {
+    if (window.__subsrfInterceptor) return;
+    window.__subsrfInterceptor = true;
+    const script = document.createElement('script');
+    script.textContent = `(function(){
+      const orig = window.fetch;
+      window.fetch = function(input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (/integrat|mcp_server|connector/i.test(url) && init && init.method === 'POST') {
+          try {
+            window.dispatchEvent(new CustomEvent('__subsrf_api', {
+              detail: { url, body: JSON.parse(init.body || '{}') }
+            }));
+          } catch(_) {}
+        }
+        return orig.apply(this, arguments);
+      };
+    })()`;
+    document.head.appendChild(script);
+    script.remove();
+
+    window.addEventListener('__subsrf_api', (e) => {
+      const { url, body } = e.detail;
+      console.log('[Subsrf] Captured Claude API call →', url, body);
+      // Save so we can reuse this exact endpoint next time
+      chrome.storage.local.set({ subsrf_known_endpoint: { url, body } });
+    });
+  }
+
+  function showConnectorBanner(url) {
+    if (document.getElementById('subsrf-connector-banner')) return;
+    const el = document.createElement('div');
+    el.id = 'subsrf-connector-banner';
+    el.style.cssText = [
+      'position:fixed;top:20px;right:20px;z-index:99998',
+      'background:#111118;border:1px solid rgba(57,217,138,0.3)',
+      'border-radius:12px;padding:16px 20px;max-width:300px',
+      'font-family:Azeret Mono,monospace;font-size:11px',
+      'color:rgba(242,242,244,0.7);box-shadow:0 8px 32px rgba(0,0,0,0.5)',
+    ].join(';');
+    el.innerHTML = `
+      <button onclick="document.getElementById('subsrf-connector-banner').remove()"
+        style="position:absolute;top:8px;right:8px;background:none;border:none;
+               color:rgba(242,242,244,0.3);cursor:pointer;font-size:18px;line-height:1;padding:4px">×</button>
+      <div style="color:#39D98A;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Subsrf — ready to add</div>
+      <div style="line-height:1.7;margin-bottom:12px">
+        Click <b style="color:#F2F2F4">Add connector</b>, then paste —
+        the URL is already copied to your clipboard.
+      </div>
+      <div style="background:#0C0C12;border:1px solid rgba(255,255,255,0.06);
+                  border-radius:4px;padding:6px 10px;font-size:10px;
+                  color:rgba(242,242,244,0.45);word-break:break-all">${url}</div>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 60000);
+  }
+
   function tryAutoFill() {
     if (!location.pathname.startsWith('/customize/connectors')) return;
+
+    // Always inject interceptor so we learn the real API endpoint
+    injectFetchInterceptor();
+
     chrome.storage.local.get('subsrf_pending_mcp_url', ({ subsrf_pending_mcp_url: pending }) => {
       if (!pending) return;
 
       let filled = false;
+      let clickedAdd = false;
 
       function findInput() {
         return (
           document.querySelector('input[placeholder*="url" i]') ||
           document.querySelector('input[placeholder*="mcp" i]') ||
           document.querySelector('input[placeholder*="server" i]') ||
+          document.querySelector('input[placeholder*="endpoint" i]') ||
           document.querySelector('input[type="url"]')
         );
       }
@@ -479,6 +545,7 @@
 
         filled = true;
         observer.disconnect();
+        console.log('[Subsrf] Found URL input, filling…', input);
         input.focus();
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
         setter.call(input, pending);
@@ -486,29 +553,48 @@
         input.dispatchEvent(new Event('change', { bubbles: true }));
         chrome.storage.local.remove('subsrf_pending_mcp_url');
 
-        // Try to submit after React processes the value
+        // Also fill name field if present
+        const nameInput = input.closest('form, [role="dialog"]')
+          ?.querySelector('input:not([type="url"]):not([placeholder*="url" i])');
+        if (nameInput) {
+          const nameSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+          nameSetter.call(nameInput, 'Subsrf Intelligence');
+          nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
         setTimeout(() => {
-          const container = input.closest('[role="dialog"]') ||
-                            input.closest('form') ||
-                            input.parentElement?.parentElement;
+          const container = input.closest('[role="dialog"]') || input.closest('form');
           if (!container) return;
           const btns = [...container.querySelectorAll('button')];
+          console.log('[Subsrf] Buttons in dialog:', btns.map(b => b.textContent.trim()));
           const submit = btns.find(b =>
-            /^(add|save|connect|done|confirm|continue|submit)/i.test(b.textContent.trim()) &&
+            /^(add|save|connect|done|confirm|continue|submit|create)/i.test(b.textContent.trim()) &&
             !b.disabled
           );
-          submit?.click();
-        }, 350);
-
+          if (submit) {
+            console.log('[Subsrf] Clicking submit:', submit.textContent.trim());
+            submit.click();
+          }
+        }, 400);
         return true;
       }
 
       function tryOpenAddDialog() {
-        const btns = [...document.querySelectorAll('button, a[role="button"]')];
-        const addBtn = btns.find(b =>
-          /add|new connector|connect|\+/i.test(b.textContent.trim()) && !b.disabled
+        if (clickedAdd) return false;
+        // Only target page-level buttons (not inside an already-open dialog)
+        const btns = [...document.querySelectorAll('button')].filter(b =>
+          !b.closest('[role="dialog"]') && !b.disabled
         );
-        if (addBtn) { addBtn.click(); return true; }
+        console.log('[Subsrf] Page buttons:', btns.map(b => b.textContent.trim()).filter(Boolean));
+        const addBtn = btns.find(b =>
+          /add|new|connect|\+|create/i.test(b.textContent.trim())
+        );
+        if (addBtn) {
+          console.log('[Subsrf] Clicking Add button:', addBtn.textContent.trim());
+          clickedAdd = true;
+          addBtn.click();
+          return true;
+        }
         return false;
       }
 
@@ -517,10 +603,18 @@
       });
       observer.observe(document.body, { childList: true, subtree: true });
 
-      // Try immediately once the page has settled
       setTimeout(() => {
-        if (!tryFill()) tryOpenAddDialog();
-      }, 800);
+        if (!tryFill()) {
+          const opened = tryOpenAddDialog();
+          // Show banner as fallback regardless — clipboard was already copied
+          if (!opened) showConnectorBanner(pending);
+        }
+      }, 900);
+
+      // Show banner after 3s if still not filled (automation may have failed)
+      setTimeout(() => {
+        if (!filled) showConnectorBanner(pending);
+      }, 3000);
     });
   }
 
