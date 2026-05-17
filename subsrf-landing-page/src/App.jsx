@@ -626,6 +626,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
   const [upgrading, setUpgrading] = useState(null) // null | 'starter' | 'pro'
   const [upgradeError, setUpgradeError] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [showUpgradeConfirm, setShowUpgradeConfirm] = useState(false)
 
   const isPro = tier === 'pro'
   const user = session.user
@@ -953,7 +954,7 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                 <>
                   <button
                     className="w-full py-sm rounded-DEFAULT bg-neon text-void hover:opacity-90 transition-opacity font-body text-body font-medium"
-                    onClick={() => handleUpgrade('pro')}
+                    onClick={() => setShowUpgradeConfirm(true)}
                     disabled={upgrading === 'pro'}
                   >
                     {upgrading === 'pro' ? 'Wait...' :
@@ -1156,6 +1157,56 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
       </main>
 
       <Footer />
+
+      {/* Upgrade confirmation modal */}
+      {showUpgradeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 backdrop-blur-sm px-md">
+          <div className="bg-layer border border-white-border rounded-lg p-xl flex flex-col gap-lg w-full max-w-sm shadow-2xl">
+            <div className="flex flex-col gap-sm">
+              <h2 className="font-heading-sm text-heading-sm text-white-primary">Confirm Upgrade to Pro</h2>
+              <p className="font-mono-data text-mono-data text-white-secondary">
+                You're upgrading from Starter to Pro. The following will be charged immediately to your payment method on file.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-sm border border-white-border rounded-DEFAULT p-md">
+              <div className="flex justify-between items-center">
+                <span className="font-mono-data text-[11px] text-white-secondary">Plan</span>
+                <span className="font-mono-data text-[11px] text-white-primary">Starter → Pro</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-mono-data text-[11px] text-white-secondary">Credits</span>
+                <span className="font-mono-data text-[11px] text-neon">75 → 300 / month</span>
+              </div>
+              {prorationPreview && (
+                <div className="flex justify-between items-center border-t border-white-border pt-sm mt-xs">
+                  <span className="font-mono-data text-[11px] text-white-secondary">Charged today</span>
+                  <span className="font-mono-data text-[13px] font-semibold text-neon">{prorationPreview.formatted}</span>
+                </div>
+              )}
+              <p className="font-mono-data text-[10px] text-white-muted">
+                Prorated for the remainder of your current billing period. Full $19/mo starts next cycle.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-sm">
+              <button
+                className="w-full py-sm rounded-DEFAULT bg-neon text-void font-label-caps text-label-caps hover:opacity-90 transition-opacity"
+                onClick={() => { setShowUpgradeConfirm(false); handleUpgrade('pro') }}
+                disabled={upgrading === 'pro'}
+              >
+                {upgrading === 'pro' ? 'Processing...' : `Confirm — ${prorationPreview?.formatted ?? '$19.00'}`}
+              </button>
+              <button
+                className="w-full py-sm rounded-DEFAULT bg-transparent border border-white-border text-white-secondary font-label-caps text-label-caps hover:bg-white-border transition-colors"
+                onClick={() => setShowUpgradeConfirm(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
