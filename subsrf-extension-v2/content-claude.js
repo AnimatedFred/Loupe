@@ -326,16 +326,27 @@
       account?.memberships?.[0]?.organization?.uuid;
     if (!orgUuid) throw new Error('no orgUuid');
 
-    for (const url of [
-      `https://claude.ai/api/organizations/${orgUuid}/integrations`,
+    const endpoints = [
       `https://claude.ai/api/organizations/${orgUuid}/mcp_servers`,
-    ]) {
-      const res = await fetch(url, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: MCP_URL, name: 'Subsrf Intelligence' }),
-      });
-      if (res.ok || res.status === 409) return true;
+      `https://claude.ai/api/organizations/${orgUuid}/integrations`,
+      `https://claude.ai/api/organizations/${orgUuid}/remote_mcp_servers`,
+      `https://claude.ai/api/organizations/${orgUuid}/connectors`,
+    ];
+    const payloads = [
+      { url: MCP_URL, name: 'Subsrf Intelligence' },
+      { url: MCP_URL, display_name: 'Subsrf Intelligence', type: 'remote' },
+      { remote_server_url: MCP_URL, name: 'Subsrf Intelligence' },
+    ];
+
+    for (const endpoint of endpoints) {
+      for (const body of payloads) {
+        const res = await fetch(endpoint, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok || res.status === 409) return true;
+      }
     }
     throw new Error('all endpoints failed');
   }
@@ -449,12 +460,24 @@
     if (!location.pathname.startsWith('/customize/connectors')) return;
     chrome.storage.local.get('subsrf_pending_mcp_url', ({ subsrf_pending_mcp_url: pending }) => {
       if (!pending) return;
-      const observer = new MutationObserver(() => {
-        const input =
+
+      let filled = false;
+
+      function findInput() {
+        return (
           document.querySelector('input[placeholder*="url" i]') ||
           document.querySelector('input[placeholder*="mcp" i]') ||
-          document.querySelector('input[type="url"]');
-        if (!input) return;
+          document.querySelector('input[placeholder*="server" i]') ||
+          document.querySelector('input[type="url"]')
+        );
+      }
+
+      function tryFill() {
+        if (filled) return false;
+        const input = findInput();
+        if (!input) return false;
+
+        filled = true;
         observer.disconnect();
         input.focus();
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -462,8 +485,42 @@
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
         chrome.storage.local.remove('subsrf_pending_mcp_url');
+
+        // Try to submit after React processes the value
+        setTimeout(() => {
+          const container = input.closest('[role="dialog"]') ||
+                            input.closest('form') ||
+                            input.parentElement?.parentElement;
+          if (!container) return;
+          const btns = [...container.querySelectorAll('button')];
+          const submit = btns.find(b =>
+            /^(add|save|connect|done|confirm|continue|submit)/i.test(b.textContent.trim()) &&
+            !b.disabled
+          );
+          submit?.click();
+        }, 350);
+
+        return true;
+      }
+
+      function tryOpenAddDialog() {
+        const btns = [...document.querySelectorAll('button, a[role="button"]')];
+        const addBtn = btns.find(b =>
+          /add|new connector|connect|\+/i.test(b.textContent.trim()) && !b.disabled
+        );
+        if (addBtn) { addBtn.click(); return true; }
+        return false;
+      }
+
+      const observer = new MutationObserver(() => {
+        if (!tryFill()) tryOpenAddDialog();
       });
       observer.observe(document.body, { childList: true, subtree: true });
+
+      // Try immediately once the page has settled
+      setTimeout(() => {
+        if (!tryFill()) tryOpenAddDialog();
+      }, 800);
     });
   }
 
