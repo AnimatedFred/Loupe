@@ -15,7 +15,6 @@
     "offscreen",
     "identity",
     "alarms",
-    "webRequest"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -37,11 +36,6 @@
       "css": ["content.css"],
       "run_at": "document_idle"
     },
-    {
-      "matches": ["https://claude.ai/*"],
-      "js": ["content-claude.js"],
-      "run_at": "document_idle"
-    }
   ],
   "web_accessible_resources": [
     {

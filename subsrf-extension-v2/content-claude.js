@@ -369,8 +369,9 @@
   // ── Connect logic ─────────────────────────────────────────────────────────
 
   async function tryDirectAPI() {
-    // If background.js captured the real endpoint from a previous manual add, use it directly
-    const stored = await safeStorageGet('subsrf_discovered_endpoint');
+    const stored = await safeStorageGet(['subsrf_discovered_endpoint', 'subsrf_discovered_list_url']);
+
+    // Best case: background captured the exact POST endpoint + payload from a previous manual add
     if (stored.subsrf_discovered_endpoint) {
       const { url, body } = stored.subsrf_discovered_endpoint;
       const res = await fetch(url, {
@@ -378,10 +379,30 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...body, url: MCP_URL, name: 'Subsrf Intelligence' }),
       });
-      console.log('[Subsrf] Using discovered endpoint', url, '→', res.status);
+      console.log('[Subsrf] Using captured POST endpoint', url, '→', res.status);
       if (res.ok || res.status === 409) return true;
     }
 
+    // Good case: background spotted a successful GET to the connector list — POST to same path
+    if (stored.subsrf_discovered_list_url) {
+      const url = stored.subsrf_discovered_list_url;
+      const payloads = [
+        { url: MCP_URL, name: 'Subsrf Intelligence' },
+        { url: MCP_URL, display_name: 'Subsrf Intelligence', type: 'remote' },
+        { remote_server_url: MCP_URL, name: 'Subsrf Intelligence' },
+      ];
+      for (const body of payloads) {
+        const res = await fetch(url, {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        console.log('[Subsrf] POST to discovered list URL', url, '→', res.status);
+        if (res.ok || res.status === 409) return true;
+      }
+    }
+
+    // Fallback: probe account endpoint, then try guessed paths
     const r = await fetch('https://claude.ai/api/account', { credentials: 'include' });
     if (!r.ok) throw new Error(`account ${r.status}`);
     const account = await r.json();
