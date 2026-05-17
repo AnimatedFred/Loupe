@@ -705,14 +705,27 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
     setUpgrading(planTier)
     setUpgradeError(null)
     try {
-      const res = await fetch('https://api.subsrf.dev/api/stripe/create-checkout-session', {
+      // Existing subscribers upgrade directly via change-plan (prorated, no portal redirect).
+      // Free users have no subscription yet — they need checkout to create one.
+      const endpoint = tier !== 'free'
+        ? 'https://api.subsrf.dev/api/stripe/change-plan'
+        : 'https://api.subsrf.dev/api/stripe/create-checkout-session'
+
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier: planTier }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to start checkout')
-      window.location.href = data.url
+      if (!res.ok) throw new Error(data.error || 'Failed to upgrade')
+
+      if (data.url) {
+        // Free user checkout or portal redirect
+        window.location.href = data.url
+      } else if (data.type === 'upgraded') {
+        // Prorated upgrade applied — refresh tier in the UI
+        onTierRefresh?.()
+      }
     } catch (e) {
       setUpgradeError(e.message)
       setUpgrading(null)
