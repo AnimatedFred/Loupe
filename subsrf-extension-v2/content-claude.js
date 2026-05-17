@@ -7,9 +7,9 @@
   if (window.__subsrfClaudeInit) return;
   window.__subsrfClaudeInit = true;
 
-  const MCP_URL       = 'https://api.subsrf.dev/mcp';
-  const PILL_ID       = 'subsrf-toolbar-pill';
-  const MODAL_ID      = 'subsrf-modal-backdrop';
+  const MCP_URL = 'https://api.subsrf.dev/mcp';
+  const PILL_ID = 'subsrf-toolbar-pill';
+  const MODAL_ID = 'subsrf-modal-backdrop';
   const CONNECTED_KEY = 'subsrf_claude_connected';
 
   // Injection guard — prevents concurrent async calls from each inserting a pill
@@ -39,7 +39,7 @@
         background: #18181f;
         cursor: pointer;
         font-family: 'Azeret Mono', monospace;
-        font-size: 11px; font-weight: 400; color: rgba(242,242,244,0.55);
+        font-size: 11px; font-weight: 400; color: rgba(242,242,244,1);
         transition: border-color 150ms ease-out, background 150ms ease-out;
         white-space: nowrap; user-select: none; flex-shrink: 0;
       }
@@ -172,77 +172,135 @@
     document.getElementById(MODAL_ID)?.remove();
   }
 
-  function openModal() {
+  // Queries Claude's API to check if Subsrf MCP is actually registered.
+  // Returns true/false, or null if the check was indeterminate (fall back to storage).
+  async function checkConnected() {
+    try {
+      const r = await fetch('https://claude.ai/api/auth/account', { credentials: 'include' });
+      if (!r.ok) return null;
+      const account = await r.json();
+      const orgUuid =
+        account?.account?.memberships?.[0]?.organization?.uuid ||
+        account?.memberships?.[0]?.organization?.uuid;
+      if (!orgUuid) return null;
+
+      let gotValidResponse = false;
+      for (const path of ['integrations', 'mcp_servers']) {
+        try {
+          const res = await fetch(
+            `https://claude.ai/api/organizations/${orgUuid}/${path}`,
+            { credentials: 'include' }
+          );
+          if (!res.ok) continue;
+          const data = await res.json();
+          let list = null;
+          if (Array.isArray(data)) {
+            list = data;
+          } else {
+            for (const key of ['integrations', 'mcp_servers', 'connectors', 'data', 'results']) {
+              if (Array.isArray(data[key])) { list = data[key]; break; }
+            }
+          }
+          if (!list) continue;
+          gotValidResponse = true;
+          if (list.some(item =>
+            (item.url || item.mcp_url || item.remote_url || item.uri || '').includes('subsrf')
+          )) return true;
+        } catch (_) { continue; }
+      }
+      return gotValidResponse ? false : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function syncPillState(connected) {
+    const pill = document.getElementById(PILL_ID);
+    if (!pill) return;
+    connected ? pill.classList.add('src-connected') : pill.classList.remove('src-connected');
+  }
+
+  async function openModal() {
     if (document.getElementById(MODAL_ID)) { closeModal(); return; }
     injectStyles();
 
-    chrome.storage.local.get(CONNECTED_KEY, (data) => {
-      const connected = !!data[CONNECTED_KEY];
-      const logoSrc = chrome.runtime?.getURL('icons/icon48.png') ?? '';
+    const logoSrc = chrome.runtime?.getURL('icons/icon48.png') ?? '';
 
-      const backdrop = document.createElement('div');
-      backdrop.id = MODAL_ID;
+    // Show backdrop immediately with loading state
+    const backdrop = document.createElement('div');
+    backdrop.id = MODAL_ID;
+    backdrop.innerHTML = `<div class="src-modal" style="display:flex;align-items:center;justify-content:center;min-height:220px"><span style="font-family:'Azeret Mono',monospace;font-size:11px;color:rgba(242,242,244,0.28);letter-spacing:1px">checking…</span></div>`;
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
 
-      if (connected) {
-        backdrop.innerHTML = `
-          <div class="src-modal">
-            <div class="src-modal-header">
-              <img class="src-modal-logo" src="${logoSrc}" alt="">
-              <span class="src-modal-name">Subsrf Intelligence</span>
-              <button class="src-modal-close" type="button">×</button>
-            </div>
-            <h2>Subsrf is connected</h2>
-            <div class="src-chips">
-              <div class="src-chip"><b>Live</b> element capture</div>
-              <div class="src-chip"><b>Real-time</b> Figma sync</div>
-              <div class="src-chip"><b>AI</b> implementation briefs</div>
-            </div>
-            <div class="src-prompts">
-              <div class="src-prompt">Analyze my captured UI and generate an implementation brief</div>
-              <div class="src-prompt">Sync the selected components to Figma</div>
-              <div class="src-prompt">What design tokens is this page using?</div>
-            </div>
-            <button class="src-cta src-cta-secondary" id="subsrf-manage-btn" type="button">Manage connection</button>
-            <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>
-          </div>`;
-      } else {
-        backdrop.innerHTML = `
-          <div class="src-modal">
-            <div class="src-modal-header">
-              <img class="src-modal-logo" src="${logoSrc}" alt="">
-              <span class="src-modal-name">Subsrf Intelligence</span>
-              <button class="src-modal-close" type="button">×</button>
-            </div>
-            <h2>Unlock Figma design intelligence in Claude</h2>
-            <div class="src-chips">
-              <div class="src-chip"><b>Live</b> element capture</div>
-              <div class="src-chip"><b>Real-time</b> Figma sync</div>
-              <div class="src-chip"><b>AI</b> implementation briefs</div>
-            </div>
-            <div class="src-prompts">
-              <div class="src-prompt">Analyze my captured UI and generate an implementation brief<span class="src-lock">🔒</span></div>
-              <div class="src-prompt">Sync the selected components to Figma<span class="src-lock">🔒</span></div>
-              <div class="src-prompt">What design tokens is this page using?<span class="src-lock">🔒</span></div>
-            </div>
-            <button class="src-cta" id="subsrf-connect-btn" type="button">
-              Connect Figma Intelligence
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-            <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>
-          </div>`;
-      }
+    // Real API check — don't trust storage alone
+    let connected = await checkConnected();
+    if (connected === null) {
+      // Indeterminate: fall back to cached storage value
+      connected = !!(await new Promise(r => chrome.storage.local.get(CONNECTED_KEY, d => r(d[CONNECTED_KEY]))));
+    } else {
+      // Sync storage and pill to match reality
+      chrome.storage.local.set({ [CONNECTED_KEY]: connected });
+      syncPillState(connected);
+    }
 
-      // Append FIRST so all getElementById calls below find the elements
-      document.body.appendChild(backdrop);
+    // User may have closed the modal while we were checking
+    if (!document.getElementById(MODAL_ID)) return;
 
-      // Wire up all event listeners after the element is in the DOM
-      backdrop.querySelector('.src-modal-close').addEventListener('click', closeModal);
-      backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
-      backdrop.querySelector('#subsrf-connect-btn')?.addEventListener('click', handleConnect);
-      backdrop.querySelector('#subsrf-manage-btn')?.addEventListener('click', () => {
-        closeModal();
-        window.location.href = 'https://claude.ai/customize/connectors';
-      });
+    const modal = backdrop.querySelector('.src-modal');
+    if (!modal) return;
+    modal.removeAttribute('style');
+
+    if (connected) {
+      modal.innerHTML = `
+        <div class="src-modal-header">
+          <img class="src-modal-logo" src="${logoSrc}" alt="">
+          <span class="src-modal-name">Subsrf Intelligence</span>
+          <button class="src-modal-close" type="button">×</button>
+        </div>
+        <h2>Subsrf is connected</h2>
+        <div class="src-chips">
+          <div class="src-chip"><b>Live</b> element capture</div>
+          <div class="src-chip"><b>Real-time</b> Figma sync</div>
+          <div class="src-chip"><b>AI</b> implementation briefs</div>
+        </div>
+        <div class="src-prompts">
+          <div class="src-prompt">Analyze my captured UI and generate an implementation brief</div>
+          <div class="src-prompt">Sync the selected components to Figma</div>
+          <div class="src-prompt">What design tokens is this page using?</div>
+        </div>
+        <button class="src-cta src-cta-secondary" id="subsrf-manage-btn" type="button">Manage connection</button>
+        <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>`;
+    } else {
+      modal.innerHTML = `
+        <div class="src-modal-header">
+          <img class="src-modal-logo" src="${logoSrc}" alt="">
+          <span class="src-modal-name">Subsrf Intelligence</span>
+          <button class="src-modal-close" type="button">×</button>
+        </div>
+        <h2>Unlock Figma design intelligence in Claude</h2>
+        <div class="src-chips">
+          <div class="src-chip"><b>Live</b> element capture</div>
+          <div class="src-chip"><b>Real-time</b> Figma sync</div>
+          <div class="src-chip"><b>AI</b> implementation briefs</div>
+        </div>
+        <div class="src-prompts">
+          <div class="src-prompt">Analyze my captured UI and generate an implementation brief<span class="src-lock">🔒</span></div>
+          <div class="src-prompt">Sync the selected components to Figma<span class="src-lock">🔒</span></div>
+          <div class="src-prompt">What design tokens is this page using?<span class="src-lock">🔒</span></div>
+        </div>
+        <button class="src-cta" id="subsrf-connect-btn" type="button">
+          Connect Figma Intelligence
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>`;
+    }
+
+    modal.querySelector('.src-modal-close').addEventListener('click', closeModal);
+    modal.querySelector('#subsrf-connect-btn')?.addEventListener('click', handleConnect);
+    modal.querySelector('#subsrf-manage-btn')?.addEventListener('click', () => {
+      closeModal();
+      window.location.href = 'https://claude.ai/customize/connectors';
     });
   }
 
@@ -332,8 +390,8 @@
       if (el.children.length < 2) return false;
       const rect = el.getBoundingClientRect();
       return rect.bottom > window.innerHeight * 0.8
-          && rect.height > 28 && rect.height < 64
-          && rect.width > 300;
+        && rect.height > 28 && rect.height < 64
+        && rect.width > 300;
     });
     return rows[0] ?? null;
   }
@@ -362,6 +420,13 @@
       // Insert after the first child (usually the + button)
       const anchor = toolbar.firstElementChild;
       anchor ? toolbar.insertBefore(pill, anchor.nextSibling) : toolbar.prepend(pill);
+
+      // Async: verify real connection state and update pill + storage
+      checkConnected().then(connected => {
+        if (connected === null) return;
+        chrome.storage.local.set({ [CONNECTED_KEY]: connected });
+        syncPillState(connected);
+      });
     } finally {
       _injecting = false;
     }
