@@ -285,6 +285,7 @@ const app = express();
 app.use(cors({
   origin: (origin, callback) => callback(null, origin === 'null' ? 'null' : (origin || '*')),
   credentials: false,
+  exposedHeaders: ['Mcp-Session-Id'],
 }));
 
 // Stripe webhook — registered BEFORE express.json() so we receive the raw Buffer
@@ -2330,6 +2331,7 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
     issuer: base,
     authorization_endpoint: `${base}/oauth/authorize`,
     token_endpoint: `${base}/oauth/token`,
+    registration_endpoint: `${base}/register`,
     scopes_supported: ['mcp'],
     response_types_supported: ['code'],
     code_challenge_methods_supported: ['S256'],
@@ -2342,10 +2344,29 @@ app.get('/.well-known/oauth-authorization-server', (req, res) => {
 app.get('/.well-known/oauth-protected-resource', (req, res) => {
   const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
   res.json({
-    resource: base,
+    resource: `${base}/mcp`,
     authorization_servers: [base],
     scopes_supported: ['mcp'],
     bearer_methods_supported: ['header'],
+  });
+});
+
+// RFC 7591 — Dynamic Client Registration
+// Claude.ai (and other MCP clients) MUST register before starting the OAuth flow.
+// We accept any client metadata and return a generated client_id. No client_secret
+// is issued because all MCP clients are public clients (PKCE-only).
+app.post('/register', (req, res) => {
+  const body = req.body || {};
+  const clientId = randomUUID();
+  res.status(201).json({
+    client_id: clientId,
+    client_id_issued_at: Math.floor(Date.now() / 1000),
+    client_secret_expires_at: 0,
+    redirect_uris: body.redirect_uris || [],
+    grant_types: ['authorization_code'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
+    scope: 'mcp',
   });
 });
 
@@ -2787,7 +2808,7 @@ app.all('/mcp', async (req, res) => {
   if (!session && req.method === 'POST') {
     const accessToken = req.headers.authorization?.slice(7) || '';
     const newSessionId = randomUUID();
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => newSessionId });
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => newSessionId, enableJsonResponse: true });
     const mcpServer = createRemoteMcpServer(auth, accessToken);
     await mcpServer.connect(transport);
     session = { transport, server: mcpServer, userId: auth.user.id };
