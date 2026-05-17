@@ -35,8 +35,8 @@
       #subsrf-toolbar-pill {
         display: inline-flex; align-items: center; gap: 8px;
         padding: 6px 12px; border-radius: 9999px;
-        border: 1px solid rgba(255,255,255,0.06);
-        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.10);
+        background: #18181f;
         cursor: pointer;
         font-family: 'Azeret Mono', monospace;
         font-size: 11px; font-weight: 400; color: rgba(242,242,244,0.55);
@@ -44,10 +44,10 @@
         white-space: nowrap; user-select: none; flex-shrink: 0;
       }
       #subsrf-toolbar-pill:hover {
-        border-color: rgba(255,255,255,0.10); background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.18); background: #22222c;
       }
       #subsrf-toolbar-pill.src-connected {
-        border-color: rgba(57,217,138,0.2); background: rgba(57,217,138,0.1);
+        border-color: rgba(57,217,138,0.35); background: rgba(57,217,138,0.12);
         color: #39D98A; letter-spacing: 0.5px;
       }
       #subsrf-toolbar-pill img { width: 16px; height: 16px; border-radius: 4px; object-fit: contain; }
