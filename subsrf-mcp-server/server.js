@@ -12,7 +12,11 @@ import { createClient } from "@supabase/supabase-js";
 import { request as httpsRequest } from "node:https";
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { randomUUID, createHmac, createHash } from "node:crypto";
 
 /**
@@ -287,6 +291,10 @@ app.use(cors({
   credentials: false,
   exposedHeaders: ['Mcp-Session-Id'],
 }));
+
+// Favicon — served from the bundled subsrf-icon.png so Claude.ai shows the real logo
+app.get('/favicon.ico', (_req, res) => res.sendFile(join(__dirname, 'subsrf-icon.png')));
+app.get('/favicon.png', (_req, res) => res.sendFile(join(__dirname, 'subsrf-icon.png')));
 
 // Stripe webhook — registered BEFORE express.json() so we receive the raw Buffer
 // that Stripe requires for signature verification.
