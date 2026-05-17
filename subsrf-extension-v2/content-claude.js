@@ -173,54 +173,70 @@
   }
 
   // Checks if Subsrf MCP is registered with Claude.
-  // Tries GET first; falls back to POST (409 = already exists, both = connected).
   // Returns true/false, or null if completely indeterminate.
   async function checkConnected() {
     try {
+      // Check Next.js page state first (no network request needed)
+      try {
+        if (window.__NEXT_DATA__ && JSON.stringify(window.__NEXT_DATA__).toLowerCase().includes('subsrf')) {
+          console.log('[Subsrf] Found in __NEXT_DATA__');
+          return true;
+        }
+      } catch (_) {}
+
       const r = await fetch('https://claude.ai/api/auth/account', { credentials: 'include' });
-      if (!r.ok) return null;
+      if (!r.ok) { console.warn('[Subsrf] account API', r.status); return null; }
       const account = await r.json();
+
       const orgUuid =
         account?.account?.memberships?.[0]?.organization?.uuid ||
         account?.memberships?.[0]?.organization?.uuid;
-      if (!orgUuid) return null;
+      if (!orgUuid) { console.warn('[Subsrf] no orgUuid, account keys:', Object.keys(account)); return null; }
 
-      // Try GET (read-only)
-      for (const path of ['integrations', 'mcp_servers']) {
+      // Try GET on every plausible endpoint — don't return false until all are checked
+      let gotValidList = false;
+      for (const path of ['mcp_servers', 'integrations', 'connectors', 'remote_mcp_servers']) {
         try {
-          const res = await fetch(
-            `https://claude.ai/api/organizations/${orgUuid}/${path}`,
-            { credentials: 'include' }
-          );
+          const res = await fetch(`https://claude.ai/api/organizations/${orgUuid}/${path}`, { credentials: 'include' });
+          console.log('[Subsrf] GET', path, '→', res.status);
           if (!res.ok) continue;
           const data = await res.json();
+          console.log('[Subsrf] GET', path, 'body:', JSON.stringify(data).slice(0, 300));
+
           let list = Array.isArray(data) ? data : null;
           if (!list) {
-            for (const key of ['integrations', 'mcp_servers', 'connectors', 'data', 'results']) {
+            for (const key of ['mcp_servers', 'integrations', 'connectors', 'data', 'results', 'items']) {
               if (Array.isArray(data[key])) { list = data[key]; break; }
             }
           }
           if (!list) continue;
-          // Got a valid list — check presence and return definitively
-          return list.some(item =>
-            (item.url || item.mcp_url || item.remote_url || item.uri || '').includes('subsrf')
-          );
-        } catch (_) { continue; }
+          gotValidList = true;
+          if (list.some(item => (item.url || item.mcp_url || item.remote_url || item.uri || '').includes('subsrf'))) {
+            console.log('[Subsrf] Found via GET', path);
+            return true;
+          }
+        } catch (e) { console.warn('[Subsrf] GET', path, 'err:', e.message); }
       }
 
-      // GET didn't yield a parseable list — fall back to POST
-      // 409 = already registered, 201 = just registered; both mean connected
-      for (const path of ['integrations', 'mcp_servers']) {
+      if (gotValidList) {
+        // Got parseable lists from GET, subsrf not in any of them
+        console.log('[Subsrf] GET succeeded but subsrf not found — trying POST probe');
+      }
+
+      // POST probe: 409 = already registered, 201 = just registered
+      for (const path of ['mcp_servers', 'integrations', 'remote_mcp_servers']) {
         const res = await fetch(`https://claude.ai/api/organizations/${orgUuid}/${path}`, {
           method: 'POST', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: MCP_URL, name: 'Subsrf Intelligence' }),
         });
+        console.log('[Subsrf] POST', path, '→', res.status);
         if (res.ok || res.status === 409) return true;
       }
 
-      return false;
-    } catch (_) {
+      return gotValidList ? false : null;
+    } catch (e) {
+      console.error('[Subsrf] checkConnected threw:', e);
       return null;
     }
   }
