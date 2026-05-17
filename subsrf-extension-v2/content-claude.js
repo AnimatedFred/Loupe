@@ -172,28 +172,52 @@
     document.getElementById(MODAL_ID)?.remove();
   }
 
+  // Get the Claude org UUID from any available source.
+  async function getOrgUuid() {
+    // 1. Try Next.js page data embedded in DOM (no network request)
+    try {
+      const el = document.getElementById('__NEXT_DATA__');
+      if (el) {
+        const nd = JSON.parse(el.textContent);
+        const uuid =
+          nd?.props?.pageProps?.account?.memberships?.[0]?.organization?.uuid ||
+          nd?.props?.pageProps?.currentOrg?.uuid ||
+          nd?.props?.pageProps?.organization?.uuid;
+        if (uuid) { console.log('[Subsrf] orgUuid from __NEXT_DATA__'); return uuid; }
+      }
+    } catch (_) {}
+
+    // 2. Try several API paths — /api/auth/account is now 404
+    for (const path of [
+      '/api/auth/account', '/api/user', '/api/me', '/api/auth/me',
+      '/api/profile', '/api/account',
+    ]) {
+      try {
+        const r = await fetch(`https://claude.ai${path}`, { credentials: 'include' });
+        console.log('[Subsrf] account probe', path, '→', r.status);
+        if (!r.ok) continue;
+        const d = await r.json();
+        const uuid =
+          d?.account?.memberships?.[0]?.organization?.uuid ||
+          d?.memberships?.[0]?.organization?.uuid ||
+          d?.organization?.uuid ||
+          d?.org_uuid ||
+          d?.uuid;
+        if (uuid) { console.log('[Subsrf] orgUuid from', path); return uuid; }
+        console.log('[Subsrf] response keys from', path, ':', Object.keys(d));
+      } catch (_) {}
+    }
+    return null;
+  }
+
   // Checks if Subsrf MCP is registered with Claude.
   // Returns true/false, or null if completely indeterminate.
   async function checkConnected() {
     try {
-      // Check Next.js page state first (no network request needed)
-      try {
-        if (window.__NEXT_DATA__ && JSON.stringify(window.__NEXT_DATA__).toLowerCase().includes('subsrf')) {
-          console.log('[Subsrf] Found in __NEXT_DATA__');
-          return true;
-        }
-      } catch (_) {}
+      const orgUuid = await getOrgUuid();
+      if (!orgUuid) { console.warn('[Subsrf] could not get orgUuid'); return null; }
 
-      const r = await fetch('https://claude.ai/api/auth/account', { credentials: 'include' });
-      if (!r.ok) { console.warn('[Subsrf] account API', r.status); return null; }
-      const account = await r.json();
-
-      const orgUuid =
-        account?.account?.memberships?.[0]?.organization?.uuid ||
-        account?.memberships?.[0]?.organization?.uuid;
-      if (!orgUuid) { console.warn('[Subsrf] no orgUuid, account keys:', Object.keys(account)); return null; }
-
-      // Try GET on every plausible endpoint — don't return false until all are checked
+      // Try GET on every plausible endpoint
       let gotValidList = false;
       for (const path of ['mcp_servers', 'integrations', 'connectors', 'remote_mcp_servers']) {
         try {
@@ -216,11 +240,6 @@
             return true;
           }
         } catch (e) { console.warn('[Subsrf] GET', path, 'err:', e.message); }
-      }
-
-      if (gotValidList) {
-        // Got parseable lists from GET, subsrf not in any of them
-        console.log('[Subsrf] GET succeeded but subsrf not found — trying POST probe');
       }
 
       // POST probe: 409 = already registered, 201 = just registered
@@ -474,37 +493,6 @@
 
   // ── Auto-fill on /customize/connectors ───────────────────────────────────
 
-  // Inject a fetch interceptor into the page context so we can capture the exact
-  // API endpoint Claude uses when a connector is added manually.
-  function injectFetchInterceptor() {
-    if (window.__subsrfInterceptor) return;
-    window.__subsrfInterceptor = true;
-    const script = document.createElement('script');
-    script.textContent = `(function(){
-      const orig = window.fetch;
-      window.fetch = function(input, init) {
-        const url = typeof input === 'string' ? input : (input && input.url) || '';
-        if (/integrat|mcp_server|connector/i.test(url) && init && init.method === 'POST') {
-          try {
-            window.dispatchEvent(new CustomEvent('__subsrf_api', {
-              detail: { url, body: JSON.parse(init.body || '{}') }
-            }));
-          } catch(_) {}
-        }
-        return orig.apply(this, arguments);
-      };
-    })()`;
-    document.head.appendChild(script);
-    script.remove();
-
-    window.addEventListener('__subsrf_api', (e) => {
-      const { url, body } = e.detail;
-      console.log('[Subsrf] Captured Claude API call →', url, body);
-      // Save so we can reuse this exact endpoint next time
-      chrome.storage.local.set({ subsrf_known_endpoint: { url, body } });
-    });
-  }
-
   function showConnectorBanner(url) {
     if (document.getElementById('subsrf-connector-banner')) return;
     const el = document.createElement('div');
@@ -534,9 +522,6 @@
 
   function tryAutoFill() {
     if (!location.pathname.startsWith('/customize/connectors')) return;
-
-    // Always inject interceptor so we learn the real API endpoint
-    injectFetchInterceptor();
 
     chrome.storage.local.get('subsrf_pending_mcp_url', ({ subsrf_pending_mcp_url: pending }) => {
       if (!pending) return;
@@ -602,8 +587,9 @@
           !b.closest('[role="dialog"]') && !b.disabled
         );
         console.log('[Subsrf] Page buttons:', btns.map(b => b.textContent.trim()).filter(Boolean));
+        // Match buttons that START with Add/New/+ — avoids "Not connected", "Disconnect" etc.
         const addBtn = btns.find(b =>
-          /add|new|connect|\+|create/i.test(b.textContent.trim())
+          /^(add|new|\+|create)\b/i.test(b.textContent.trim())
         );
         if (addBtn) {
           console.log('[Subsrf] Clicking Add button:', addBtn.textContent.trim());
