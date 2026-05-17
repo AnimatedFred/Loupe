@@ -14,7 +14,7 @@
     "downloads",
     "offscreen",
     "identity",
-    "alarms",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -35,7 +35,7 @@
       "js": ["config.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
-    },
+    }
   ],
   "web_accessible_resources": [
     {
