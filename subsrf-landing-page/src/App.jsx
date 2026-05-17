@@ -567,14 +567,14 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <div className="font-heading-sm text-heading-sm text-white-primary">$9<span className="font-body text-body text-white-secondary font-light">/mo</span></div>
               </div>
               <p className="font-body text-body text-white-secondary border-b border-white-border pb-md">
-                Essential tooling for consistent UI data pipelines.
+                Full pipeline access. 75 AI credits / month.
               </p>
               <ul className="flex flex-col gap-sm font-mono-data text-mono-data text-white-primary">
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Everything in Free</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Subsrf Studio Editor</li>
-                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> AI Analysis (Build Prompt, Audit)</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> MCP Bridge (Claude/Cursor)</li>
+                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync + AI Analysis</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 75 Credits / month</li>
-                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Figma Sync</li>
               </ul>
               {(() => {
                 const downgradeScheduled = subInfo?.cancelAtPeriodEnd || (subInfo?.scheduledTier && subInfo?.scheduledDate)
@@ -596,14 +596,11 @@ function LandingPage({ onLogin, loading, session, tier, onLogout }) {
                 <div className="font-heading-sm text-heading-sm text-white-primary">$19<span className="font-body text-body text-white-secondary font-light">/mo</span></div>
               </div>
               <p className="font-body text-body text-white-secondary border-b border-white-border pb-md">
-                Unrestricted access for professional teams.
+                Everything in Starter. 300 AI credits / month.
               </p>
               <ul className="flex flex-col gap-sm font-mono-data text-mono-data text-white-secondary">
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Everything in Starter</li>
-                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Full MCP Bridge Integration</li>
-                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Claude ↔ Figma Live Control</li>
                 <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> 300 Credits / month</li>
-                <li className="flex items-center gap-sm"><span className="material-symbols-outlined text-neon text-[16px]">check</span> Unlimited Full Page Capture</li>
               </ul>
               <button className="mt-auto bg-transparent border border-white-border text-white-primary w-full py-sm rounded-DEFAULT font-label-caps text-label-caps hover:bg-white-border transition-colors" onClick={!session ? onLogin : tier === 'pro' ? null : () => handleUpgrade('pro')} disabled={upgrading === 'pro'}>
                 {upgrading === 'pro' ? 'Wait...' : !session ? 'Select Pro' : tier === 'pro' ? 'Current Plan' : tier === 'starter' ? 'Upgrade to Pro' : 'Get Pro'}

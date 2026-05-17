@@ -128,7 +128,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-display-lg text-heading-md text-white-primary">$9</span>
                 <span className="font-mono-data text-white-muted text-label-caps">/MO</span>
               </div>
-              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Studio unlocked. AI-assisted analysis for rapid prototyping.</p>
+              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Full pipeline access. 75 AI credits / month.</p>
             </div>
             <div className="flex-grow space-y-md mb-xl">
               <div className="flex items-start gap-sm">
@@ -141,11 +141,15 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">AI Analysis (75 credits/mo)</span>
+                <span className="font-mono-data text-white-primary text-label-caps">MCP Bridge (Claude/Cursor)</span>
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">Unlimited Figma Sync</span>
+                <span className="font-mono-data text-white-primary text-label-caps">Unlimited Figma Sync + AI Analysis</span>
+              </div>
+              <div className="flex items-start gap-sm">
+                <span className="material-symbols-outlined text-neon text-[18px]">check</span>
+                <span className="font-mono-data text-white-primary text-label-caps">75 AI Credits / month</span>
               </div>
             </div>
             {(() => {
@@ -170,7 +174,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <span className="font-display-lg text-heading-md text-white-primary">$19</span>
                 <span className="font-mono-data text-white-muted text-label-caps">/MO</span>
               </div>
-              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Full pipeline. Live Claude-to-Figma orchestration bridge.</p>
+              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Everything in Starter. 300 AI credits / month.</p>
             </div>
             <div className="flex-grow space-y-md mb-xl">
               <div className="flex items-start gap-sm">
@@ -179,15 +183,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">MCP Bridge (Claude/Cursor)</span>
-              </div>
-              <div className="flex items-start gap-sm">
-                <span className="material-symbols-outlined text-neon text-[18px]">check</span>
                 <span className="font-mono-data text-white-primary text-label-caps">300 AI Credits / month</span>
-              </div>
-              <div className="flex items-start gap-sm">
-                <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">Bidirectional Figma Control</span>
               </div>
             </div>
             <button
@@ -285,9 +281,15 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                   <td className="p-md text-center text-neon">Unlimited</td>
                 </tr>
                 <tr>
+                  <td className="p-md text-white-secondary">MCP Bridge (Claude/Cursor)</td>
+                  <td className="p-md text-center text-white-muted">—</td>
+                  <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
+                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
+                </tr>
+                <tr>
                   <td className="p-md text-white-secondary">Claude Live Control</td>
                   <td className="p-md text-center text-white-muted">—</td>
-                  <td className="p-md text-center text-white-muted bg-white-border/5">—</td>
+                  <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
                   <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
               </tbody>
