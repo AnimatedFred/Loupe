@@ -2637,18 +2637,19 @@ function createRemoteMcpServer(auth, accessToken) {
 
     if (name === 'get_selected_elements') {
       const ustate = getOrInitUserState(auth.user.id);
+      // Prefer per-user state (populated when extension sends auth'd request),
+      // fall back to global lastElements (written even when auth fails).
+      const elements = ustate.elements.length > 0 ? ustate.elements : lastElements;
+      const context  = ustate.context   || lastContext;
+      const prompt   = ustate.prompt    || lastPrompt;
+      const screenshot = ustate.screenshot || lastScreenshot;
       const content = [{
         type: 'text',
-        text: JSON.stringify({
-          page: ustate.context,
-          count: ustate.elements.length,
-          elements: ustate.elements,
-          prompt: ustate.prompt,
-        }, null, 2),
+        text: JSON.stringify({ page: context, count: elements.length, elements, prompt }, null, 2),
       }];
-      if (ustate.screenshot) {
-        const base64Data = ustate.screenshot.split(',')[1];
-        const mimeType = ustate.screenshot.split(',')[0].split(':')[1].split(';')[0];
+      if (screenshot) {
+        const base64Data = screenshot.split(',')[1];
+        const mimeType = screenshot.split(',')[0].split(':')[1].split(';')[0];
         content.push({ type: 'image', data: base64Data, mimeType });
       }
       return { content };
@@ -2687,8 +2688,22 @@ function createRemoteMcpServer(auth, accessToken) {
       try {
         const r = await fetch(`${selfBase}/api/state`);
         const data = r.ok ? await r.json() : null;
-        const bridgeStatus = data ? { figmaConnected: data.figmaConnected, elementCount: data.count || 0, tier: data.tier } : { error: 'Bridge unreachable' };
-        return { content: [{ type: 'text', text: JSON.stringify({ bridge: bridgeStatus, restApiAvailable: isFigmaRestAvailable() }, null, 2) }] };
+        const bridgeStatus = data
+          ? { figmaConnected: data.figmaConnected, elementCount: data.count || 0 }
+          : { error: 'Bridge unreachable' };
+        const userPat = await getUserFigmaPat(auth.user.id, accessToken);
+        const status = {
+          bridge: bridgeStatus,
+          subsrfElements: (getOrInitUserState(auth.user.id).elements.length || lastElements.length),
+          restApiAvailable: !!(userPat || isFigmaRestAvailable()),
+          tier: auth.tier,
+          hint: !data?.figmaConnected
+            ? 'Open the Subsrf plugin in Figma and sign in to connect the Figma bridge.'
+            : data.count === 0
+            ? 'Figma is connected. Use the browser extension to capture UI elements.'
+            : null,
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(status, null, 2) }] };
       } catch (e) {
         return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
       }
