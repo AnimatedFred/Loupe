@@ -11,6 +11,7 @@ import HealthPanel from './panels/HealthPanel';
 import ComponentPanel from './panels/ComponentPanel';
 import AiAnalysis from './AiAnalysis';
 import ExportSidebar from './ExportSidebar';
+import ClaudeSetup from './ClaudeSetup';
 
 const CATEGORIES = [
   { id: 'colors',     label: 'Colors',     dot: '#00FF87' },
@@ -185,6 +186,11 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Claude MCP setup */}
+        <div style={{ padding: '16px 16px 0', marginTop: 'auto' }}>
+          <ClaudeSetup compact />
         </div>
       </aside>
 
