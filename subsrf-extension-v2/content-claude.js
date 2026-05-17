@@ -185,27 +185,27 @@
           nd?.props?.pageProps?.organization?.uuid;
         if (uuid) { console.log('[Subsrf] orgUuid from __NEXT_DATA__'); return uuid; }
       }
-    } catch (_) {}
+    } catch (_) { }
 
-    // 2. Try several API paths — /api/auth/account is now 404
+    // 2. Try several API paths — /api/account works, others are 404
     for (const path of [
-      '/api/auth/account', '/api/user', '/api/me', '/api/auth/me',
-      '/api/profile', '/api/account',
+      '/api/account', '/api/auth/account', '/api/user', '/api/me', '/api/auth/me',
+      '/api/profile',
     ]) {
       try {
         const r = await fetch(`https://claude.ai${path}`, { credentials: 'include' });
         console.log('[Subsrf] account probe', path, '→', r.status);
         if (!r.ok) continue;
         const d = await r.json();
+        console.log('[Subsrf] account response:', JSON.stringify(d).slice(0, 500));
         const uuid =
           d?.account?.memberships?.[0]?.organization?.uuid ||
           d?.memberships?.[0]?.organization?.uuid ||
           d?.organization?.uuid ||
           d?.org_uuid ||
           d?.uuid;
-        if (uuid) { console.log('[Subsrf] orgUuid from', path); return uuid; }
-        console.log('[Subsrf] response keys from', path, ':', Object.keys(d));
-      } catch (_) {}
+        if (uuid) { console.log('[Subsrf] orgUuid from', path, '=', uuid); return uuid; }
+      } catch (_) { }
     }
     return null;
   }
@@ -336,7 +336,7 @@
           <div class="src-prompt">What design tokens is this page using?<span class="src-lock">🔒</span></div>
         </div>
         <button class="src-cta" id="subsrf-connect-btn" type="button">
-          Connect Figma Intelligence
+          Connect Subsrf Intelligence
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
         <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>`;
@@ -353,7 +353,20 @@
   // ── Connect logic ─────────────────────────────────────────────────────────
 
   async function tryDirectAPI() {
-    const r = await fetch('https://claude.ai/api/auth/account', { credentials: 'include' });
+    // If background.js captured the real endpoint from a previous manual add, use it directly
+    const stored = await new Promise(r => chrome.storage.local.get('subsrf_discovered_endpoint', r));
+    if (stored.subsrf_discovered_endpoint) {
+      const { url, body } = stored.subsrf_discovered_endpoint;
+      const res = await fetch(url, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, url: MCP_URL, name: 'Subsrf Intelligence' }),
+      });
+      console.log('[Subsrf] Using discovered endpoint', url, '→', res.status);
+      if (res.ok || res.status === 409) return true;
+    }
+
+    const r = await fetch('https://claude.ai/api/account', { credentials: 'include' });
     if (!r.ok) throw new Error(`account ${r.status}`);
     const account = await r.json();
     const orgUuid =
@@ -410,7 +423,7 @@
       console.warn('[Subsrf] Direct API failed:', e.message, '— redirecting to connectors page');
       closeModal();
       // Copy URL to clipboard so user can paste it if automation fails
-      navigator.clipboard?.writeText(MCP_URL).catch(() => {});
+      navigator.clipboard?.writeText(MCP_URL).catch(() => { });
       chrome.storage.local.set({ subsrf_pending_mcp_url: MCP_URL });
       window.location.href = 'https://claude.ai/customize/connectors';
     }

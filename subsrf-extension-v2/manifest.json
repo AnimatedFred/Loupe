@@ -14,7 +14,8 @@
     "downloads",
     "offscreen",
     "identity",
-    "alarms"
+    "alarms",
+    "webRequest"
   ],
   "host_permissions": [
     "<all_urls>"

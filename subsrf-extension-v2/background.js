@@ -607,6 +607,27 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'bridgeHeartbeat') syncTierToBridge();
 });
 
+// ── Discover Claude's real MCP connector endpoint ─────────────────────────────
+// Intercepts POSTs to claude.ai/api/* so we learn the exact endpoint path and
+// payload shape the first time the user manually adds a connector.
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    if (details.method !== 'POST') return;
+    try {
+      const raw = details.requestBody?.raw?.[0]?.bytes;
+      if (!raw) return;
+      const body = JSON.parse(new TextDecoder().decode(new Uint8Array(raw)));
+      // Only care about requests that look like connector/MCP registration
+      const isConnector = body.url || body.mcp_url || body.remote_server_url || body.server_url;
+      if (!isConnector) return;
+      console.log('[Subsrf BG] Captured Claude connector POST →', details.url, body);
+      chrome.storage.local.set({ subsrf_discovered_endpoint: { url: details.url, body } });
+    } catch (_) {}
+  },
+  { urls: ['https://claude.ai/api/*'] },
+  ['requestBody']
+);
+
 // Sync immediately whenever the service worker activates
 syncTierToBridge();
 
