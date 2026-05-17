@@ -21,92 +21,147 @@
 
   function injectStyles() {
     if (document.getElementById('subsrf-claude-styles')) return;
+
+    // Fonts
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400&family=Manrope:wght@500;600&display=swap';
+    document.head.appendChild(link);
+
     const s = document.createElement('style');
     s.id = 'subsrf-claude-styles';
     s.textContent = `
+      /* ── Pill ── */
       #subsrf-toolbar-pill {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 5px 10px 5px 7px; border-radius: 999px;
-        border: 1.5px solid #d1d5db; background: #fff;
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 12px; border-radius: 9999px;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255,255,255,0.05);
         cursor: pointer;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 12.5px; font-weight: 500; color: #374151;
-        transition: border-color .15s, background .15s;
+        font-family: 'Azeret Mono', monospace;
+        font-size: 11px; font-weight: 400; color: rgba(242,242,244,0.55);
+        transition: border-color 150ms ease-out, background 150ms ease-out;
         white-space: nowrap; user-select: none; flex-shrink: 0;
       }
-      #subsrf-toolbar-pill:hover { border-color: #9ca3af; background: #f9fafb; }
-      #subsrf-toolbar-pill.src-connected { border-color: #00c96b; background: #f0fdf4; color: #065f46; }
+      #subsrf-toolbar-pill:hover {
+        border-color: rgba(255,255,255,0.10); background: rgba(255,255,255,0.08);
+      }
+      #subsrf-toolbar-pill.src-connected {
+        border-color: rgba(57,217,138,0.2); background: rgba(57,217,138,0.1);
+        color: #39D98A; letter-spacing: 0.5px;
+      }
       #subsrf-toolbar-pill img { width: 16px; height: 16px; border-radius: 4px; object-fit: contain; }
-      #subsrf-toolbar-pill .src-caret { opacity: .45; margin-left: 1px; }
+      #subsrf-toolbar-pill .src-caret { opacity: 0.45; margin-left: 4px; }
 
+      /* ── Modal backdrop ── */
       #subsrf-modal-backdrop {
         position: fixed; inset: 0; z-index: 99999;
-        background: rgba(0,0,0,0.45);
+        background: rgba(5,5,8,0.85); backdrop-filter: blur(8px);
         display: flex; align-items: center; justify-content: center; padding: 16px;
-        animation: srfBackdrop .18s ease;
+        animation: srfBackdrop 200ms cubic-bezier(0,0,0.2,1);
       }
       @keyframes srfBackdrop { from { opacity:0 } to { opacity:1 } }
 
+      /* ── Modal card ── */
       #subsrf-modal-backdrop .src-modal {
-        background: #fff; border-radius: 14px; padding: 22px 22px 18px;
+        background: #111118; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px; padding: 32px;
         width: 100%; max-width: 540px;
-        box-shadow: 0 24px 64px rgba(0,0,0,0.22);
-        animation: srfModal .2s cubic-bezier(0.34,1.2,0.64,1);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        box-sizing: border-box;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        animation: srfModal 200ms cubic-bezier(0,0,0.2,1);
+        font-family: 'Manrope', sans-serif; box-sizing: border-box;
       }
       @keyframes srfModal {
-        from { opacity:0; transform:translateY(10px) scale(0.97) }
-        to   { opacity:1; transform:translateY(0)   scale(1)    }
+        from { opacity:0; transform:translateY(12px) scale(0.98) }
+        to   { opacity:1; transform:translateY(0)    scale(1)    }
       }
-      #subsrf-modal-backdrop .src-header {
-        display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+      #subsrf-modal-backdrop .src-modal-header {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
       }
-      #subsrf-modal-backdrop .src-logo {
-        width: 30px; height: 30px; border-radius: 7px; object-fit: contain;
+      #subsrf-modal-backdrop .src-modal-logo {
+        width: 32px; height: 32px; border-radius: 8px; object-fit: contain;
       }
-      #subsrf-modal-backdrop .src-name { font-size: 13px; font-weight: 600; color: #111827; flex: 1; }
-      #subsrf-modal-backdrop .src-close {
-        background: none; border: none; font-size: 20px; color: #9ca3af;
-        cursor: pointer; padding: 2px 6px; border-radius: 5px; line-height: 1;
+      #subsrf-modal-backdrop .src-modal-name {
+        font-family: 'Azeret Mono', monospace;
+        font-size: 11px; font-weight: 400; color: rgba(242,242,244,0.55);
+        letter-spacing: 2px; text-transform: uppercase; flex: 1;
       }
-      #subsrf-modal-backdrop .src-close:hover { background: #f3f4f6; color: #374151; }
-      #subsrf-modal-backdrop h2 { font-size: 17px; font-weight: 700; color: #111827; margin: 0 0 12px; line-height: 1.35; }
-      #subsrf-modal-backdrop .src-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+      #subsrf-modal-backdrop .src-modal-close {
+        background: transparent; border: 1px solid transparent;
+        font-size: 18px; color: rgba(242,242,244,0.28);
+        cursor: pointer; padding: 4px 8px; border-radius: 6px; line-height: 1;
+        transition: all 150ms ease-out;
+      }
+      #subsrf-modal-backdrop .src-modal-close:hover {
+        border-color: rgba(255,255,255,0.06); color: rgba(242,242,244,0.55);
+      }
+      #subsrf-modal-backdrop h2 {
+        font-family: 'Manrope', sans-serif;
+        font-size: 22px; font-weight: 500; color: #F2F2F4;
+        margin: 0 0 16px; line-height: 1.3; letter-spacing: -0.3px;
+      }
+      #subsrf-modal-backdrop .src-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
       #subsrf-modal-backdrop .src-chip {
-        background: #f3f4f6; border-radius: 999px; padding: 4px 12px;
-        font-size: 12px; font-weight: 500; color: #374151;
+        background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 4px; padding: 4px 10px;
+        font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 400;
+        color: rgba(242,242,244,0.55); letter-spacing: 0.5px;
       }
-      #subsrf-modal-backdrop .src-chip b { color: #059669; }
+      #subsrf-modal-backdrop .src-chip b { color: #F2F2F4; font-weight: 400; }
       #subsrf-modal-backdrop .src-prompts {
-        border: 1px solid #e5e7eb; border-radius: 9px; overflow: hidden; margin-bottom: 16px;
+        background: #0C0C12; border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px; overflow: hidden; margin-bottom: 24px;
       }
       #subsrf-modal-backdrop .src-prompt {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 11px 14px; font-size: 13px; color: #374151;
-        border-bottom: 1px solid #f3f4f6;
+        padding: 12px 16px; font-family: 'Azeret Mono', monospace;
+        font-size: 12px; color: rgba(242,242,244,0.55);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
       }
       #subsrf-modal-backdrop .src-prompt:last-child { border-bottom: none; }
-      #subsrf-modal-backdrop .src-lock { font-size: 12px; color: #d1d5db; }
+      #subsrf-modal-backdrop .src-lock { font-size: 11px; color: rgba(242,242,244,0.28); }
       #subsrf-modal-backdrop .src-cta {
-        width: 100%; background: #111827; color: #fff; border: none;
-        border-radius: 8px; padding: 13px 20px; font-size: 14px; font-weight: 600;
+        width: 100%; background: #00FF87; color: #050508; border: none;
+        border-radius: 6px; padding: 12px 24px;
+        font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600;
         cursor: pointer; display: flex; align-items: center; justify-content: center;
-        gap: 8px; transition: background .15s; box-sizing: border-box;
+        gap: 8px; transition: all 150ms ease-out; box-sizing: border-box;
       }
-      #subsrf-modal-backdrop .src-cta:hover { background: #1f2937; }
-      #subsrf-modal-backdrop .src-cta:disabled { opacity: .6; cursor: default; }
-      #subsrf-modal-backdrop .src-cta-muted { background: #f3f4f6; color: #374151; }
-      #subsrf-modal-backdrop .src-cta-muted:hover { background: #e5e7eb; }
-      #subsrf-modal-backdrop .src-caption { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 10px; }
-      #subsrf-modal-backdrop .src-success { text-align: center; padding: 20px 0; }
+      #subsrf-modal-backdrop .src-cta:hover {
+        transform: translateY(-1px); box-shadow: 0 0 30px rgba(0,255,135,0.20);
+      }
+      #subsrf-modal-backdrop .src-cta:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; transform: none; }
+      #subsrf-modal-backdrop .src-cta-secondary {
+        background: rgba(255,255,255,0.05); color: rgba(242,242,244,0.55);
+        border: 1px solid rgba(255,255,255,0.06);
+      }
+      #subsrf-modal-backdrop .src-cta-secondary:hover {
+        background: rgba(255,255,255,0.08); transform: none; box-shadow: none;
+      }
+      #subsrf-modal-backdrop .src-caption {
+        text-align: center; font-family: 'Azeret Mono', monospace;
+        font-size: 9px; color: rgba(242,242,244,0.28); margin-top: 16px;
+        text-transform: uppercase; letter-spacing: 2px;
+      }
+      /* ── Success state ── */
+      #subsrf-modal-backdrop .src-success { text-align: left; padding: 16px 0; }
       #subsrf-modal-backdrop .src-success-check {
-        width: 44px; height: 44px; border-radius: 50%; background: #d1fae5;
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 12px; font-size: 22px;
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 4px;
+        background: rgba(57,217,138,0.1); border: 1px solid rgba(57,217,138,0.2);
+        color: #39D98A; font-family: 'Azeret Mono', monospace;
+        font-size: 10px; letter-spacing: 0.5px; margin-bottom: 16px;
       }
-      #subsrf-modal-backdrop .src-success-title { font-size: 15px; font-weight: 700; color: #111827; }
-      #subsrf-modal-backdrop .src-success-sub { font-size: 13px; color: #6b7280; margin-top: 5px; }
+      #subsrf-modal-backdrop .src-success-check::before {
+        content: ''; display: block; width: 5px; height: 5px; border-radius: 50%; background: currentColor;
+      }
+      #subsrf-modal-backdrop .src-success-title {
+        font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 500; color: #F2F2F4;
+      }
+      #subsrf-modal-backdrop .src-success-sub {
+        font-family: 'Azeret Mono', monospace; font-size: 12px;
+        color: rgba(242,242,244,0.55); margin-top: 8px; line-height: 1.8;
+      }
     `;
     document.head.appendChild(s);
   }
@@ -131,10 +186,10 @@
       if (connected) {
         backdrop.innerHTML = `
           <div class="src-modal">
-            <div class="src-header">
-              <img class="src-logo" src="${logoSrc}" alt="">
-              <span class="src-name">Subsrf Intelligence</span>
-              <button class="src-close" type="button">×</button>
+            <div class="src-modal-header">
+              <img class="src-modal-logo" src="${logoSrc}" alt="">
+              <span class="src-modal-name">Subsrf Intelligence</span>
+              <button class="src-modal-close" type="button">×</button>
             </div>
             <h2>Subsrf is connected</h2>
             <div class="src-chips">
@@ -147,16 +202,16 @@
               <div class="src-prompt">Sync the selected components to Figma</div>
               <div class="src-prompt">What design tokens is this page using?</div>
             </div>
-            <button class="src-cta src-cta-muted" id="subsrf-manage-btn" type="button">Manage connection</button>
+            <button class="src-cta src-cta-secondary" id="subsrf-manage-btn" type="button">Manage connection</button>
             <p class="src-caption">One-click setup · Secure OAuth · Turn it off anytime</p>
           </div>`;
       } else {
         backdrop.innerHTML = `
           <div class="src-modal">
-            <div class="src-header">
-              <img class="src-logo" src="${logoSrc}" alt="">
-              <span class="src-name">Subsrf Intelligence</span>
-              <button class="src-close" type="button">×</button>
+            <div class="src-modal-header">
+              <img class="src-modal-logo" src="${logoSrc}" alt="">
+              <span class="src-modal-name">Subsrf Intelligence</span>
+              <button class="src-modal-close" type="button">×</button>
             </div>
             <h2>Unlock Figma design intelligence in Claude</h2>
             <div class="src-chips">
@@ -181,7 +236,7 @@
       document.body.appendChild(backdrop);
 
       // Wire up all event listeners after the element is in the DOM
-      backdrop.querySelector('.src-close').addEventListener('click', closeModal);
+      backdrop.querySelector('.src-modal-close').addEventListener('click', closeModal);
       backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeModal(); });
       backdrop.querySelector('#subsrf-connect-btn')?.addEventListener('click', handleConnect);
       backdrop.querySelector('#subsrf-manage-btn')?.addEventListener('click', () => {
@@ -230,7 +285,7 @@
       if (modal) {
         modal.innerHTML = `
           <div class="src-success">
-            <div class="src-success-check">✓</div>
+            <div class="src-success-check">CONNECTED</div>
             <div class="src-success-title">Subsrf connected!</div>
             <div class="src-success-sub">Figma Intelligence is ready in this conversation.</div>
           </div>`;
