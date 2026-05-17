@@ -1050,15 +1050,15 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
               <div className="md:w-3/4 flex flex-col gap-md">
                 {tab === 'mcp' && (
                   <div className="animate-fade-in relative">
-                    {!isPro && (
+                    {tier === 'free' && (
                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-sm bg-void/50 rounded-lg border border-white-border">
                         <span className="text-[32px] mb-2">🔒</span>
-                        <div className="font-heading-sm text-lg text-white-primary mb-2">Pro Feature</div>
+                        <div className="font-heading-sm text-lg text-white-primary mb-2">Paid Feature</div>
                         <div className="font-body text-sm text-white-secondary text-center max-w-sm mb-4">
-                          MCP Bridge access is available on the Pro plan. Upgrade to connect Subsrf to Claude and Cursor.
+                          MCP Bridge access is available on Starter and Pro. Upgrade to connect Subsrf to Claude and Cursor.
                         </div>
-                        <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={() => handleUpgrade('pro')}>
-                          Upgrade to Pro
+                        <button className="bg-neon text-void px-md py-sm rounded-DEFAULT font-label-caps text-label-caps hover:opacity-90 transition-opacity" onClick={() => handleUpgrade('starter')}>
+                          Upgrade to Starter
                         </button>
                       </div>
                     )}
