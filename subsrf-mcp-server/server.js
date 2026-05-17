@@ -2389,42 +2389,101 @@ app.get('/oauth/authorize', (req, res) => {
   const callbackUrl = `${base}/oauth/callback?state=${supabaseState}`;
   const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
 
-  // Show a branded sign-in page instead of a silent redirect
   res.setHeader('Content-Type', 'text/html');
   res.send(`<!DOCTYPE html>
-<html lang="en">
+<html class="h-full" lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Subsrf · Connect to Claude</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Connect Subsrf to Claude</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400&family=Manrope:wght@600;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { void: '#050508', neon: '#00FF87' },
+        fontFamily: { sans: ['Manrope','sans-serif'], mono: ['Azeret Mono','monospace'] },
+      }
+    }
+  }
+</script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: #050505; color: #f8f8f8;
-    display: flex; align-items: center; justify-content: center;
-    font-family: -apple-system, 'Inter', sans-serif; }
-  .card { background: #111; border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px; padding: 40px 48px; max-width: 400px; width: 90%; text-align: center; }
-  .logo { font-family: monospace; font-size: 12px; letter-spacing: 0.18em;
-    color: #00ff87; margin-bottom: 32px; opacity: 0.8; }
-  h1 { font-size: 22px; font-weight: 600; margin: 0 0 10px; line-height: 1.3; }
-  .sub { font-size: 14px; color: rgba(255,255,255,0.45); margin: 0 0 36px; line-height: 1.5; }
-  .btn { display: block; width: 100%; padding: 14px 20px; background: #00ff87;
-    color: #050505; font-weight: 600; font-size: 14px; border: none; border-radius: 8px;
-    cursor: pointer; text-decoration: none; transition: opacity .15s; }
-  .btn:hover { opacity: 0.88; }
-  .secure { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 20px; }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(0,255,135,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,255,135,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .scanlines {
+    background: linear-gradient(to bottom, rgba(18,16,16,0) 50%, rgba(0,0,0,0.2) 50%);
+    background-size: 100% 4px;
+    pointer-events: none;
+  }
+  .glow-border {
+    box-shadow: 0 0 20px rgba(0,255,135,0.1), inset 0 0 10px rgba(0,255,135,0.05);
+    border: 1px solid rgba(0,255,135,0.2);
+  }
+  @keyframes tech-pulse {
+    0%,100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(2px); opacity: 0.7; }
+  }
+  .animate-pulse-down { animation: tech-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
 </style>
 </head>
-<body>
-<div class="card">
-  <div class="logo">SUBSRF</div>
-  <h1>Connect Subsrf to Claude</h1>
-  <p class="sub">Sign in with the Google account you use for Subsrf to grant Claude access to your Figma bridge and captured elements.</p>
-  <a class="btn" href="${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}">
-    Continue with Google
-  </a>
-  <p class="secure">Secure OAuth 2.0 · Read-only session</p>
-</div>
+<body class="bg-void text-white h-full flex items-center justify-center overflow-hidden font-sans">
+<div aria-hidden="true" class="fixed inset-0 bg-grid z-0"></div>
+<div aria-hidden="true" class="fixed inset-0 scanlines z-10"></div>
+<div aria-hidden="true" class="fixed inset-0 z-0" style="background:radial-gradient(circle at center,rgba(0,255,135,0.05) 0%,rgba(5,5,8,1) 80%);"></div>
+<main class="relative z-20 w-full max-w-md px-6">
+  <div class="bg-void/80 backdrop-blur-xl glow-border rounded-xl p-8 md:p-12 flex flex-col items-center text-center shadow-2xl">
+    <div class="mb-10">
+      <div class="relative w-12 h-12 flex flex-col items-center justify-center">
+        <div class="w-8 h-2 bg-neon rounded-t-sm mb-0.5"></div>
+        <div class="w-8 h-4 bg-neon/80 rounded-b-sm flex items-end justify-center pb-1">
+          <svg class="w-4 h-4 text-void animate-pulse-down" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M19 14l-7 7m0 0l-7-7m7 7V3" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/>
+          </svg>
+        </div>
+        <div class="absolute -inset-2 border border-neon/10 rounded-full animate-spin" style="animation-duration:10s;"></div>
+      </div>
+      <div class="mt-4 font-mono text-[10px] tracking-[0.3em] text-neon uppercase opacity-80">Infrastructure Node</div>
+    </div>
+    <header class="space-y-4 mb-10">
+      <h1 class="text-3xl font-extrabold tracking-tight text-white">Connect <span class="text-neon">Subsrf</span> to Claude</h1>
+      <p class="text-slate-400 text-sm leading-relaxed max-w-[280px] mx-auto">Authorize bridging to grant Claude access to your Figma assets and captured design elements.</p>
+    </header>
+    <div class="w-full space-y-6">
+      <a href="${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}"
+         class="group relative w-full flex items-center justify-center gap-3 bg-neon hover:bg-[#00E67A] transition-all duration-200 text-void font-extrabold py-4 px-6 rounded-lg text-sm uppercase tracking-widest overflow-hidden">
+        <span class="absolute inset-0 w-full h-full bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
+        <svg class="w-5 h-5 relative z-10" viewBox="0 0 24 24">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="currentColor"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"/>
+        </svg>
+        <span class="relative z-10">Continue with Google</span>
+      </a>
+      <div class="flex items-center justify-center gap-2">
+        <div class="h-px flex-1 bg-neon/10"></div>
+        <span class="font-mono text-[10px] text-slate-600 uppercase tracking-widest">Protocol secure</span>
+        <div class="h-px flex-1 bg-neon/10"></div>
+      </div>
+    </div>
+    <footer class="mt-10 font-mono text-[9px] text-slate-500 uppercase tracking-wider">
+      <p class="flex items-center justify-center gap-2">
+        <svg class="w-3 h-3 text-neon/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+        </svg>
+        Secure OAuth 2.0 · Read-only session active
+      </p>
+      <p class="mt-2 text-[8px] opacity-40">System ID: SRF-CLD-BRIDGE-X19</p>
+    </footer>
+  </div>
+</main>
 </body></html>`);
 });
 
