@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -12,7 +13,7 @@ import { request as httpsRequest } from "node:https";
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
-import { randomUUID, createHmac } from "node:crypto";
+import { randomUUID, createHmac, createHash } from "node:crypto";
 
 /**
  * Subsrf MCP Server (HTTP Bridge Version)
@@ -267,6 +268,17 @@ let pendingQuery = null;
 let queryCounter = 0;
 const queryResults = {}; // { [queryId]: { result, error } }
 
+// Per-user captured state — keyed by Supabase user ID.
+// Written by /api/update when the extension sends a Bearer token.
+// Read by the remote MCP server so each Claude.ai session sees its own user's captures.
+const userStates = new Map();
+function getOrInitUserState(userId) {
+  if (!userStates.has(userId)) {
+    userStates.set(userId, { elements: [], context: null, prompt: '', screenshot: null });
+  }
+  return userStates.get(userId);
+}
+
 // --- HTTP Bridge (Extension Gateway) ---
 const app = express();
 // Figma plugin iframes have 'null' origin — explicitly allow it alongside all other origins
@@ -372,6 +384,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 });
 
 app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: false }));
 
 app.post("/api/update", async (req, res) => {
   const data = req.body;
@@ -391,6 +404,12 @@ app.post("/api/update", async (req, res) => {
       if (auth) {
         lastTier  = auth.tier;
         lastEmail = auth.user.email || '';
+        // Also write to per-user state for remote MCP sessions
+        const ustate = getOrInitUserState(auth.user.id);
+        ustate.elements   = data.elements || [];
+        ustate.screenshot = data.screenshot || null;
+        ustate.context    = data.context || ustate.context;
+        ustate.prompt     = data.prompt || '';
       }
     } else if (!supabase) {
       lastTier = 'pro';
@@ -1892,9 +1911,7 @@ const server = new Server(
   }
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
+const MCP_TOOLS = [
       {
         name: "get_selected_elements",
         description: "Retrieves the high-fidelity UI elements currently selected in the browser extension.",
@@ -2011,9 +2028,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ["url"]
         },
       },
-    ],
-  };
-});
+];
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: MCP_TOOLS }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
@@ -2298,6 +2315,482 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   throw new Error("Tool not found");
+});
+
+// ── OAuth 2.0 for Remote MCP (Claude.ai integration) ─────────────────────────
+// Pending authorize requests — keyed by a per-request state UUID we pass to Supabase.
+// Each entry holds the original OAuth params from Claude.ai so we can echo them back.
+const oauthSessions = new Map(); // Map<supabaseState, { redirectUri, clientState, codeChallenge, expiresAt }>
+const oauthCodes = new Map();    // Map<code, { accessToken, refreshToken, codeChallenge, redirectUri, expiresAt }>
+
+// RFC 8414 — OAuth discovery document
+app.get('/.well-known/oauth-authorization-server', (req, res) => {
+  const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
+  res.json({
+    issuer: base,
+    authorization_endpoint: `${base}/oauth/authorize`,
+    token_endpoint: `${base}/oauth/token`,
+    scopes_supported: ['mcp'],
+    response_types_supported: ['code'],
+    code_challenge_methods_supported: ['S256'],
+    grant_types_supported: ['authorization_code'],
+    token_endpoint_auth_methods_supported: ['none'],
+  });
+});
+
+// RFC 9728 — protected resource metadata (used by MCP clients to discover the auth server)
+app.get('/.well-known/oauth-protected-resource', (req, res) => {
+  const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
+  res.json({
+    resource: base,
+    authorization_servers: [base],
+    scopes_supported: ['mcp'],
+    bearer_methods_supported: ['header'],
+  });
+});
+
+// Step 1 — Claude.ai redirects the user here to start OAuth
+app.get('/oauth/authorize', (req, res) => {
+  const { redirect_uri, state: clientState, code_challenge, code_challenge_method } = req.query;
+  if (!redirect_uri) return res.status(400).send('Missing redirect_uri');
+
+  // Store OAuth request context keyed by a random state we pass to Supabase
+  const supabaseState = randomUUID().replace(/-/g, '');
+  oauthSessions.set(supabaseState, {
+    redirectUri: String(redirect_uri),
+    clientState: String(clientState || ''),
+    codeChallenge: String(code_challenge || ''),
+    codeChallengeMethod: String(code_challenge_method || 'S256'),
+    expiresAt: Date.now() + 10 * 60 * 1000,
+  });
+
+  const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
+  const callbackUrl = `${base}/oauth/callback?state=${supabaseState}`;
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
+
+  // Show a branded sign-in page instead of a silent redirect
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subsrf · Connect to Claude</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #050505; color: #f8f8f8;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, 'Inter', sans-serif; }
+  .card { background: #111; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 40px 48px; max-width: 400px; width: 90%; text-align: center; }
+  .logo { font-family: monospace; font-size: 12px; letter-spacing: 0.18em;
+    color: #00ff87; margin-bottom: 32px; opacity: 0.8; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 10px; line-height: 1.3; }
+  .sub { font-size: 14px; color: rgba(255,255,255,0.45); margin: 0 0 36px; line-height: 1.5; }
+  .btn { display: block; width: 100%; padding: 14px 20px; background: #00ff87;
+    color: #050505; font-weight: 600; font-size: 14px; border: none; border-radius: 8px;
+    cursor: pointer; text-decoration: none; transition: opacity .15s; }
+  .btn:hover { opacity: 0.88; }
+  .secure { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">SUBSRF</div>
+  <h1>Connect Subsrf to Claude</h1>
+  <p class="sub">Sign in with the Google account you use for Subsrf to grant Claude access to your Figma bridge and captured elements.</p>
+  <a class="btn" href="${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}">
+    Continue with Google
+  </a>
+  <p class="secure">Secure OAuth 2.0 · Read-only session</p>
+</div>
+</body></html>`);
+});
+
+// Step 2 — Supabase redirects here after sign-in; token is in the URL fragment
+app.get('/oauth/callback', (req, res) => {
+  const state = (req.query.state || '').replace(/[^a-zA-Z0-9]/g, '');
+  const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Subsrf · Connecting…</title>
+<style>
+  body { margin: 0; min-height: 100vh; background: #050505; color: #f8f8f8;
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, 'Inter', sans-serif; flex-direction: column; gap: 12px; }
+  .logo { font-family: monospace; font-size: 12px; letter-spacing: 0.18em; color: #00ff87; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  p  { font-size: 14px; color: rgba(255,255,255,0.45); margin: 0; }
+</style>
+</head>
+<body>
+<div class="logo">SUBSRF</div>
+<h1 id="msg">Completing connection…</h1>
+<p id="sub">Please wait.</p>
+<script>
+var state = ${JSON.stringify(state)};
+var hash = location.hash.slice(1);
+var p = new URLSearchParams(hash);
+var accessToken = p.get('access_token');
+var refreshToken = p.get('refresh_token') || '';
+var expiresIn = parseInt(p.get('expires_in') || '3600');
+function set(m, s) {
+  document.getElementById('msg').textContent = m;
+  document.getElementById('sub').textContent = s || '';
+}
+if (!accessToken) {
+  set('Sign-in failed', 'No token received — please try again from Claude.');
+} else {
+  fetch('/oauth/complete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: state, accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn })
+  }).then(function(r) {
+    return r.json();
+  }).then(function(d) {
+    if (d.redirect) {
+      set('Connected!', 'Redirecting back to Claude…');
+      window.location.href = d.redirect;
+    } else {
+      set('Connection failed', d.error || 'Unknown error');
+    }
+  }).catch(function(e) {
+    set('Connection failed', e.message);
+  });
+}
+</script>
+</body></html>`);
+});
+
+// Step 3 — callback page POSTs here; we generate the auth code and return the redirect URL
+app.post('/oauth/complete', async (req, res) => {
+  const { state: supabaseState, accessToken, refreshToken, expiresIn } = req.body || {};
+  if (!supabaseState || !accessToken) return res.status(400).json({ error: 'Missing state or token' });
+
+  const session = oauthSessions.get(supabaseState);
+  if (!session || Date.now() > session.expiresAt) {
+    return res.status(400).json({ error: 'Session expired — please retry from Claude' });
+  }
+  oauthSessions.delete(supabaseState);
+
+  const code = randomUUID().replace(/-/g, '');
+  oauthCodes.set(code, {
+    accessToken,
+    refreshToken: refreshToken || null,
+    codeChallenge: session.codeChallenge,
+    codeChallengeMethod: session.codeChallengeMethod,
+    redirectUri: session.redirectUri,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  });
+
+  // Redirect Claude.ai back to its callback with code + original state
+  const params = new URLSearchParams({ code, state: session.clientState });
+  res.json({ redirect: `${session.redirectUri}?${params}` });
+});
+
+// Step 4 — Claude.ai exchanges the code for an access token
+app.post('/oauth/token', (req, res) => {
+  // Accept both application/x-www-form-urlencoded (req.body via urlencoded middleware)
+  // and application/json (already parsed by express.json above)
+  const body = req.body || {};
+  const { grant_type, code, code_verifier } = body;
+
+  if (grant_type !== 'authorization_code') {
+    return res.status(400).json({ error: 'unsupported_grant_type' });
+  }
+  if (!code) return res.status(400).json({ error: 'invalid_request', error_description: 'Missing code' });
+
+  const codeData = oauthCodes.get(code);
+  if (!codeData || Date.now() > codeData.expiresAt) {
+    return res.status(400).json({ error: 'invalid_grant', error_description: 'Code expired or not found' });
+  }
+
+  // Verify PKCE if the client sent a verifier
+  if (codeData.codeChallenge && code_verifier) {
+    const verifierHash = createHash('sha256').update(code_verifier).digest('base64url');
+    if (verifierHash !== codeData.codeChallenge) {
+      return res.status(400).json({ error: 'invalid_grant', error_description: 'PKCE verification failed' });
+    }
+  }
+
+  oauthCodes.delete(code);
+
+  const response = {
+    access_token: codeData.accessToken,
+    token_type: 'bearer',
+    expires_in: 3600,
+    scope: 'mcp',
+  };
+  if (codeData.refreshToken) response.refresh_token = codeData.refreshToken;
+  res.json(response);
+});
+
+// ── Remote MCP over HTTP/SSE ──────────────────────────────────────────────────
+
+// Active MCP HTTP sessions: Map<sessionId, { transport, server, userId }>
+const mcpHttpSessions = new Map();
+
+// Creates a per-user MCP Server instance for the remote HTTP transport.
+// Tool logic mirrors the stdio path but reads from per-user state buckets.
+function createRemoteMcpServer(auth, accessToken) {
+  const srv = new Server(
+    { name: 'subsrf-mcp-server', version: '1.1.0' },
+    { capabilities: { tools: {} } }
+  );
+
+  srv.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: MCP_TOOLS }));
+
+  srv.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args = {} } = request.params;
+    const selfBase = `http://localhost:${BRIDGE_PORT}`;
+
+    if (name === 'get_selected_elements') {
+      const ustate = getOrInitUserState(auth.user.id);
+      const content = [{
+        type: 'text',
+        text: JSON.stringify({
+          page: ustate.context,
+          count: ustate.elements.length,
+          elements: ustate.elements,
+          prompt: ustate.prompt,
+        }, null, 2),
+      }];
+      if (ustate.screenshot) {
+        const base64Data = ustate.screenshot.split(',')[1];
+        const mimeType = ustate.screenshot.split(',')[0].split(':')[1].split(';')[0];
+        content.push({ type: 'image', data: base64Data, mimeType });
+      }
+      return { content };
+    }
+
+    if (name === 'query_figma') {
+      try {
+        const r = await fetch(`${selfBase}/api/ai/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: args.code }),
+        });
+        const data = await r.json();
+        if (!r.ok) return { content: [{ type: 'text', text: data.error || 'Query failed' }] };
+        if (data.error) return { content: [{ type: 'text', text: `Figma error: ${data.error}` }] };
+        const result = data.result;
+        if (result && typeof result === 'object' && result._base64Image) {
+          const filePath = saveExportToFile(result._base64Image, 'eval-' + randomUUID().slice(0, 8), result.format || 'PNG');
+          const { _base64Image, ...rest } = result;
+          return { content: [{ type: 'text', text: JSON.stringify({ ...rest, filePath, byteLength: Buffer.from(_base64Image, 'base64').length }, null, 2) }] };
+        }
+        return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Failed to reach Figma bridge: ${e.message}` }] };
+      }
+    }
+
+    if (name === 'push_to_figma') {
+      aiMessageCounter++;
+      currentAiMessage = { id: aiMessageCounter, timestamp: Date.now(), ...args };
+      console.error(`[Subsrf Remote MCP] push_to_figma #${aiMessageCounter} (${args.type}) for ${auth.user.email}`);
+      return { content: [{ type: 'text', text: `Successfully pushed ${args.type} instruction to Figma plugin (#${aiMessageCounter}).` }] };
+    }
+
+    if (name === 'figma_status') {
+      try {
+        const r = await fetch(`${selfBase}/api/state`);
+        const data = r.ok ? await r.json() : null;
+        const bridgeStatus = data ? { figmaConnected: data.figmaConnected, elementCount: data.count || 0, tier: data.tier } : { error: 'Bridge unreachable' };
+        return { content: [{ type: 'text', text: JSON.stringify({ bridge: bridgeStatus, restApiAvailable: isFigmaRestAvailable() }, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
+      }
+    }
+
+    // For Figma REST tools, prefer the user's PAT stored in Supabase
+    async function getUserToken() {
+      const pat = await getUserFigmaPat(auth.user.id, accessToken);
+      return pat || getFigmaToken();
+    }
+
+    if (name === 'figma_rest') {
+      try {
+        const method = (args.method || 'GET').toUpperCase();
+        const path = args.path;
+        if (!path || !path.startsWith('/v1/')) return { content: [{ type: 'text', text: 'Error: path must start with /v1/' }] };
+        const token = await getUserToken();
+        if (!token) return { content: [{ type: 'text', text: 'Error: No Figma token configured. Use configure_figma_auth or set your PAT in the Subsrf extension.' }] };
+        const headers = token.startsWith('figd_') ? { 'X-Figma-Token': token } : { Authorization: `Bearer ${token}` };
+        if (method !== 'GET') headers['Content-Type'] = 'application/json';
+        const qs = method === 'GET' && args.params ? '?' + new URLSearchParams(args.params).toString() : '';
+        const body = method !== 'GET' && args.params ? JSON.stringify(args.params) : null;
+        const r = await httpsJson(method, `${FIGMA_API_BASE}${path}${qs}`, headers, body);
+        if (r.status === 429) throw new Error(`Rate limited. Retry after ${r.headers['retry-after'] || '30'}s.`);
+        if (r.status >= 400) throw new Error(`Figma API error ${r.status}: ${JSON.stringify(r.data)}`);
+        return { content: [{ type: 'text', text: JSON.stringify(r.data, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
+      }
+    }
+
+    if (name === 'figma_search_components') {
+      try {
+        const token = await getUserToken();
+        if (!token) return { content: [{ type: 'text', text: 'Error: No Figma token configured.' }] };
+        const localAuth = { ...figmaAuthConfig };
+        const teamId = args.team_id || process.env.FIGMA_TEAM_ID || localAuth?.team_id;
+        if (!teamId) return { content: [{ type: 'text', text: 'Error: No team_id. Pass team_id arg or set FIGMA_TEAM_ID env var.' }] };
+        const query = (args.query || '').toLowerCase();
+        const [components, componentSets] = await Promise.all([
+          figmaApi('GET', `/v1/teams/${teamId}/components`, { page_size: '100' }),
+          figmaApi('GET', `/v1/teams/${teamId}/component_sets`, { page_size: '100' }),
+        ]);
+        const results = [];
+        for (const item of (components.meta?.components || [])) {
+          if (!query || item.name.toLowerCase().includes(query))
+            results.push({ key: item.key, name: item.name, description: item.description || '', file_key: item.file_key, node_id: item.node_id });
+        }
+        for (const item of (componentSets.meta?.component_sets || [])) {
+          if (!query || item.name.toLowerCase().includes(query))
+            results.push({ key: item.key, name: item.name, description: item.description || '', file_key: item.file_key, node_id: item.node_id, type: 'COMPONENT_SET' });
+        }
+        return { content: [{ type: 'text', text: JSON.stringify({ results, total: results.length }, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
+      }
+    }
+
+    if (name === 'figma_export_rest') {
+      try {
+        const fmt = args.format || 'png';
+        const scale = Math.max(0.01, Math.min(4, args.scale ?? 2));
+        const data = await figmaApi('GET', `/v1/images/${args.file_key}`, { ids: args.node_ids.join(','), format: fmt, scale: String(scale) });
+        if (!data.images) throw new Error('No images returned from Figma API.');
+        const results = {};
+        for (const [nodeId, imageUrl] of Object.entries(data.images)) {
+          if (!imageUrl) { results[nodeId] = { error: 'No URL returned.' }; continue; }
+          try {
+            const imgRes = await new Promise((resolve, reject) => {
+              const req = httpsRequest(imageUrl, (res) => {
+                const chunks = [];
+                res.on('data', (c) => chunks.push(c));
+                res.on('end', () => resolve({ status: res.statusCode, data: Buffer.concat(chunks) }));
+              });
+              req.on('error', reject);
+              req.end();
+            });
+            const filePath = saveExportToFile(imgRes.data.toString('base64'), nodeId, fmt.toUpperCase());
+            results[nodeId] = { filePath, byteLength: imgRes.data.length };
+          } catch (dlErr) {
+            results[nodeId] = { error: dlErr.message };
+          }
+        }
+        return { content: [{ type: 'text', text: JSON.stringify({ exports: results, hint: 'Use the Read tool to view exported image files.' }, null, 2) }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
+      }
+    }
+
+    if (name === 'configure_figma_auth') {
+      try {
+        const token = args.token;
+        if (!token) return { content: [{ type: 'text', text: 'Error: Token is required.' }] };
+        const headers = token.startsWith('figd_') ? { 'X-Figma-Token': token } : { Authorization: `Bearer ${token}` };
+        const r = await httpsJson('GET', `${FIGMA_API_BASE}/v1/me`, headers);
+        if (r.status !== 200) return { content: [{ type: 'text', text: `Error: Invalid token (Status ${r.status}).` }] };
+        // In remote mode, persist to Supabase (userFigmaPats in-memory + DB)
+        userFigmaPats.set(auth.user.id, token);
+        if (supabase) {
+          await supabase.from('profiles').update({ figma_pat: token }).eq('id', auth.user.id);
+        }
+        return { content: [{ type: 'text', text: `Figma token saved for ${r.data.handle} (${r.data.email}).` }] };
+      } catch (e) {
+        return { content: [{ type: 'text', text: `Error: ${e.message}` }] };
+      }
+    }
+
+    if (name === 'subsrf_extract_tokens') {
+      const { url, format = 'json', mode = 'both' } = args;
+      const extractorUrl = process.env.TOKEN_EXTRACTION_URL || 'http://localhost:3001';
+      try {
+        const extractRes = await fetch(`${extractorUrl}/extract`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, mode }),
+          signal: AbortSignal.timeout(35000),
+        });
+        if (!extractRes.ok) {
+          const err = await extractRes.json().catch(() => ({}));
+          return { content: [{ type: 'text', text: `EXTRACTION_ERROR: ${err.error || extractRes.statusText}` }] };
+        }
+        const { tokens } = await extractRes.json();
+        if (format === 'json' || format === 'both') return { content: [{ type: 'text', text: JSON.stringify(tokens, null, 2) }] };
+        const transformRes = await fetch(`${extractorUrl}/transform`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tokens, format, mode: mode === 'both' ? 'dark' : mode }),
+        });
+        const transformed = await transformRes.json();
+        return { content: [{ type: 'text', text: transformed.content || JSON.stringify(tokens, null, 2) }] };
+      } catch (e) {
+        if (e.name === 'TimeoutError') return { content: [{ type: 'text', text: 'TIMEOUT: Extraction service took >35s.' }] };
+        return { content: [{ type: 'text', text: `ERROR: ${e.message}` }] };
+      }
+    }
+
+    throw new Error(`Tool not found: ${name}`);
+  });
+
+  return srv;
+}
+
+// MCP over HTTP — handles GET (SSE stream), POST (initialize + tool calls), DELETE (close session)
+app.all('/mcp', async (req, res) => {
+  // DELETE — close session
+  if (req.method === 'DELETE') {
+    const sessionId = req.headers['mcp-session-id'];
+    if (sessionId) {
+      const s = mcpHttpSessions.get(sessionId);
+      if (s) { await s.server.close?.(); mcpHttpSessions.delete(sessionId); }
+    }
+    return res.status(200).end();
+  }
+
+  const base = process.env.BRIDGE_URL || 'https://api.subsrf.dev';
+
+  // Verify Supabase JWT (issued during OAuth flow above)
+  const auth = await verifyToken(req);
+  if (!auth) {
+    res.setHeader('WWW-Authenticate', `Bearer realm="${base}", error="unauthorized", error_description="Sign in at ${base} to connect"`);
+    return res.status(401).json({
+      error: 'Unauthorized',
+      error_description: 'Sign in at https://subsrf.dev, then reconnect from Claude.',
+    });
+  }
+  if (auth.tier === 'free') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      error_description: 'Remote MCP requires a Starter or Pro plan. Upgrade at https://subsrf.dev/pricing.',
+    });
+  }
+
+  const sessionId = req.headers['mcp-session-id'];
+  let session = sessionId ? mcpHttpSessions.get(sessionId) : null;
+
+  // POST with no (or unknown) session ID → initialize a new session
+  if (!session && req.method === 'POST') {
+    const accessToken = req.headers.authorization?.slice(7) || '';
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() });
+    const mcpServer = createRemoteMcpServer(auth, accessToken);
+    await mcpServer.connect(transport);
+    session = { transport, server: mcpServer, userId: auth.user.id };
+    transport.onclose = () => { mcpHttpSessions.delete(transport.sessionId); };
+    mcpHttpSessions.set(transport.sessionId, session);
+    console.error(`[Subsrf Remote MCP] New session for ${auth.user.email} (${auth.tier})`);
+  }
+
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+
+  await session.transport.handleRequest(req, res, req.method === 'POST' ? req.body : undefined);
 });
 
 async function main() {
