@@ -807,7 +807,7 @@ app.post('/api/stripe/change-plan', async (req, res) => {
       const params = new URLSearchParams({
         [`items[0][id]`]: itemId,
         [`items[0][price]`]: priceId,
-        proration_behavior: 'create_prorated_invoice',
+        proration_behavior: 'always_invoice',
       });
       const updateRes = await fetch(`https://api.stripe.com/v1/subscriptions/${subscriptionId}`, {
         method: 'POST',
