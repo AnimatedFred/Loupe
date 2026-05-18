@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
-import ClaudeSetup from '../components/ClaudeSetup';
+
 import { useUser } from '../context/UserContext';
 
 export default function Home() {
@@ -273,7 +273,7 @@ export default function Home() {
                   </div>
                 )}
 
-                <ClaudeSetup />
+
               </div>
             </div>
           ) : (
