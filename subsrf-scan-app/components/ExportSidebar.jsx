@@ -13,9 +13,12 @@ const FORMATS = [
   { id: 'ai_prompt',        icon: 'AI',   label: 'AI Prompt',        badge: '1 credit', ext: 'txt' },
 ];
 
-export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
+export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData, curatedTokenData }) {
   const { session, updateCredits } = useUser() || {};
   const accessToken = session?.access_token;
+
+  // Use curated tokens when available — preserves all transformer logic unchanged
+  const effectiveTokens = curatedTokenData ? { ...tokens, [mode]: curatedTokenData } : tokens;
 
   const [format, setFormat] = useState('css');
   const [preview, setPreview] = useState(null);
@@ -28,14 +31,14 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
   })();
 
   async function loadPreview(fmt) {
-    if (!tokens) return;
+    if (!effectiveTokens) return;
     if (fmt === 'ai_prompt') { setPreview('Generate to see preview'); return; }
 
     try {
       const res = await fetch('/api/export', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tokens, format: fmt, mode }),
+        body: JSON.stringify({ tokens: effectiveTokens, format: fmt, mode }),
       });
       const data = await res.json();
       setPreview(data.content || '');
@@ -51,7 +54,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
   }
 
   async function handleDownload(subset = 'all') {
-    if (!tokens) return;
+    if (!effectiveTokens) return;
     if (format === 'ai_prompt') {
       await handleAiPrompt(true);
       return;
@@ -60,7 +63,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
     const res = await fetch('/api/export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tokens, format, mode, subset }),
+      body: JSON.stringify({ tokens: effectiveTokens, format, mode, subset }),
     });
     const data = await res.json();
     const ext = FORMATS.find(f => f.id === format)?.ext || 'txt';
@@ -84,7 +87,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
       const res = await fetch('/api/ai-prompt', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tokens, mode }),
+        body: JSON.stringify({ tokens: effectiveTokens, mode }),
       });
       const data = await res.json();
       const text = data.prompt || data.error || 'Error generating prompt';
@@ -111,8 +114,9 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
     setTimeout(() => setCopied(false), 1800);
   }
 
-  const totalTokens = tokenData?.meta?.totalTokens || 0;
-  const baseUnit = tokenData?.meta?.baseUnit;
+  const activeTokenData = curatedTokenData ?? tokenData;
+  const totalTokens = activeTokenData?.meta?.totalTokens || 0;
+  const baseUnit = activeTokenData?.meta?.baseUnit;
 
   return (
     <aside style={{
@@ -156,7 +160,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
       </div>
 
       {format === 'figma' && (() => {
-        const primary = tokens?.dark || tokens?.light;
+        const primary = effectiveTokens?.dark || effectiveTokens?.light;
         const counts = {
           colors:  primary?.colors?.length  || 0,
           spacing: primary?.spacing?.length || 0,
@@ -180,14 +184,14 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
             }}>Download collection</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {subsets.map(s => (
-                <button key={s.id} onClick={() => tokens && handleDownload(s.id)} disabled={!tokens} style={{
+                <button key={s.id} onClick={() => effectiveTokens && handleDownload(s.id)} disabled={!effectiveTokens} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   background: s.id === 'all' ? 'var(--neon)' : 'var(--layer)',
                   color: s.id === 'all' ? 'var(--void)' : 'var(--t1)',
                   border: s.id === 'all' ? 'none' : '1px solid var(--border)',
                   borderRadius: 7, padding: '9px 13px',
                   fontFamily: "'Azeret Mono', monospace", fontSize: 11, fontWeight: s.id === 'all' ? 600 : 400,
-                  opacity: !tokens ? 0.4 : 1, cursor: tokens ? 'pointer' : 'default',
+                  opacity: !effectiveTokens ? 0.4 : 1, cursor: effectiveTokens ? 'pointer' : 'default',
                   transition: 'opacity 0.15s',
                 }}>
                   <span>{s.id === 'all' ? '↓ ' : ''}{s.label}</span>
@@ -232,30 +236,30 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
             ? <span style={{ color: 'var(--t3)' }}>Click Generate to create AI prompt (1 credit)</span>
             : preview
               ? preview.slice(0, 600) + (preview.length > 600 ? '\n...' : '')
-              : <span style={{ color: 'var(--t3)' }}>{tokens ? 'Select a format to preview' : 'Extract tokens first'}</span>
+              : <span style={{ color: 'var(--t3)' }}>{effectiveTokens ? 'Select a format to preview' : 'Extract tokens first'}</span>
           }
         </div>
       </div>
 
       {format === 'ai_prompt' ? (
-        <button onClick={() => handleAiPrompt(false)} disabled={!tokens || generating} style={{
+        <button onClick={() => handleAiPrompt(false)} disabled={!effectiveTokens || generating} style={{
           width: '100%', background: 'var(--neon)', color: 'var(--void)',
           border: 'none', borderRadius: 4, padding: 12,
           fontFamily: "'Azeret Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          marginBottom: 10, opacity: (!tokens || generating) ? 0.6 : 1,
-          boxShadow: (!tokens || generating) ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
+          marginBottom: 10, opacity: (!effectiveTokens || generating) ? 0.6 : 1,
+          boxShadow: (!effectiveTokens || generating) ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
         }}>
           {generating ? '⟳ Generating...' : 'Generate AI Prompt (1 credit)'}
         </button>
       ) : format !== 'figma' ? (
-        <button onClick={() => handleDownload()} disabled={!tokens} style={{
+        <button onClick={() => handleDownload()} disabled={!effectiveTokens} style={{
           width: '100%', background: 'var(--neon)', color: 'var(--void)',
           border: 'none', borderRadius: 4, padding: 12,
           fontFamily: "'Azeret Mono', monospace", fontSize: 12, fontWeight: 600, letterSpacing: 0.5,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          marginBottom: 10, opacity: !tokens ? 0.4 : 1,
-          boxShadow: !tokens ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
+          marginBottom: 10, opacity: !effectiveTokens ? 0.4 : 1,
+          boxShadow: !effectiveTokens ? 'none' : '0 4px 14px rgba(0,255,135,0.15)',
         }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -287,7 +291,7 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
         ['Base unit', baseUnit ? `${baseUnit}px` : '—'],
         ['Dark mode', tokens?.hasDark ? 'detected' : '—'],
         ['Light mode', tokens?.hasLight ? 'detected' : '—'],
-        ['Extraction', tokenData?.meta?.extractionMs ? `${(tokenData.meta.extractionMs / 1000).toFixed(1)}s` : '—'],
+        ['Extraction', activeTokenData?.meta?.extractionMs ? `${(activeTokenData.meta.extractionMs / 1000).toFixed(1)}s` : '—'],
       ].map(([label, value]) => (
         <div key={label} style={{
           display: 'flex', justifyContent: 'space-between',

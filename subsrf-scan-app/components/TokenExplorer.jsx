@@ -11,6 +11,7 @@ import HealthPanel from './panels/HealthPanel';
 import ComponentPanel from './panels/ComponentPanel';
 import AiAnalysis from './AiAnalysis';
 import ExportSidebar from './ExportSidebar';
+import CurationPanel from './panels/CurationPanel';
 
 
 const CATEGORIES = [
@@ -20,12 +21,20 @@ const CATEGORIES = [
   { id: 'radius',     label: 'Radius',     dot: '#fb923c' },
   { id: 'shadows',    label: 'Shadows',    dot: '#e879f9' },
   { id: 'animations', label: 'Animations', dot: '#34d399' },
+  { id: 'curate',     label: 'Curate',     dot: '#00FF87' },
   { id: 'health',     label: 'Health',     dot: '#FFB020' },
   { id: 'component',  label: 'Components', dot: '#c084fc' },
   { id: 'ai',         label: 'AI Analysis', dot: '#00FF87' },
 ];
 
-function tokenCount(tokens, mode, category) {
+function tokenCount(tokens, mode, category, curatedTokens) {
+  if (category === 'curate') {
+    const src = curatedTokens || tokens?.[mode];
+    if (!src) return 0;
+    return (src.colors?.length || 0) +
+      (src.typography?.families?.length || 0) + (src.typography?.sizes?.length || 0) +
+      (src.spacing?.length || 0) + (src.radius?.length || 0) + (src.shadows?.length || 0);
+  }
   const t = tokens?.[mode];
   if (!t) return 0;
   if (category === 'colors') return t.colors?.length || 0;
@@ -44,6 +53,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
   const [activeCategory, setActiveCategory] = useState('colors');
   const [mode, setMode] = useState('dark');
   const [copied, setCopied] = useState(null);
+  const [curatedTokens, setCuratedTokens] = useState(null);
 
   const hasBothModes = tokens?.hasDark && tokens?.hasLight;
   const primaryMode = tokens?.hasDark ? 'dark' : 'light';
@@ -61,9 +71,62 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
     setTimeout(() => setCopied(null), 1600);
   }
 
+  function handleCategorySelect(catId) {
+    setActiveCategory(catId);
+    if (catId === 'curate' && curatedTokens === null && tokenData) {
+      setCuratedTokens(structuredClone(tokenData));
+    }
+  }
+
+  function handleRenameToken(category, name, newName) {
+    setCuratedTokens(prev => {
+      const next = structuredClone(prev);
+      const idx = next[category].findIndex(t => t.name === name);
+      if (idx !== -1) next[category][idx] = { ...next[category][idx], name: newName };
+      return next;
+    });
+  }
+
+  function handleRenameTypography(subKey, name, newName) {
+    setCuratedTokens(prev => {
+      const next = structuredClone(prev);
+      const idx = next.typography[subKey].findIndex(t => t.name === name);
+      if (idx !== -1) next.typography[subKey][idx] = { ...next.typography[subKey][idx], name: newName };
+      return next;
+    });
+  }
+
+  function handleDeleteToken(category, name) {
+    setCuratedTokens(prev => {
+      const next = structuredClone(prev);
+      if (category === 'typography-families') {
+        next.typography = { ...next.typography, families: next.typography.families.filter(t => t.name !== name) };
+      } else if (category === 'typography-sizes') {
+        next.typography = { ...next.typography, sizes: next.typography.sizes.filter(t => t.name !== name) };
+      } else {
+        next[category] = next[category].filter(t => t.name !== name);
+      }
+      return next;
+    });
+  }
+
+  function handleMergeColors(names) {
+    setCuratedTokens(prev => {
+      const next = structuredClone(prev);
+      const candidates = next.colors.filter(t => names.includes(t.name));
+      const canonical = candidates.reduce((a, b) => b.frequency > a.frequency ? b : a);
+      next.colors = next.colors.filter(t => !names.includes(t.name) || t.name === canonical.name);
+      return next;
+    });
+  }
+
+  function handleCurateReset() {
+    setCuratedTokens(structuredClone(tokenData));
+  }
+
   const panelTitles = {
     colors: 'Colors', typography: 'Typography', spacing: 'Spacing', radius: 'Radius', shadows: 'Shadows',
-    animations: 'Animations', health: 'Health Score', component: 'Components', ai: 'AI Analysis',
+    animations: 'Animations', curate: 'Curate Tokens', health: 'Health Score', component: 'Components', ai: 'AI Analysis',
   };
 
   const totalTokens = tokenData?.meta?.totalTokens || 0;
@@ -88,10 +151,10 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
           }}>Token categories</div>
 
           {CATEGORIES.filter(cat => cat.id !== 'ai').map(cat => {
-            const count = tokenCount(tokens, activeMode, cat.id);
+            const count = tokenCount(tokens, activeMode, cat.id, curatedTokens);
             const active = activeCategory === cat.id;
             return (
-              <div key={cat.id} onClick={() => setActiveCategory(cat.id)} style={{
+              <div key={cat.id} onClick={() => handleCategorySelect(cat.id)} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '7px 10px', borderRadius: 4, cursor: 'pointer',
                 marginBottom: 2, transition: 'background 0.12s',
@@ -127,7 +190,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
           {(() => {
             const active = activeCategory === 'ai';
             return (
-              <div onClick={() => setActiveCategory('ai')} style={{
+              <div onClick={() => handleCategorySelect('ai')} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '7px 10px', borderRadius: 6, cursor: 'pointer',
                 transition: 'background 0.12s',
@@ -150,7 +213,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
         </div>
 
         {/* Mode toggle */}
-        {hasBothModes && (
+        {hasBothModes && activeCategory !== 'curate' && (
           <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
             <div style={{
               fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 2,
@@ -167,6 +230,16 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
                   textTransform: 'uppercase',
                 }}>{m}</button>
               ))}
+            </div>
+          </div>
+        )}
+        {hasBothModes && activeCategory === 'curate' && curatedTokens !== null && (
+          <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+            <div style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t3)',
+              lineHeight: 1.7, letterSpacing: 0.3,
+            }}>
+              Mode locked while curating.<br/>Reset to switch.
             </div>
           </div>
         )}
@@ -203,7 +276,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
               {panelTitles[activeCategory]}
             </h1>
             <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 10, color: 'var(--t3)', letterSpacing: 0.5, flexShrink: 0, paddingBottom: 4 }}>
-              {tokenCount(tokens, activeMode, activeCategory)} tokens · {hostname}
+              {tokenCount(tokens, activeMode, activeCategory, curatedTokens)} tokens · {hostname}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -224,7 +297,20 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
         </div>
 
         {/* Token panels */}
-        {activeCategory === 'health' ? (
+        {activeCategory === 'curate' ? (
+          <CurationPanel
+            curatedTokens={curatedTokens}
+            originalTokens={tokenData}
+            fullTokens={tokens}
+            mode={activeMode}
+            sourceUrl={sourceUrl}
+            onRenameToken={handleRenameToken}
+            onRenameTypography={handleRenameTypography}
+            onDeleteToken={handleDeleteToken}
+            onMergeColors={handleMergeColors}
+            onReset={handleCurateReset}
+          />
+        ) : activeCategory === 'health' ? (
           <HealthPanel healthScore={tokens?.healthScore} />
         ) : activeCategory === 'component' ? (
           <ComponentPanel componentDetection={tokens?.componentDetection} />
@@ -250,7 +336,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
       </main>
 
       {/* Export sidebar */}
-      <ExportSidebar tokens={tokens} sourceUrl={sourceUrl} mode={activeMode} tokenData={tokenData} />
+      <ExportSidebar tokens={tokens} sourceUrl={sourceUrl} mode={activeMode} tokenData={tokenData} curatedTokenData={curatedTokens} />
     </div>
   );
 }
