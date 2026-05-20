@@ -1,5 +1,21 @@
 import { verifyAuth, getServiceClient } from '../../../lib/withAuth';
 
+export async function GET(req) {
+  const auth = await verifyAuth(req);
+  if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getServiceClient();
+  const { data, error } = await db
+    .from('scan_projects')
+    .select('slug, source_url, updated_at')
+    .eq('user_id', auth.user.id)
+    .order('updated_at', { ascending: false })
+    .limit(20);
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ projects: data });
+}
+
 export async function POST(req) {
   const auth = await verifyAuth(req);
   if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });

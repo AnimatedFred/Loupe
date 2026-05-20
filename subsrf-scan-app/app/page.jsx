@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
 
@@ -14,7 +14,38 @@ export default function Home() {
   const [urlInput, setUrlInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [projectSlug, setProjectSlug] = useState(null);
+  const [savedProjects, setSavedProjects] = useState([]);
+  const [loadingProject, setLoadingProject] = useState(null);
   const { user, session, signOut, credits, tier } = useUser() || {};
+
+  useEffect(() => {
+    if (!session?.access_token) return;
+    fetch('/api/project', {
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    })
+      .then(r => r.json())
+      .then(d => { if (d.projects) setSavedProjects(d.projects); })
+      .catch(() => {});
+  }, [session?.access_token]);
+
+  async function handleLoadProject(slug) {
+    if (!session?.access_token) return;
+    setLoadingProject(slug);
+    try {
+      const res = await fetch(`/api/project/${slug}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setTokens(data.tokens);
+      setSourceUrl(data.source_url);
+      setProjectSlug(data.slug);
+    } catch {
+      setError('Failed to load project');
+    } finally {
+      setLoadingProject(null);
+    }
+  }
 
   async function handleExtract(url) {
     const target = url || urlInput;
@@ -40,7 +71,15 @@ export default function Home() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
           body: JSON.stringify({ sourceUrl: target.trim(), tokens: data.tokens }),
-        }).then(r => r.json()).then(d => { if (d.slug) setProjectSlug(d.slug); }).catch(() => {});
+        }).then(r => r.json()).then(d => {
+          if (d.slug) {
+            setProjectSlug(d.slug);
+            setSavedProjects(prev => {
+              const filtered = prev.filter(p => p.slug !== d.slug);
+              return [{ slug: d.slug, source_url: target.trim(), updated_at: new Date().toISOString() }, ...filtered];
+            });
+          }
+        }).catch(() => {});
       }
     } catch (err) {
       setError(err.message);
@@ -251,7 +290,7 @@ export default function Home() {
                 backgroundSize: '32px 32px',
               }} />
 
-              <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 480 }}>
+              <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 560 }}>
                 <div style={{
                   width: 56, height: 56, background: '#111118',
                   border: '1px solid rgba(242,242,244,0.12)',
@@ -284,7 +323,68 @@ export default function Home() {
                   </div>
                 )}
 
-
+                {!loading && savedProjects.length > 0 && (
+                  <div style={{ marginTop: 48, textAlign: 'left' }}>
+                    <div style={{
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 2,
+                      textTransform: 'uppercase', color: 'rgba(242,242,244,0.28)', marginBottom: 12,
+                    }}>
+                      Recent scans
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {savedProjects.map(p => {
+                        let hostname = p.source_url;
+                        try { hostname = new URL(p.source_url.startsWith('http') ? p.source_url : 'https://' + p.source_url).hostname; } catch {}
+                        const isLoading = loadingProject === p.slug;
+                        const ago = (() => {
+                          const diff = Date.now() - new Date(p.updated_at).getTime();
+                          const m = Math.floor(diff / 60000);
+                          if (m < 1) return 'just now';
+                          if (m < 60) return `${m}m ago`;
+                          const h = Math.floor(m / 60);
+                          if (h < 24) return `${h}h ago`;
+                          return `${Math.floor(h / 24)}d ago`;
+                        })();
+                        return (
+                          <button
+                            key={p.slug}
+                            onClick={() => handleLoadProject(p.slug)}
+                            disabled={!!loadingProject}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              padding: '10px 14px', borderRadius: 4, cursor: 'pointer',
+                              background: '#111118', border: '1px solid rgba(242,242,244,0.08)',
+                              transition: 'border-color 0.15s, background 0.15s',
+                              opacity: loadingProject && !isLoading ? 0.4 : 1,
+                              width: '100%', textAlign: 'left',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,135,0.3)'; e.currentTarget.style.background = 'rgba(0,255,135,0.04)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(242,242,244,0.08)'; e.currentTarget.style.background = '#111118'; }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: isLoading ? '#00FF87' : 'rgba(0,255,135,0.4)', flexShrink: 0,
+                                boxShadow: isLoading ? '0 0 8px rgba(0,255,135,0.8)' : 'none',
+                              }} />
+                              <span style={{
+                                fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: '#F2F2F4',
+                              }}>
+                                {isLoading ? 'Loading…' : hostname}
+                              </span>
+                            </div>
+                            <span style={{
+                              fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                              color: 'rgba(242,242,244,0.28)',
+                            }}>
+                              {ago}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
