@@ -70,15 +70,28 @@ export default function HealthPanel({ healthScore }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {list.map((issue, i) => (
                 <div key={i} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 12,
                   background: 'var(--layer)', border: '1px solid var(--border)',
                   borderLeft: `3px solid ${SEVERITY_COLOR[sev]}`,
                   borderRadius: 8, padding: '12px 16px',
                 }}>
                   <div style={{
                     fontFamily: "'Azeret Mono', monospace", fontSize: 10,
-                    color: 'var(--t2)', lineHeight: 1.6,
+                    color: 'var(--t2)', lineHeight: 1.6, marginBottom: issue.tokens?.length ? 10 : 0,
                   }}>{issue.message}</div>
+                  {issue.tokens?.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {issue.tokens.map((token, j) => (
+                        <span key={j} style={{
+                          fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                          color: SEVERITY_COLOR[sev],
+                          background: sev === 'critical' ? 'rgba(255,77,77,0.07)' : sev === 'warning' ? 'rgba(255,176,32,0.07)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${SEVERITY_COLOR[sev]}22`,
+                          borderRadius: 4, padding: '2px 7px',
+                          maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>{token}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

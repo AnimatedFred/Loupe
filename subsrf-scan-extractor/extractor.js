@@ -25,11 +25,12 @@ async function extractFromPage(page, selector = null) {
       if (SKIP_TAGS.has(el.tagName)) continue;
       const cs = window.getComputedStyle(el);
 
-      // Colors
+      // Colors — reject multi-value strings (multi-layer backgrounds, gradients) and non-rgb values
       const colorProps = ['color', 'backgroundColor', 'borderColor', 'outlineColor', 'caretColor'];
       for (const prop of colorProps) {
         const v = cs[prop];
-        if (v && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)' && v !== 'currentcolor') {
+        if (v && v !== 'transparent' && v !== 'rgba(0, 0, 0, 0)' && v !== 'currentcolor'
+            && !v.includes('gradient') && /^rgba?\(/.test(v.trim())) {
           inc(colors, v);
         }
       }
@@ -107,12 +108,26 @@ function isNeonGreen(rgb) {
   return parseInt(m[2]) > 200 && parseInt(m[1]) < 100 && parseInt(m[3]) < 100;
 }
 
+// Simplified perceptual color distance (weighted Euclidean in RGB space).
+function colorDelta(cssA, cssB) {
+  const parseRgb = s => {
+    const m = s.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    return m ? [parseInt(m[1]), parseInt(m[2]), parseInt(m[3])] : null;
+  };
+  const a = parseRgb(cssA);
+  const b = parseRgb(cssB);
+  if (!a || !b) return 100;
+  return Math.sqrt(2 * (a[0] - b[0]) ** 2 + 4 * (a[1] - b[1]) ** 2 + 3 * (a[2] - b[2]) ** 2) / 5;
+}
+
 function processColors(colorMap) {
   const sorted = Object.entries(colorMap)
     .filter(([v]) => !v.includes('gradient'))
+    .filter(([, f]) => f >= 3)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 40);
+    .slice(0, 60);
 
+  // Pass 1: exact hex dedup
   const byHex = {};
   for (const [cssVal, freq] of sorted) {
     const hex = rgbToHex(cssVal) || cssVal;
@@ -120,29 +135,62 @@ function processColors(colorMap) {
     else byHex[hex].freq += freq;
   }
 
-  const deduplicated = Object.values(byHex).sort((a, b) => b.freq - a.freq);
+  const exactDeduped = Object.values(byHex).sort((a, b) => b.freq - a.freq);
 
+  // Pass 2: ΔE < 5 merging — fold near-duplicates into the highest-frequency representative
+  const clusters = [];
+  for (const item of exactDeduped) {
+    let merged = false;
+    for (const rep of clusters) {
+      if (colorDelta(item.cssVal, rep.cssVal) < 5) {
+        rep.freq += item.freq;
+        merged = true;
+        break;
+      }
+    }
+    if (!merged) clusters.push({ ...item });
+  }
+
+  // Pass 3: name assignment with hard caps per role bucket
+  // Structural backgrounds are capped at 4 (void, layer, surface, lift) — extras are discarded.
+  // Text colors capped at 4 (primary, secondary, muted, dim).
+  // Anything that doesn't fit a structural role goes into color/other (capped at 4).
+  const textNames  = ['primary', 'secondary', 'muted', 'dim'];
+  const voidNames  = ['void', 'layer', 'surface', 'lift'];   // dark bg cap: 4
+  const liftNames  = ['card', 'overlay', 'modal', 'popup'];  // mid-dark bg cap: 4
+  const otherNames = ['brand', 'interactive', 'warn', 'error'];
+
+  const CAP_TEXT  = 4;
+  const CAP_BG    = 4;
+  const CAP_LIFT  = 4;
+  const CAP_OTHER = 4;
+
+  let textIdx = 0, bgIdx = 0, liftIdx = 0, otherIdx = 0, accentUsed = false;
   const named = [];
-  let textIdx = 0, bgIdx = 0, accentIdx = 0;
 
-  for (const { cssVal, freq, hex } of deduplicated) {
+  for (const { cssVal, freq, hex } of clusters) {
     const lum = luminance(cssVal);
     let name;
 
-    if (isNeonGreen(cssVal)) {
+    if (isNeonGreen(cssVal) && !accentUsed) {
       name = 'color/accent';
+      accentUsed = true;
     } else if (lum > 0.6) {
-      name = textIdx === 0 ? 'color/text/primary' : `color/text/muted${textIdx > 1 ? '-' + textIdx : ''}`;
+      if (textIdx >= CAP_TEXT) continue;
+      name = `color/text/${textNames[textIdx]}`;
       textIdx++;
     } else if (lum < 0.05) {
-      name = bgIdx === 0 ? 'color/bg/void' : bgIdx === 1 ? 'color/bg/layer' : bgIdx === 2 ? 'color/bg/surface' : `color/bg/layer-${bgIdx}`;
+      if (bgIdx >= CAP_BG) continue;
+      name = `color/bg/${voidNames[bgIdx]}`;
       bgIdx++;
     } else if (lum < 0.2) {
-      name = `color/bg/${bgIdx === 0 ? 'layer' : bgIdx === 1 ? 'surface' : 'lift'}`;
-      bgIdx++;
+      if (liftIdx >= CAP_LIFT) continue;
+      name = `color/bg/${liftNames[liftIdx]}`;
+      liftIdx++;
     } else {
-      name = `color/other/${accentIdx}`;
-      accentIdx++;
+      if (otherIdx >= CAP_OTHER) continue;
+      name = `color/other/${otherNames[otherIdx]}`;
+      otherIdx++;
     }
 
     named.push({ name, value: cssVal, hex, frequency: freq });
@@ -153,14 +201,43 @@ function processColors(colorMap) {
 
 function processFonts(fontMap, sizeMap, weightMap, lineHeightMap) {
   const families = Object.entries(fontMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  const sizes = Object.entries(sizeMap)
-    .filter(([v]) => !v.includes('%'))
-    .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
-    .slice(0, 12);
   const weights = Object.entries(weightMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const lineHeights = Object.entries(lineHeightMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
+  // Typography bucketing: snap fractional px to nearest integer, merge any two sizes within 1.5px
+  const rawSizes = Object.entries(sizeMap)
+    .filter(([v]) => !v.includes('%') && v.endsWith('px'))
+    .map(([v, f]) => [Math.round(parseFloat(v)), f])
+    .filter(([px]) => px >= 8 && px <= 96);
+
+  // Merge by rounded value first
+  const byPx = {};
+  for (const [px, freq] of rawSizes) {
+    byPx[px] = (byPx[px] || 0) + freq;
+  }
+
+  // Bucket-merge: any remaining size within 1.5px of an existing bucket collapses into it
+  const buckets = []; // [{px, freq}] sorted ascending
+  for (const [px, freq] of Object.entries(byPx).map(([p, f]) => [Number(p), f]).sort((a, b) => a[0] - b[0])) {
+    const last = buckets[buckets.length - 1];
+    if (last && px - last.px <= 1.5) {
+      last.freq += freq;
+      // Keep the higher-frequency px value as the canonical
+      if (freq > last.freq - freq) last.px = px;
+    } else {
+      buckets.push({ px, freq });
+    }
+  }
+
   const sizeScale = ['xs', 'sm', 'base', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl'];
+  const sizes = buckets
+    .sort((a, b) => a.px - b.px)
+    .slice(0, 10)
+    .map(({ px, freq }, i) => ({
+      name: `font/size/${sizeScale[i] || 'size-' + i}`,
+      value: `${px}px`,
+      frequency: freq,
+    }));
 
   return {
     families: families.map(([value, frequency], i) => ({
@@ -168,11 +245,7 @@ function processFonts(fontMap, sizeMap, weightMap, lineHeightMap) {
       value: value.replace(/['"]/g, ''),
       frequency,
     })),
-    sizes: sizes.map(([value, frequency], i) => ({
-      name: `font/size/${sizeScale[i] || 'size-' + i}`,
-      value,
-      frequency,
-    })),
+    sizes,
     weights: weights.map(([value, frequency]) => ({
       name: `font/weight/${value}`,
       value,
@@ -187,25 +260,29 @@ function processFonts(fontMap, sizeMap, weightMap, lineHeightMap) {
 }
 
 function processSpacing(spacingMap) {
-  const sorted = Object.entries(spacingMap)
+  const raw = Object.entries(spacingMap)
     .filter(([v]) => v.endsWith('px') && !v.includes(' '))
-    .map(([v, f]) => [parseFloat(v), f, v])
-    .filter(([px]) => px >= 4 && px <= 256)
+    .map(([v, f]) => [parseFloat(v), f])
+    .filter(([px, f]) => px >= 2 && px <= 256 && f >= 3)
     .sort((a, b) => a[0] - b[0]);
 
-  const dedup = {};
-  for (const [px, freq, cssVal] of sorted) {
-    if (!dedup[px]) dedup[px] = { px, freq, cssVal };
-    else dedup[px].freq += freq;
-  }
-
-  const small = Object.keys(dedup).map(Number).filter(px => px <= 16);
+  // Detect base unit from raw values before any snapping
+  const small = raw.map(([px]) => px).filter(px => px <= 16);
   let baseUnit = 4;
   if (small.includes(8)) baseUnit = 8;
   else if (small.includes(4)) baseUnit = 4;
   else if (small.includes(5)) baseUnit = 5;
 
-  const named = Object.values(dedup)
+  // Snap each value to the nearest base unit multiple, then re-dedup
+  const snapped = {};
+  for (const [px, freq] of raw) {
+    const snappedPx = Math.round(px / baseUnit) * baseUnit;
+    if (snappedPx <= 0) continue;
+    if (!snapped[snappedPx]) snapped[snappedPx] = { px: snappedPx, freq: 0 };
+    snapped[snappedPx].freq += freq;
+  }
+
+  const named = Object.values(snapped)
     .sort((a, b) => a.px - b.px)
     .slice(0, 16)
     .map(({ px, freq }) => ({
@@ -228,13 +305,28 @@ function processRadii(radiiMap) {
     else dedup[px].f += f;
   }
 
-  const scale = ['none', 'sm', 'md', 'lg', 'xl', 'full'];
   const vals = Object.values(dedup).sort((a, b) => parseFloat(a.v) - parseFloat(b.v));
+  const usedNames = new Set();
 
-  return vals.map(({ v, f }, i) => {
+  return vals.map(({ v, f }) => {
     const px = parseFloat(v);
-    let name = `radius/${scale[Math.min(i, scale.length - 1)]}`;
-    if (px >= 9000) name = 'radius/full';
+    let baseName;
+    if (px >= 999) baseName = 'full';
+    else if (px >= 24) baseName = '2xl';
+    else if (px >= 16) baseName = 'xl';
+    else if (px >= 10) baseName = 'lg';
+    else if (px >= 6)  baseName = 'md';
+    else if (px >= 3)  baseName = 'sm';
+    else baseName = 'xs';
+
+    // Guarantee 1:1 — suffix if the name is already taken
+    let name = `radius/${baseName}`;
+    if (usedNames.has(name)) {
+      let suffix = 2;
+      while (usedNames.has(`radius/${baseName}-${suffix}`)) suffix++;
+      name = `radius/${baseName}-${suffix}`;
+    }
+    usedNames.add(name);
     return { name, value: v, frequency: f };
   });
 }

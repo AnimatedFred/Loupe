@@ -37,7 +37,11 @@ function scoreHealth(tokenResult) {
   // Color count
   const colors = primary.colors || [];
   if (colors.length > 20) {
-    issues.push({ severity: 'warning', check: 'color-count', message: `${colors.length} unique colors — consider reducing palette to < 20` });
+    issues.push({
+      severity: 'warning', check: 'color-count',
+      message: `${colors.length} unique colors — consider reducing palette to < 20`,
+      tokens: colors.slice(0, 6).map(c => c.name),
+    });
   }
 
   // Near-duplicate colors
@@ -47,7 +51,8 @@ function scoreHealth(tokenResult) {
       if (delta < 8) {
         issues.push({
           severity: 'warning', check: 'near-duplicate',
-          message: `Near-duplicate: ${colors[i].name} and ${colors[j].name} are ΔE ${delta.toFixed(1)} apart — consider merging`,
+          message: `Near-duplicate colors are ΔE ${delta.toFixed(1)} apart — consider merging`,
+          tokens: [colors[i].name, colors[j].name],
         });
         if (issues.filter(i => i.check === 'near-duplicate').length >= 3) break;
       }
@@ -65,10 +70,10 @@ function scoreHealth(tokenResult) {
     });
     const adherence = (spacing.length - offGrid.length) / spacing.length;
     if (adherence < 0.9) {
-      const offValues = offGrid.map(s => s.value).join(', ');
       issues.push({
         severity: 'critical', check: 'spacing-grid',
-        message: `${offGrid.length} spacing values outside ${baseUnit}px grid: ${offValues}`,
+        message: `${offGrid.length} spacing values outside the ${baseUnit}px grid`,
+        tokens: offGrid.map(s => `${s.name} (${s.value})`),
       });
     }
   }
@@ -81,7 +86,8 @@ function scoreHealth(tokenResult) {
     if (a > 0 && b > 0 && b / a < 1.15 && b !== a) {
       issues.push({
         severity: 'warning', check: 'type-scale',
-        message: `Type scale: ${sizes[i].value} and ${sizes[i+1].value} are too close (ratio ${(b/a).toFixed(2)}) — remove one`,
+        message: `Two type steps too close (ratio ${(b/a).toFixed(2)}) — remove one`,
+        tokens: [sizes[i].name || sizes[i].value, sizes[i + 1].name || sizes[i + 1].value],
       });
       break;
     }
@@ -99,7 +105,8 @@ function scoreHealth(tokenResult) {
       if (ratio < 4.5 && ratio > 1.1) {
         issues.push({
           severity: 'critical', check: 'contrast',
-          message: `Contrast fail: ${text.name} on ${bg.name} = ${ratio.toFixed(1)}:1 (WCAG AA requires 4.5:1)`,
+          message: `Contrast ${ratio.toFixed(1)}:1 — WCAG AA requires 4.5:1`,
+          tokens: [text.name, bg.name],
         });
         if (issues.filter(i => i.check === 'contrast').length >= 2) break;
       }
@@ -112,7 +119,8 @@ function scoreHealth(tokenResult) {
   if (radius.length > 5) {
     issues.push({
       severity: 'info', check: 'radius-count',
-      message: `${radius.length} radius values in core use — consider consolidating to ≤ 4`,
+      message: `${radius.length} radius values in use — consider consolidating to ≤ 4`,
+      tokens: radius.map(r => `${r.name} (${r.value})`),
     });
   }
 
@@ -121,7 +129,8 @@ function scoreHealth(tokenResult) {
   if (transitions.length > 3) {
     issues.push({
       severity: 'info', check: 'transition-count',
-      message: `${transitions.length} distinct transition values — consider reducing to 3`,
+      message: `${transitions.length} distinct transition durations — consider reducing to 3`,
+      tokens: transitions.slice(0, 6).map(t => t.name || t.value),
     });
   }
 
