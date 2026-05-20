@@ -276,6 +276,29 @@ export default function Home() {
             background: 'linear-gradient(to bottom, #071009, #050508)',
           }} />
 
+          {/* Loading video — lives at workspace level so inset:0 has a real height to fill */}
+          {loading && !tokens && (
+            <>
+              <video
+                key="scan-video"
+                autoPlay
+                loop
+                muted
+                playsInline
+                style={{
+                  position: 'absolute', inset: 0, width: '100%', height: '100%',
+                  objectFit: 'cover', zIndex: 1, pointerEvents: 'none',
+                }}
+              >
+                <source src="/loadingvideo.mp4" type="video/mp4" />
+              </video>
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
+                background: 'linear-gradient(to bottom, rgba(5,5,8,0.5) 0%, rgba(5,5,8,0.2) 50%, rgba(5,5,8,0.65) 100%)',
+              }} />
+            </>
+          )}
+
           {!tokens ? (
             /* ── Empty state ──────────────────────────────────────────────── */
             <div style={{
@@ -283,33 +306,7 @@ export default function Home() {
               alignItems: 'center', justifyContent: 'center',
               position: 'relative', zIndex: 10,
             }}>
-              {/* Loading video — full hero, visible only while scanning */}
-              {loading && (
-                <video
-                  key="scan-video"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  style={{
-                    position: 'absolute', inset: 0, width: '100%', height: '100%',
-                    objectFit: 'cover', zIndex: 0,
-                    opacity: 1,
-                  }}
-                >
-                  <source src="/loadingvideo.mp4" type="video/mp4" />
-                </video>
-              )}
-
-              {/* Overlay so text stays readable over the video */}
-              {loading && (
-                <div style={{
-                  position: 'absolute', inset: 0, zIndex: 1,
-                  background: 'linear-gradient(to bottom, rgba(5,5,8,0.55) 0%, rgba(5,5,8,0.3) 50%, rgba(5,5,8,0.7) 100%)',
-                }} />
-              )}
-
-              {/* Grid bg — hidden while scanning so video shows through */}
+              {/* Grid bg — hidden while scanning */}
               {!loading && <div style={{
                 position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.015,
                 backgroundImage: 'linear-gradient(to right, #F2F2F4 1px, transparent 1px), linear-gradient(to bottom, #F2F2F4 1px, transparent 1px)',
