@@ -283,43 +283,85 @@ export default function Home() {
               alignItems: 'center', justifyContent: 'center',
               position: 'relative', zIndex: 10,
             }}>
-              {/* Grid bg */}
-              <div style={{
+              {/* Loading video — full hero, visible only while scanning */}
+              {loading && (
+                <video
+                  key="scan-video"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{
+                    position: 'absolute', inset: 0, width: '100%', height: '100%',
+                    objectFit: 'cover', zIndex: 0,
+                    opacity: 1,
+                  }}
+                >
+                  <source src="/loadingvideo.mp4" type="video/mp4" />
+                </video>
+              )}
+
+              {/* Overlay so text stays readable over the video */}
+              {loading && (
+                <div style={{
+                  position: 'absolute', inset: 0, zIndex: 1,
+                  background: 'linear-gradient(to bottom, rgba(5,5,8,0.55) 0%, rgba(5,5,8,0.3) 50%, rgba(5,5,8,0.7) 100%)',
+                }} />
+              )}
+
+              {/* Grid bg — hidden while scanning so video shows through */}
+              {!loading && <div style={{
                 position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.015,
                 backgroundImage: 'linear-gradient(to right, #F2F2F4 1px, transparent 1px), linear-gradient(to bottom, #F2F2F4 1px, transparent 1px)',
                 backgroundSize: '32px 32px',
-              }} />
+              }} />}
 
-              <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 560 }}>
-                <div style={{
-                  width: 56, height: 56, background: '#111118',
-                  border: '1px solid rgba(242,242,244,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 24px', boxShadow: '0 0 40px rgba(0,255,135,0.06)',
-                }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#00FF87" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </div>
-
-                <h2 style={{
-                  fontFamily: "'Manrope', sans-serif", fontSize: 32, fontWeight: 700,
-                  lineHeight: 1.1, letterSpacing: '-0.8px', marginBottom: 12,
-                }}>Ready to scan</h2>
-
-                <p style={{
-                  fontFamily: "'Manrope', sans-serif", fontSize: 16, fontWeight: 300,
-                  lineHeight: 1.8, color: 'rgba(242,242,244,0.55)', marginBottom: 32,
-                }}>
-                  Enter a URL above to extract the complete design token set — colors, typography, spacing, shadows, and more.
-                </p>
+              <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: 560 }}>
+                {!loading && (
+                  <>
+                    <div style={{
+                      width: 56, height: 56, background: '#111118',
+                      border: '1px solid rgba(242,242,244,0.12)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 24px', boxShadow: '0 0 40px rgba(0,255,135,0.06)',
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#00FF87" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <h2 style={{
+                      fontFamily: "'Manrope', sans-serif", fontSize: 32, fontWeight: 700,
+                      lineHeight: 1.1, letterSpacing: '-0.8px', marginBottom: 12,
+                    }}>Ready to scan</h2>
+                    <p style={{
+                      fontFamily: "'Manrope', sans-serif", fontSize: 16, fontWeight: 300,
+                      lineHeight: 1.8, color: 'rgba(242,242,244,0.55)', marginBottom: 32,
+                    }}>
+                      Enter a URL above to extract the complete design token set — colors, typography, spacing, shadows, and more.
+                    </p>
+                  </>
+                )}
 
                 {loading && (
-                  <div style={{
-                    fontFamily: "'Azeret Mono', monospace", fontSize: 11,
-                    color: '#00FF87', letterSpacing: 2,
-                  }}>
-                    ● SCANNING {urlInput.toUpperCase()}…
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 4,
+                      textTransform: 'uppercase', color: 'rgba(0,255,135,0.6)', marginBottom: 16,
+                    }}>
+                      Scanning subsurface
+                    </div>
+                    <div style={{
+                      fontFamily: "'Manrope', sans-serif", fontSize: 28, fontWeight: 700,
+                      letterSpacing: '-0.5px', color: '#F2F2F4', marginBottom: 8,
+                    }}>
+                      {(() => { try { return new URL(urlInput.startsWith('http') ? urlInput : 'https://' + urlInput).hostname; } catch { return urlInput; } })()}
+                    </div>
+                    <div style={{
+                      fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+                      color: 'rgba(0,255,135,0.7)', letterSpacing: 1,
+                    }}>
+                      ● extracting design tokens…
+                    </div>
                   </div>
                 )}
 
