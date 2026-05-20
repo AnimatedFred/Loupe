@@ -18,7 +18,14 @@
 
   // Load tier from storage — avoids waking the service worker
   chrome.storage.local.get('subsrf_session', (data) => {
-    cachedTier = data.subsrf_session?.tier || 'free';
+    cachedTier = data.subsrf_session?.tier?.toLowerCase() || 'free';
+  });
+
+  // Listen for session updates (e.g., user logs in or upgrades via popup)
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.subsrf_session) {
+      cachedTier = changes.subsrf_session.newValue?.tier?.toLowerCase() || 'free';
+    }
   });
 
   const FREE_ELEMENT_LIMIT = 5;

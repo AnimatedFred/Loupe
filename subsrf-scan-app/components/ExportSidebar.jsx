@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useUser } from '../context/UserContext';
 
 const FORMATS = [
+  { id: 'subsrf',           icon: '.SR',  label: '.subsrf Standard', ext: 'subsrf', badge: 'new' },
   { id: 'css',              icon: 'CSS',  label: 'CSS Variables',    ext: 'css'  },
   { id: 'tailwind',         icon: 'TW',   label: 'Tailwind Config',  ext: 'js'   },
   { id: 'json',             icon: '{}',   label: 'JSON',             ext: 'json' },
@@ -63,12 +64,13 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
     });
     const data = await res.json();
     const ext = FORMATS.find(f => f.id === format)?.ext || 'txt';
-    const suffix = (format === 'figma' && subset !== 'all') ? `-${subset}` : '-tokens';
+    const suffix = (format === 'figma' && subset !== 'all') ? `-${subset}` : format === 'subsrf' ? '' : '-tokens';
+    const filename = format === 'subsrf' ? `design.${ext}` : `${hostname}${suffix}.${ext}`;
     const blob = new Blob([data.content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${hostname}${suffix}.${ext}`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -141,8 +143,11 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData }) {
               {f.badge && (
                 <span style={{
                   fontFamily: "'Azeret Mono', monospace", fontSize: 8,
-                  color: 'rgba(0,255,135,0.7)', background: 'rgba(0,255,135,0.08)',
-                  borderRadius: 3, padding: '1px 5px', border: '1px solid rgba(0,255,135,0.15)',
+                  color: f.badge === 'new' ? 'var(--neon)' : 'rgba(0,255,135,0.7)',
+                  background: f.badge === 'new' ? 'rgba(0,255,135,0.12)' : 'rgba(0,255,135,0.08)',
+                  borderRadius: 3, padding: '1px 5px',
+                  border: f.badge === 'new' ? '1px solid rgba(0,255,135,0.4)' : '1px solid rgba(0,255,135,0.15)',
+                  fontWeight: f.badge === 'new' ? 700 : 400,
                 }}>{f.badge}</span>
               )}
             </div>

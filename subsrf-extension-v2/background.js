@@ -302,6 +302,27 @@ async function captureFullPage(tabId, watermark = false) {
   }
 }
 
+// Synchronous-path capture: fires captureVisibleTab immediately (before any await)
+// so activeTab grant is still valid. Skips if within cooldown instead of waiting.
+function snapCapture(callback) {
+  const now = Date.now();
+  if (isCapturing || (now - lastCaptureTime) < CAPTURE_COOLDOWN) {
+    callback(null);
+    return;
+  }
+  isCapturing = true;
+  chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 80 }, (dataUrl) => {
+    lastCaptureTime = Date.now();
+    isCapturing = false;
+    if (chrome.runtime.lastError) {
+      console.warn('[Subsrf] Capture skipped:', chrome.runtime.lastError.message);
+      callback(null);
+    } else {
+      callback(dataUrl);
+    }
+  });
+}
+
 function throttleCapture(callback) {
   captureQueue.push(callback);
   processQueue();
@@ -309,13 +330,13 @@ function throttleCapture(callback) {
 
 async function processQueue() {
   if (isCapturing || captureQueue.length === 0) return;
-  
+
   isCapturing = true;
   const callback = captureQueue.shift();
 
   const now = Date.now();
   const wait = Math.max(0, CAPTURE_COOLDOWN - (now - lastCaptureTime));
-  
+
   if (wait > 0) {
     await new Promise(r => setTimeout(r, wait));
   }
@@ -325,7 +346,7 @@ async function processQueue() {
     isCapturing = false;
 
     if (chrome.runtime.lastError) {
-      console.error('[Subsrf Background] Capture Error:', chrome.runtime.lastError.message);
+      console.warn('[Subsrf] Capture skipped:', chrome.runtime.lastError.message);
       callback(null);
     } else {
       callback(dataUrl);
@@ -463,9 +484,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         lastScreenshot = msg.screenshot;
         notifyBridge();
       } else {
-        // Auto-capture the visible viewport so AI Import works without a separate
-        // screenshot step — selecting elements is the only action required
-        throttleCapture((dataUrl) => {
+        // Snap the viewport immediately (sync path) so activeTab grant is still valid.
+        // Falls back to previous screenshot if within cooldown or capture is unavailable.
+        snapCapture((dataUrl) => {
           if (dataUrl) lastScreenshot = dataUrl;
           notifyBridge();
         });
@@ -520,7 +541,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       console.log('[Subsrf Background] Initializing Region Capture...', msg.rect);
       (async () => {
         const session = await getAuthState();
-        const watermark = !session?.tier || session.tier === 'free';
+        const watermark = !session?.tier || session.tier.toLowerCase() === 'free';
         throttleCapture((dataUrl) => {
           if (dataUrl) {
             chrome.storage.local.set({
@@ -542,7 +563,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       console.log('[Subsrf Background] Initializing Accessibility Audit Capture...', msg.rect);
       (async () => {
         const session = await getAuthState();
-        if (!session?.tier || session.tier === 'free') return;
+        if (!session?.tier || session.tier.toLowerCase() === 'free') return;
         throttleCapture((dataUrl) => {
           if (dataUrl) {
             chrome.storage.local.set({
@@ -566,7 +587,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!tabId) break;
       (async () => {
         const session = await getAuthState();
-        const watermark = !session?.tier || session.tier === 'free';
+        const watermark = !session?.tier || session.tier.toLowerCase() === 'free';
         captureFullPage(tabId, watermark).catch(e => console.error('[Subsrf] captureFullPage error:', e));
       })();
       break;

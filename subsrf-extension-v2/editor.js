@@ -770,7 +770,7 @@ async function runEditorAnalysis() {
   }
   if (!subsrf_session?.accessToken) { showToast('Sign in to use AI Analysis'); return; }
 
-  const tier    = subsrf_session.tier || 'free';
+  const tier    = (subsrf_session.tier || 'free').toLowerCase();
   const credits = subsrf_session.credits ?? 0;
   const isPaid  = tier === 'starter' || tier === 'pro';
 
