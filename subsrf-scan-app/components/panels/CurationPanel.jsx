@@ -273,7 +273,7 @@ function CurationSection({ id, label, dot, tokens, type, subKey, collapsed, onTo
 
 export default function CurationPanel({
   curatedTokens, originalTokens, fullTokens, mode, sourceUrl,
-  onRenameToken, onRenameTypography, onDeleteToken, onMergeColors, onReset,
+  onRenameToken, onRenameTypography, onDeleteToken, onMergeColors, onReset, onSaveCuratedTokens,
 }) {
   const { tier } = useUser() || {};
   const isPro = tier === 'pro';
@@ -356,6 +356,7 @@ export default function CurationPanel({
 
   async function handleGenerateSubsrf() {
     if (!curatedTokens || !fullTokens) return;
+    onSaveCuratedTokens?.(curatedTokens);
     try {
       const res = await fetch('/api/export', {
         method: 'POST',

@@ -49,7 +49,7 @@ function tokenCount(tokens, mode, category, curatedTokens) {
   return 0;
 }
 
-export default function TokenExplorer({ tokens, sourceUrl }) {
+export default function TokenExplorer({ tokens, sourceUrl, projectSlug, onSaveCuratedTokens }) {
   const [activeCategory, setActiveCategory] = useState('colors');
   const [mode, setMode] = useState('dark');
   const [copied, setCopied] = useState(null);
@@ -309,6 +309,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
             onDeleteToken={handleDeleteToken}
             onMergeColors={handleMergeColors}
             onReset={handleCurateReset}
+            onSaveCuratedTokens={onSaveCuratedTokens}
           />
         ) : activeCategory === 'health' ? (
           <HealthPanel healthScore={tokens?.healthScore} />
@@ -336,7 +337,7 @@ export default function TokenExplorer({ tokens, sourceUrl }) {
       </main>
 
       {/* Export sidebar */}
-      <ExportSidebar tokens={tokens} sourceUrl={sourceUrl} mode={activeMode} tokenData={tokenData} curatedTokenData={curatedTokens} />
+      <ExportSidebar tokens={tokens} sourceUrl={sourceUrl} mode={activeMode} tokenData={tokenData} curatedTokenData={curatedTokens} projectSlug={projectSlug} />
     </div>
   );
 }

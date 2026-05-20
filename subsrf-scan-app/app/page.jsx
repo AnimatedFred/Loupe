@@ -13,7 +13,8 @@ export default function Home() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [urlInput, setUrlInput] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, signOut, credits, tier } = useUser() || {};
+  const [projectSlug, setProjectSlug] = useState(null);
+  const { user, session, signOut, credits, tier } = useUser() || {};
 
   async function handleExtract(url) {
     const target = url || urlInput;
@@ -31,6 +32,16 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Extraction failed');
       setTokens(data.tokens);
+      setProjectSlug(null);
+
+      // Auto-save project (fire-and-forget)
+      if (session?.access_token) {
+        fetch('/api/project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({ sourceUrl: target.trim(), tokens: data.tokens }),
+        }).then(r => r.json()).then(d => { if (d.slug) setProjectSlug(d.slug); }).catch(() => {});
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -278,7 +289,19 @@ export default function Home() {
             </div>
           ) : (
             /* ── Token dashboard (3-column layout) ────────────────────────── */
-            <TokenExplorer tokens={tokens} sourceUrl={sourceUrl} />
+            <TokenExplorer
+              tokens={tokens}
+              sourceUrl={sourceUrl}
+              projectSlug={projectSlug}
+              onSaveCuratedTokens={(curated) => {
+                if (!projectSlug || !session?.access_token) return;
+                fetch(`/api/project/${projectSlug}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                  body: JSON.stringify({ curatedTokens: curated }),
+                }).catch(() => {});
+              }}
+            />
           )}
         </div>
       </div>

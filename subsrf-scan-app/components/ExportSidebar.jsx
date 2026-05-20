@@ -13,7 +13,7 @@ const FORMATS = [
   { id: 'ai_prompt',        icon: 'AI',   label: 'AI Prompt',        badge: '1 credit', ext: 'txt' },
 ];
 
-export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData, curatedTokenData }) {
+export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData, curatedTokenData, projectSlug }) {
   const { session, updateCredits } = useUser() || {};
   const accessToken = session?.access_token;
 
@@ -240,6 +240,37 @@ export default function ExportSidebar({ tokens, sourceUrl, mode, tokenData, cura
           }
         </div>
       </div>
+
+      {format === 'subsrf' && projectSlug && (
+        <div style={{
+          marginBottom: 12, padding: '10px 12px',
+          background: 'rgba(0,255,135,0.04)', border: '1px solid rgba(0,255,135,0.2)',
+          borderRadius: 4,
+        }}>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t3)',
+            letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6,
+          }}>
+            Live URL
+          </div>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--neon)',
+            wordBreak: 'break-all', marginBottom: 8, lineHeight: 1.6,
+          }}>
+            /api/project/{projectSlug}/design.subsrf
+          </div>
+          <button
+            onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/project/${projectSlug}/design.subsrf`).catch(() => {})}
+            style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9, color: 'var(--t2)',
+              background: 'var(--void)', border: '1px solid var(--border)',
+              borderRadius: 3, padding: '3px 8px', cursor: 'pointer',
+            }}
+          >
+            ⎘ Copy URL
+          </button>
+        </div>
+      )}
 
       {format === 'ai_prompt' ? (
         <button onClick={() => handleAiPrompt(false)} disabled={!effectiveTokens || generating} style={{
