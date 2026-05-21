@@ -14,9 +14,9 @@ export async function GET(request) {
 
   try {
     // Because GitHub drops the state parameter on App installation redirects,
-    // we use the user's secure Supabase cookie to identify them.
-    const auth = await verifyAuth(request);
-    const userId = auth?.user?.id || (state && state !== 'anon' ? state : null);
+    // we use the cookie we set in the /install route.
+    const cookieUserId = request.cookies.get('gh_install_user')?.value;
+    const userId = cookieUserId || (state && state !== 'anon' ? state : null);
 
     // Fetch installation details from GitHub to get account info
     const jwt = (await import('jsonwebtoken')).default;

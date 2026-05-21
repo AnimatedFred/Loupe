@@ -51,7 +51,7 @@ export default function GitHubConnect({ onReposLoaded }) {
 
   function handleConnect() {
     setWaitingForPopup(true);
-    window.open(`/api/github/install`, 'github_install', 'width=800,height=700,left=200,top=100');
+    window.open(`/api/github/install?userId=${session.user.id}`, 'github_install', 'width=800,height=700,left=200,top=100');
   }
 
   if (loading) {
