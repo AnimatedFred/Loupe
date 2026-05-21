@@ -1,19 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getServiceClient } from '../../../../lib/withAuth';
+import { verifyAuth, getServiceClient } from '../../../../lib/withAuth';
 
 // GET /api/github/callback — handles redirect after GitHub App install
-// GitHub sends: ?installation_id=123&setup_action=install&code=xxx&state=userId
+// GitHub sends: ?installation_id=123&setup_action=install
 export async function GET(request) {
   const url = new URL(request.url);
   const installationId = url.searchParams.get('installation_id');
-  const setupAction = url.searchParams.get('setup_action');
-  const state = url.searchParams.get('state'); // our user ID
+  const state = url.searchParams.get('state'); 
 
   if (!installationId) {
     return NextResponse.redirect(new URL('/?gh_error=missing_installation', request.url));
   }
 
   try {
+    // Because GitHub drops the state parameter on App installation redirects,
+    // we use the user's secure Supabase cookie to identify them.
+    const auth = await verifyAuth(request);
+    const userId = auth?.user?.id || (state && state !== 'anon' ? state : null);
+
     // Fetch installation details from GitHub to get account info
     const jwt = (await import('jsonwebtoken')).default;
     const now = Math.floor(Date.now() / 1000);
@@ -44,11 +48,11 @@ export async function GET(request) {
     }
 
     // Save to Supabase if we have a valid user ID
-    if (state && state !== 'anon') {
+    if (userId) {
       const supabase = getServiceClient();
       await supabase.from('github_installations').upsert(
         {
-          user_id: state,
+          user_id: userId,
           installation_id: parseInt(installationId),
           account_login: accountLogin,
           account_type: accountType,
