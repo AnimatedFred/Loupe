@@ -138,7 +138,7 @@ export async function getFileContent(installationToken, owner, repo, path) {
 export function getInstallUrl(state = '') {
   // This URL lets users install or configure the App on their repos
   const params = new URLSearchParams({ state });
-  return `https://github.com/apps/subsrf-scan/installations/new?${params}`;
+  return `https://github.com/apps/subsrf/installations/new?${params}`;
 }
 
 export function getOAuthUrl(state = '') {
