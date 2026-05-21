@@ -57,11 +57,28 @@ export async function GET(request) {
       );
     }
 
-    // Redirect back to the scan app with success indicator
-    return NextResponse.redirect(new URL('/?gh_connected=1', request.url));
+    // Return an HTML page that closes the popup
+    return new NextResponse(`
+      <html>
+        <body style="background: #050508; color: #00FF87; font-family: monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+          <div style="text-align: center;">
+            <h2>Connected Successfully!</h2>
+            <p style="color: #888;">You can close this window and return to the Scan app.</p>
+            <script>
+              setTimeout(() => window.close(), 1500);
+            </script>
+          </div>
+        </body>
+      </html>
+    `, {
+      headers: { 'Content-Type': 'text/html' }
+    });
   } catch (err) {
     console.error('[github/callback] Error:', err.message);
-    return NextResponse.redirect(new URL('/?gh_error=callback_failed', request.url));
+    return new NextResponse(`<html><body>Error: ${err.message}. Please close this window and try again.</body></html>`, {
+      status: 500,
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
 }
 

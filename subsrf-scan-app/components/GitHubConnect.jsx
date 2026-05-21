@@ -7,9 +7,10 @@ export default function GitHubConnect({ onReposLoaded }) {
   const { session } = useUser() || {};
   const [status, setStatus] = useState(null); // { connected, installations }
   const [loading, setLoading] = useState(true);
+  const [waitingForPopup, setWaitingForPopup] = useState(false);
 
-  useEffect(() => {
-    if (!session?.access_token) { setLoading(false); return; }
+  const checkStatus = () => {
+    if (!session?.access_token) return;
     fetch('/api/github/status', {
       headers: { 'Authorization': `Bearer ${session.access_token}` },
     })
@@ -17,13 +18,25 @@ export default function GitHubConnect({ onReposLoaded }) {
       .then(data => {
         setStatus(data);
         if (data.connected) {
-          // Auto-load repos
+          setWaitingForPopup(false);
           loadRepos();
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    checkStatus();
   }, [session?.access_token]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (waitingForPopup) checkStatus();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [waitingForPopup, session?.access_token]);
 
   async function loadRepos() {
     if (!session?.access_token) return;
@@ -37,8 +50,8 @@ export default function GitHubConnect({ onReposLoaded }) {
   }
 
   function handleConnect() {
-    // Redirect to GitHub App install (opens in same window)
-    window.location.href = `/api/github/install`;
+    setWaitingForPopup(true);
+    window.open(`/api/github/install`, 'github_install', 'width=800,height=700,left=200,top=100');
   }
 
   if (loading) {
@@ -99,11 +112,11 @@ export default function GitHubConnect({ onReposLoaded }) {
         <div style={{
           fontFamily: "'Azeret Mono', monospace", fontSize: 11,
           color: 'var(--t1)', fontWeight: 500,
-        }}>Connect GitHub</div>
+        }}>{waitingForPopup ? 'Waiting for authorization…' : 'Connect GitHub'}</div>
         <div style={{
           fontFamily: "'Azeret Mono', monospace", fontSize: 9,
           color: 'var(--t3)', marginTop: 2,
-        }}>Read-only · Audit codebase</div>
+        }}>{waitingForPopup ? 'Complete setup in popup window' : 'Read-only · Audit codebase'}</div>
       </div>
       <span style={{
         fontFamily: "'Azeret Mono', monospace", fontSize: 10,
