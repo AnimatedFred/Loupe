@@ -49,6 +49,23 @@ export default function Home() {
     }
   }
 
+  async function handleDeleteProject(slug) {
+    if (!session?.access_token) return;
+    try {
+      const res = await fetch(`/api/project/${slug}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      setSavedProjects(prev => prev.filter(p => p.slug !== slug));
+      if (projectSlug === slug) {
+        setProjectSlug(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+    }
+  }
+
   async function handleExtract(url) {
     const target = url || urlInput;
     if (!target.trim()) return;
@@ -421,40 +438,59 @@ export default function Home() {
                           return `${Math.floor(h / 24)}d ago`;
                         })();
                         return (
-                          <button
-                            key={p.slug}
-                            onClick={() => handleLoadProject(p.slug)}
-                            disabled={!!loadingProject}
-                            style={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                              padding: '10px 14px', borderRadius: 4, cursor: 'pointer',
-                              background: '#111118', border: '1px solid rgba(242,242,244,0.08)',
-                              transition: 'border-color 0.15s, background 0.15s',
-                              opacity: loadingProject && !isLoading ? 0.4 : 1,
-                              width: '100%', textAlign: 'left',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,135,0.3)'; e.currentTarget.style.background = 'rgba(0,255,135,0.04)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(242,242,244,0.08)'; e.currentTarget.style.background = '#111118'; }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div style={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                background: isLoading ? '#00FF87' : 'rgba(0,255,135,0.4)', flexShrink: 0,
-                                boxShadow: isLoading ? '0 0 8px rgba(0,255,135,0.8)' : 'none',
-                              }} />
+                          <div key={p.slug} style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                            <button
+                              onClick={() => handleLoadProject(p.slug)}
+                              disabled={!!loadingProject}
+                              style={{
+                                flex: 1,
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '10px 14px', borderRadius: 4, cursor: 'pointer',
+                                background: '#111118', border: '1px solid rgba(242,242,244,0.08)',
+                                transition: 'border-color 0.15s, background 0.15s',
+                                opacity: loadingProject && !isLoading ? 0.4 : 1,
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,135,0.3)'; e.currentTarget.style.background = 'rgba(0,255,135,0.04)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(242,242,244,0.08)'; e.currentTarget.style.background = '#111118'; }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div style={{
+                                  width: 8, height: 8, borderRadius: '50%',
+                                  background: isLoading ? '#00FF87' : 'rgba(0,255,135,0.4)', flexShrink: 0,
+                                  boxShadow: isLoading ? '0 0 8px rgba(0,255,135,0.8)' : 'none',
+                                }} />
+                                <span style={{
+                                  fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: '#F2F2F4',
+                                }}>
+                                  {isLoading ? 'Loading…' : hostname}
+                                </span>
+                              </div>
                               <span style={{
-                                fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: '#F2F2F4',
+                                fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                                color: 'rgba(242,242,244,0.28)',
                               }}>
-                                {isLoading ? 'Loading…' : hostname}
+                                {ago}
                               </span>
-                            </div>
-                            <span style={{
-                              fontFamily: "'Azeret Mono', monospace", fontSize: 9,
-                              color: 'rgba(242,242,244,0.28)',
-                            }}>
-                              {ago}
-                            </span>
-                          </button>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.slug); }}
+                              disabled={!!loadingProject}
+                              title="Delete scan"
+                              style={{
+                                width: 40, background: '#111118', border: '1px solid rgba(242,242,244,0.08)',
+                                borderRadius: 4, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'rgba(242,242,244,0.3)', transition: 'color 0.15s, background 0.15s, border-color 0.15s',
+                                opacity: loadingProject && !isLoading ? 0.4 : 1,
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.color = '#FF4D4D'; e.currentTarget.style.borderColor = 'rgba(255,77,77,0.3)'; e.currentTarget.style.background = 'rgba(255,77,77,0.05)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(242,242,244,0.3)'; e.currentTarget.style.borderColor = 'rgba(242,242,244,0.08)'; e.currentTarget.style.background = '#111118'; }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+                              </svg>
+                            </button>
+                          </div>
                         );
                       })}
                     </div>

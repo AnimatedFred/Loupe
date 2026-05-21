@@ -33,3 +33,18 @@ export async function PATCH(req, { params }) {
   if (error) return Response.json({ error: error.message }, { status: 500 });
   return Response.json({ ok: true });
 }
+
+export async function DELETE(req, { params }) {
+  const auth = await verifyAuth(req);
+  if (!auth) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = getServiceClient();
+  const { error } = await db
+    .from('scan_projects')
+    .delete()
+    .eq('slug', params.slug)
+    .eq('user_id', auth.user.id);
+
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+  return Response.json({ ok: true });
+}
