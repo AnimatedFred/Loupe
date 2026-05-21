@@ -333,6 +333,24 @@
     .settings-val { font-size: 12px; font-weight: 600; color: var(--t1); }
     .credits-bar { height: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
     .credits-fill { height: 100%; background: var(--neon); transition: width 0.4s; }
+
+    /* ── Vars tab: project browser ── */
+    .project-row {
+      display: flex; flex-direction: column; gap: 3px;
+      padding: 8px 10px; cursor: pointer; margin-bottom: 4px;
+      background: var(--layer); border: 1px solid var(--border); border-radius: 4px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .project-row:hover { border-color: var(--border-md); background: var(--surface); }
+    .project-row.selected { border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.04); }
+    .project-name { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .project-meta { font-family: 'Azeret Mono', monospace; font-size: 9px; color: var(--t3); }
+    .cat-check { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 8px; border-radius: 3px; }
+    .cat-check:hover { background: rgba(255,255,255,0.03); }
+    .cat-check input[type="checkbox"] { width: 12px; height: 12px; cursor: pointer; accent-color: var(--neon); flex-shrink: 0; }
+    .cat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .cat-name { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t2); flex: 1; }
+    .cat-count { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3); }
   </style>
 </head>
 
@@ -530,30 +548,75 @@
     <div class="tab-panel" id="tab-vars">
       <div class="scroll-area">
 
+        <!-- Project browser -->
         <div>
-          <div class="sec-label">Import source</div>
-          <button id="btnImportFile" class="btn-secondary" style="width:100%;gap:7px;margin-bottom:10px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            Import JSON file
-          </button>
-          <div style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Or paste JSON</div>
-          <textarea id="importVarsInput" placeholder='{"name":"…","modes":[…],"variables":[…]}' style="
-            width:100%;height:260px;resize:none;
-            background:var(--void);border:1px solid var(--border);border-radius:4px;
-            color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
-            line-height:1.6;padding:8px 10px;outline:none;
-            transition:border-color 0.15s;
-          " oninput="checkImportBtn()"></textarea>
+          <div class="sec-label">Scanned projects</div>
+          <div id="projectsList">
+            <div style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">Loading…</div>
+          </div>
         </div>
 
-        <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;"></div>
+        <!-- Category selector — shown after a project is selected -->
+        <div id="varsCategorySection" style="display:none;margin-top:12px;">
+          <div class="sec-label">Categories to import</div>
+          <div style="margin-top:4px;">
+            <label class="cat-check">
+              <input type="checkbox" id="chkColors" checked>
+              <span class="cat-dot" style="background:#FF6B9D;"></span>
+              <span class="cat-name">Colors</span>
+              <span class="cat-count" id="countColors">–</span>
+            </label>
+            <label class="cat-check">
+              <input type="checkbox" id="chkSpacing" checked>
+              <span class="cat-dot" style="background:#7B9FF5;"></span>
+              <span class="cat-name">Spacing</span>
+              <span class="cat-count" id="countSpacing">–</span>
+            </label>
+            <label class="cat-check">
+              <input type="checkbox" id="chkRadius" checked>
+              <span class="cat-dot" style="background:#FFD166;"></span>
+              <span class="cat-name">Radius</span>
+              <span class="cat-count" id="countRadius">–</span>
+            </label>
+            <label class="cat-check">
+              <input type="checkbox" id="chkTypography" checked>
+              <span class="cat-dot" style="background:#06D6A0;"></span>
+              <span class="cat-name">Typography</span>
+              <span class="cat-count" id="countTypography">–</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-top:10px;"></div>
+
+        <!-- Manual JSON paste fallback -->
+        <details style="margin-top:16px;">
+          <summary style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            Paste JSON manually
+          </summary>
+          <div style="margin-top:8px;">
+            <button id="btnImportFile" class="btn-secondary" style="width:100%;gap:7px;margin-bottom:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import JSON file
+            </button>
+            <textarea id="importVarsInput" placeholder='{"name":"…","modes":[…],"variables":[…]}' style="
+              width:100%;height:180px;resize:none;box-sizing:border-box;
+              background:var(--void);border:1px solid var(--border);border-radius:4px;
+              color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
+              line-height:1.6;padding:8px 10px;outline:none;
+              transition:border-color 0.15s;
+            " oninput="checkImportBtn()"></textarea>
+            <button class="btn-secondary" id="btnImportVarsManual" disabled onclick="importVariables()" style="width:100%;margin-top:6px;">Import from JSON</button>
+          </div>
+        </details>
 
       </div>
 
       <div class="tab-footer">
-        <button class="btn-primary" id="btnImportVars" disabled onclick="importVariables()">Import Variables</button>
+        <button class="btn-primary" id="btnImportVars" disabled onclick="importVarsFromProject()">Import Variables</button>
       </div>
     </div>
 
@@ -628,6 +691,7 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        if (btn.dataset.tab === 'vars') loadProjects();
       });
     });
 
@@ -1084,9 +1148,100 @@
       reader.readAsText(file);
     });
 
+    // ── Vars tab: project browser ─────────────────────────────────────────────
+    const SCAN = 'https://scan.subsrf.dev';
+    let selectedProject = null;
+    const projectsMap = new Map();
+
+    async function loadProjects() {
+      if (!session) return;
+      const list = document.getElementById('projectsList');
+      list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">Loading…</div>';
+      try {
+        const res = await fetch(SCAN + '/api/figma/projects', {
+          headers: { 'Authorization': 'Bearer ' + session.accessToken },
+        });
+        const data = await res.json();
+        if (!data.projects || data.projects.length === 0) {
+          list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--t3);padding:16px 0;text-align:center;">No scanned projects yet.<br>Visit scan.subsrf.dev to scan a site.</div>';
+          return;
+        }
+        projectsMap.clear();
+        data.projects.forEach(p => projectsMap.set(p.slug, p));
+        list.innerHTML = data.projects.map(p => `
+          <div class="project-row" data-slug="${p.slug}" onclick="selectProject('${p.slug}')">
+            <div class="project-name">${escapeHtml(p.source_url)}</div>
+            <div class="project-meta">${timeAgo(p.updated_at)} · ${p.counts.colors} colors · ${p.counts.spacing} spacing</div>
+          </div>
+        `).join('');
+      } catch {
+        list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--err);padding:12px 0;text-align:center;">Failed to load projects</div>';
+      }
+    }
+
+    function selectProject(slug) {
+      const project = projectsMap.get(slug);
+      if (!project) return;
+      document.querySelectorAll('.project-row').forEach(r => r.classList.remove('selected'));
+      const row = document.querySelector(`.project-row[data-slug="${slug}"]`);
+      if (row) row.classList.add('selected');
+      selectedProject = project;
+      document.getElementById('countColors').textContent = project.counts.colors;
+      document.getElementById('countSpacing').textContent = project.counts.spacing;
+      document.getElementById('countRadius').textContent = project.counts.radius;
+      document.getElementById('countTypography').textContent = project.counts.typography;
+      document.getElementById('varsCategorySection').style.display = 'block';
+      document.getElementById('btnImportVars').disabled = false;
+    }
+
+    async function importVarsFromProject() {
+      if (!selectedProject || !session) return;
+      const cats = [];
+      if (document.getElementById('chkColors').checked) cats.push('colors');
+      if (document.getElementById('chkSpacing').checked) cats.push('spacing');
+      if (document.getElementById('chkRadius').checked) cats.push('radius');
+      if (document.getElementById('chkTypography').checked) cats.push('typography');
+      if (cats.length === 0) {
+        document.getElementById('importVarsStatus').textContent = 'Select at least one category';
+        return;
+      }
+      const btn = document.getElementById('btnImportVars');
+      const statusEl = document.getElementById('importVarsStatus');
+      btn.disabled = true;
+      statusEl.style.color = 'var(--t3)';
+      statusEl.textContent = 'Fetching variables…';
+      try {
+        const res = await fetch(`${SCAN}/api/figma/projects/${selectedProject.slug}/variables?categories=${cats.join(',')}`, {
+          headers: { 'Authorization': 'Bearer ' + session.accessToken },
+        });
+        const data = await res.json();
+        if (!data.variables) throw new Error(data.error || 'No variables returned');
+        statusEl.textContent = `Importing ${data.variables.length} variables…`;
+        parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data } }, '*');
+      } catch (e) {
+        statusEl.style.color = 'var(--err)';
+        statusEl.textContent = '✗ ' + e.message;
+        btn.disabled = false;
+      }
+    }
+
+    function timeAgo(iso) {
+      const diff = Date.now() - new Date(iso).getTime();
+      const m = Math.floor(diff / 60000);
+      if (m < 1) return 'just now';
+      if (m < 60) return m + 'm ago';
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + 'h ago';
+      return Math.floor(h / 24) + 'd ago';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     function checkImportBtn() {
       const val = document.getElementById('importVarsInput').value.trim();
-      document.getElementById('btnImportVars').disabled = !val;
+      document.getElementById('btnImportVarsManual').disabled = !val;
     }
 
     function importVariables() {
@@ -1107,7 +1262,7 @@
       }
       statusEl.style.color = 'var(--t3)';
       statusEl.textContent = 'Importing…';
-      document.getElementById('btnImportVars').disabled = true;
+      document.getElementById('btnImportVarsManual').disabled = true;
       parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data: parsed } }, '*');
     }
 
@@ -1161,7 +1316,8 @@
 
       if (msg.type === 'IMPORT_VARIABLES_RESULT') {
         const statusEl = document.getElementById('importVarsStatus');
-        document.getElementById('btnImportVars').disabled = false;
+        if (selectedProject) document.getElementById('btnImportVars').disabled = false;
+        checkImportBtn();
         if (msg.error) {
           statusEl.style.color = 'var(--err)';
           statusEl.textContent = '✗ ' + msg.error;
