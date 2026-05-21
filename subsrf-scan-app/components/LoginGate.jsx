@@ -57,13 +57,12 @@ export default function LoginGate({ children }) {
         display: 'none', position: 'relative', flexDirection: 'column', justifyContent: 'flex-end',
         width: '50%', padding: 48, borderRight: '1px solid rgba(242,242,244,0.12)', overflow: 'hidden',
       }} className="login-left">
-        <img
-          src="/scan-hero.jpg"
-          alt=""
+        <video
+          autoPlay muted loop playsInline
+          src="/Hero.mp4"
           style={{
             position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', opacity: 0.5, mixBlendMode: 'screen',
-            filter: 'saturate(0.5) contrast(1.25)',
+            objectFit: 'cover', opacity: 0.45, mixBlendMode: 'screen',
           }}
         />
         <div style={{
