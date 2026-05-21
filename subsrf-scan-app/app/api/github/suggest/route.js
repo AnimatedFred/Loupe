@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { verifyAuth, getServiceClient } from '../../../../lib/withAuth';
+import { verifyAuth, getServiceClient, deductCredit } from '../../../../lib/withAuth';
 import { getInstallationToken, getRepoTree, getFileContent } from '../../../../lib/github';
 
 const SYSTEM_INSTRUCTION = `You are a senior design systems engineer performing a design code review.
@@ -23,6 +23,12 @@ export async function POST(request) {
   const { owner, repo, installationId, branch = 'main' } = await request.json();
   if (!owner || !repo || !installationId) {
     return NextResponse.json({ error: 'owner, repo, and installationId are required' }, { status: 400 });
+  }
+
+  // Deduct credit before running expensive API calls
+  const { ok, credits: creditsRemaining } = await deductCredit(auth.user.id);
+  if (!ok) {
+    return NextResponse.json({ error: 'Insufficient credits for AI analysis' }, { status: 402 });
   }
 
   // Verify the installation belongs to this user
