@@ -91,7 +91,7 @@ export default function CodeSuggestDashboard() {
   }, {});
 
   return (
-    <div style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%' }}>
+    <div style={{ display: 'flex', flex: 1, overflow: 'hidden', height: '100%', position: 'relative', zIndex: 1 }}>
 
       {/* ── Left sidebar ─────────────────────────────────────────────── */}
       <div style={{
