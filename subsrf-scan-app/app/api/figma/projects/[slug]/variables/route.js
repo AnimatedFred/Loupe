@@ -127,11 +127,6 @@ export async function GET(request, { params }) {
   }
 
   if (categories.includes('typography')) {
-    for (const f of (primaryTokens.typography?.families ?? [])) {
-      const varName = f.name.startsWith('type/') ? f.name : `type/family/${f.name}`;
-      const values = Object.fromEntries(modes.map(m => [m, f.value]));
-      variables.push({ name: varName, type: 'STRING', values });
-    }
     for (const s of (primaryTokens.typography?.sizes ?? [])) {
       const varName = s.name.startsWith('type/') ? s.name : `type/size/${s.name}`;
       const val = parsePixelValue(s.value);
