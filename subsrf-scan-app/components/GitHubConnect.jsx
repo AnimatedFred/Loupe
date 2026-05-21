@@ -69,15 +69,26 @@ export default function GitHubConnect({ onReposLoaded }) {
 
   function handleConnect() {
     setWaitingForPopup(true);
+    // Store token so the callback popup can save the installation client-side
+    localStorage.setItem('gh_install_token', session.access_token);
+    localStorage.removeItem('gh_install_done');
+
     popupRef.current = window.open(
       `/api/github/install?userId=${session.user.id}`,
       'github_install',
       'width=800,height=700,left=200,top=100'
     );
-    // Fallback: poll for popup close in case postMessage is blocked
+
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(() => {
-      if (popupRef.current?.closed) {
+      const done = localStorage.getItem('gh_install_done');
+      if (done) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+        localStorage.removeItem('gh_install_done');
+        localStorage.removeItem('gh_install_token');
+        checkStatus();
+      } else if (popupRef.current?.closed) {
         clearInterval(pollRef.current);
         pollRef.current = null;
         checkStatus();

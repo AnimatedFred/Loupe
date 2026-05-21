@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
+import CodeSuggestDashboard from '../components/CodeSuggestDashboard';
 
 import { useUser } from '../context/UserContext';
 
 export default function Home() {
+  const [mode, setMode] = useState('scan'); // 'scan' | 'review'
   const [tokens, setTokens] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -123,48 +125,77 @@ export default function Home() {
             }}>BETA</span>
           </div>
 
-          {/* URL Scan Input */}
-          <div style={{ flex: 1, maxWidth: 640, margin: '0 48px', display: 'flex' }}>
+          {/* Center: mode toggle + input */}
+          <div style={{ flex: 1, maxWidth: 640, margin: '0 48px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Mode tabs */}
             <div style={{
-              display: 'flex', width: '100%',
-              background: '#111118', border: '1px solid rgba(242,242,244,0.12)',
-              borderRadius: 2, overflow: 'hidden',
-              transition: 'border-color 0.2s',
+              display: 'flex', gap: 2,
+              background: '#0C0C12', border: '1px solid rgba(242,242,244,0.1)',
+              borderRadius: 3, padding: 2, alignSelf: 'center',
             }}>
-              <div style={{
-                padding: '8px 16px', display: 'flex', alignItems: 'center',
-                color: 'rgba(242,242,244,0.28)',
-                fontFamily: "'Azeret Mono', monospace", fontSize: 13,
-                background: '#0C0C12', borderRight: '1px solid rgba(242,242,244,0.12)',
-              }}>https://</div>
-              <input
-                type="text"
-                value={urlInput}
-                onChange={e => setUrlInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleExtract()}
-                placeholder="Enter URL to scan..."
-                style={{
-                  flex: 1, background: 'transparent', border: 'none',
-                  color: '#F2F2F4', fontFamily: "'Azeret Mono', monospace", fontSize: 13,
-                  padding: '8px 16px', outline: 'none', lineHeight: 1.8,
-                }}
-              />
-              <button
-                onClick={() => handleExtract()}
-                disabled={loading || !urlInput.trim()}
-                style={{
-                  background: '#00FF87', color: '#050508',
-                  fontFamily: "'Azeret Mono', monospace", fontSize: 11,
-                  letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase',
-                  padding: '8px 16px', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  opacity: loading || !urlInput.trim() ? 0.5 : 1,
-                  transition: 'background 0.15s',
-                }}
-              >
-                {loading ? 'Scanning…' : 'Scan'} <span style={{ fontSize: 14 }}>→</span>
-              </button>
+              {[
+                { id: 'scan',   label: 'URL Scan' },
+                { id: 'review', label: 'Code Review' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setMode(tab.id)}
+                  style={{
+                    padding: '5px 16px', borderRadius: 2, border: 'none', cursor: 'pointer',
+                    fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+                    letterSpacing: 1, fontWeight: 600,
+                    background: mode === tab.id ? '#1C1C2A' : 'transparent',
+                    color: mode === tab.id ? '#F2F2F4' : 'rgba(242,242,244,0.35)',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
+
+            {/* URL input — only in scan mode */}
+            {mode === 'scan' && (
+              <div style={{
+                display: 'flex', width: '100%',
+                background: '#111118', border: '1px solid rgba(242,242,244,0.12)',
+                borderRadius: 2, overflow: 'hidden',
+              }}>
+                <div style={{
+                  padding: '8px 16px', display: 'flex', alignItems: 'center',
+                  color: 'rgba(242,242,244,0.28)',
+                  fontFamily: "'Azeret Mono', monospace", fontSize: 13,
+                  background: '#0C0C12', borderRight: '1px solid rgba(242,242,244,0.12)',
+                }}>https://</div>
+                <input
+                  type="text"
+                  value={urlInput}
+                  onChange={e => setUrlInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleExtract()}
+                  placeholder="Enter URL to scan..."
+                  style={{
+                    flex: 1, background: 'transparent', border: 'none',
+                    color: '#F2F2F4', fontFamily: "'Azeret Mono', monospace", fontSize: 13,
+                    padding: '8px 16px', outline: 'none', lineHeight: 1.8,
+                  }}
+                />
+                <button
+                  onClick={() => handleExtract()}
+                  disabled={loading || !urlInput.trim()}
+                  style={{
+                    background: '#00FF87', color: '#050508',
+                    fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+                    letterSpacing: 2, fontWeight: 700, textTransform: 'uppercase',
+                    padding: '8px 16px', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    opacity: loading || !urlInput.trim() ? 0.5 : 1,
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {loading ? 'Scanning…' : 'Scan'} <span style={{ fontSize: 14 }}>→</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right: credits + avatar */}
@@ -299,8 +330,13 @@ export default function Home() {
             </>
           )}
 
-          {!tokens ? (
-            /* ── Empty state ──────────────────────────────────────────────── */
+          {/* ── Code Review mode ──────────────────────────────────────────── */}
+          {mode === 'review' && (
+            <CodeSuggestDashboard />
+          )}
+
+          {mode === 'scan' && !tokens ? (
+            /* ── Scan: empty state ────────────────────────────────────────── */
             <div style={{
               flex: 1, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
@@ -426,8 +462,8 @@ export default function Home() {
                 )}
               </div>
             </div>
-          ) : (
-            /* ── Token dashboard (3-column layout) ────────────────────────── */
+          ) : mode === 'scan' && tokens ? (
+            /* ── Scan: token dashboard ────────────────────────────────────── */
             <TokenExplorer
               tokens={tokens}
               sourceUrl={sourceUrl}
@@ -441,7 +477,7 @@ export default function Home() {
                 }).catch(() => {});
               }}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </LoginGate>

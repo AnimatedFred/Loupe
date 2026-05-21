@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyAuth, getServiceClient } from '../../../../lib/withAuth';
+import { getServiceClient } from '../../../../lib/withAuth';
 
 // GET /api/github/callback — handles redirect after GitHub App install
 // GitHub sends: ?installation_id=123&setup_action=install
@@ -61,18 +61,41 @@ export async function GET(request) {
       );
     }
 
-    // Return an HTML page that closes the popup
+    // Return an HTML page that completes the install client-side and closes the popup.
+    // The client-side script saves via /api/github/save-installation using the token
+    // stored in localStorage by the parent window — this is the reliable save path
+    // since GitHub does not forward the state param on App installation redirects.
     return new NextResponse(`
       <html>
         <body style="background: #050508; color: #00FF87; font-family: monospace; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
           <div style="text-align: center;">
-            <h2>Connected Successfully!</h2>
-            <p style="color: #888;">You can close this window and return to the Scan app.</p>
+            <h2>Connecting…</h2>
+            <p id="msg" style="color: #888;">Saving connection…</p>
             <script>
-              if (window.opener) {
-                try { window.opener.postMessage({ type: 'github_connected' }, '*'); } catch(e) {}
-              }
-              setTimeout(() => window.close(), 1500);
+              (async function() {
+                try {
+                  const params = new URLSearchParams(window.location.search);
+                  const installationId = params.get('installation_id');
+                  const token = localStorage.getItem('gh_install_token');
+                  if (token && installationId) {
+                    await fetch('/api/github/save-installation', {
+                      method: 'POST',
+                      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ installationId: parseInt(installationId) }),
+                    });
+                  }
+                  document.getElementById('msg').textContent = 'Connected! Closing window…';
+                } catch(e) {
+                  document.getElementById('msg').textContent = 'Done. You can close this window.';
+                }
+                // Signal completion to the parent via localStorage (reliable, same-origin)
+                localStorage.setItem('gh_install_done', Date.now());
+                // Also try postMessage for immediate notification
+                if (window.opener) {
+                  try { window.opener.postMessage({ type: 'github_connected' }, '*'); } catch(e) {}
+                }
+                window.close();
+              })();
             </script>
           </div>
         </body>
