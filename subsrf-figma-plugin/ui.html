@@ -1,30 +1,43 @@
 <!DOCTYPE html>
+
 <head>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --void:      #050508;
-      --deep:      #0C0C12;
-      --layer:     #111118;
-      --surface:   #18181F;
-      --lift:      #202028;
-      --border:    rgba(242,242,244,0.08);
-      --border-md: rgba(242,242,244,0.12);
-      --neon:      #00FF87;
-      --neon-dim:  rgba(0,255,135,0.10);
-      --t1:        #F2F2F4;
-      --t2:        rgba(242,242,244,0.55);
-      --t3:        rgba(242,242,244,0.28);
-      --t4:        rgba(242,242,244,0.10);
-      --ok:        #39D98A;
-      --warn:      #FFAB00;
-      --err:       #FF4D4D;
+      --void: #050508;
+      --deep: #0C0C12;
+      --layer: #111118;
+      --surface: #18181F;
+      --lift: #202028;
+      --border: rgba(242, 242, 244, 0.08);
+      --border-md: rgba(242, 242, 244, 0.12);
+      --neon: #00FF87;
+      --neon-dim: rgba(0, 255, 135, 0.10);
+      --t1: #F2F2F4;
+      --t2: rgba(242, 242, 244, 0.55);
+      --t3: rgba(242, 242, 244, 0.28);
+      --t4: rgba(242, 242, 244, 0.10);
+      --ok: #39D98A;
+      --warn: #FFAB00;
+      --err: #FF4D4D;
     }
 
-    html, body { height: 100%; margin: 0; padding: 0; }
-    *, *::before, *::after { box-sizing: border-box; }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
 
     body {
       font-family: 'Manrope', sans-serif;
@@ -36,13 +49,25 @@
 
     body::before {
       content: "";
-      position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: 0.03;
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.03;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
 
     /* inline SVG icons */
-    .ico { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .ico svg { display: block; }
+    .ico {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .ico svg {
+      display: block;
+    }
 
     /* ── Button reset ── */
     button {
@@ -50,321 +75,859 @@
       box-sizing: border-box;
       cursor: pointer;
       font-family: 'Manrope', sans-serif;
-      display: inline-flex; align-items: center; justify-content: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: opacity 0.15s;
     }
-    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
 
     .btn-primary {
-      width: 100%; background: var(--neon); color: var(--void);
+      width: 100%;
+      background: var(--neon);
+      color: var(--void);
       padding: 12px;
-      font-family: 'Azeret Mono', monospace; font-weight: 400;
-      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      font-family: 'Azeret Mono', monospace;
+      font-weight: 400;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
       gap: 6px;
     }
-    .btn-primary:not(:disabled):hover { opacity: 0.9; }
-    .btn-primary.locked {
-      background: var(--surface); color: var(--t3);
-      border: 1px solid var(--border);
-      font-family: 'Manrope', sans-serif; font-size: 13px;
-      font-weight: 700; letter-spacing: 0; text-transform: none;
+
+    .btn-primary:not(:disabled):hover {
+      opacity: 0.9;
     }
-    .btn-primary.locked:hover { opacity: 1; border-color: var(--border-md); color: var(--t2); }
-    .btn-primary.loading { opacity: 0.6; cursor: wait; }
+
+    .btn-primary.locked {
+      background: var(--surface);
+      color: var(--t3);
+      border: 1px solid var(--border);
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .btn-primary.locked:hover {
+      opacity: 1;
+      border-color: var(--border-md);
+      color: var(--t2);
+    }
+
+    .btn-primary.loading {
+      opacity: 0.6;
+      cursor: wait;
+    }
 
     .btn-secondary {
-      width: 100%; background: rgba(255,255,255,0.05); color: var(--t2);
-      border: 1px solid var(--border-md); padding: 9px; font-weight: 600; font-size: 12px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--t2);
+      border: 1px solid var(--border-md);
+      padding: 9px;
+      font-weight: 600;
+      font-size: 12px;
     }
-    .btn-secondary:not(:disabled):hover { color: var(--t1); background: rgba(255,255,255,0.08); opacity: 1; }
+
+    .btn-secondary:not(:disabled):hover {
+      color: var(--t1);
+      background: rgba(255, 255, 255, 0.08);
+      opacity: 1;
+    }
 
     .btn-icon {
-      background: var(--surface); color: var(--t2); border: 1px solid var(--border);
-      padding: 5px 9px; font-size: 11px; font-weight: 600; gap: 4px;
+      background: var(--surface);
+      color: var(--t2);
+      border: 1px solid var(--border);
+      padding: 5px 9px;
+      font-size: 11px;
+      font-weight: 600;
+      gap: 4px;
     }
-    .btn-icon:not(:disabled):hover { border-color: var(--border-md); color: var(--t1); opacity: 1; }
+
+    .btn-icon:not(:disabled):hover {
+      border-color: var(--border-md);
+      color: var(--t1);
+      opacity: 1;
+    }
 
     .btn-minimize {
-      background: transparent; border: none; padding: 0;
-      color: var(--t3); font-family: 'Azeret Mono', monospace; font-size: 11px; line-height: 1;
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: var(--t3);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 11px;
+      line-height: 1;
     }
-    .btn-minimize:hover { color: var(--t2); opacity: 1; }
+
+    .btn-minimize:hover {
+      color: var(--t2);
+      opacity: 1;
+    }
 
     .toggle {
-      width: 32px; height: 18px; background: var(--lift); border-radius: 9px;
-      position: relative; flex-shrink: 0; border: 1px solid transparent;
+      width: 32px;
+      height: 18px;
+      background: var(--lift);
+      border-radius: 9px;
+      position: relative;
+      flex-shrink: 0;
+      border: 1px solid transparent;
     }
+
     .toggle::after {
-      content: ''; position: absolute; top: 2px; left: 2px;
-      width: 12px; height: 12px; border-radius: 50%;
-      background: var(--t3); transition: left 0.2s, background 0.2s;
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--t3);
+      transition: left 0.2s, background 0.2s;
     }
-    .toggle.on { background: rgba(0,255,135,0.12); border-color: rgba(0,255,135,0.25); }
-    .toggle.on::after { left: 16px; background: var(--neon); }
-    .toggle:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .toggle.on {
+      background: rgba(0, 255, 135, 0.12);
+      border-color: rgba(0, 255, 135, 0.25);
+    }
+
+    .toggle.on::after {
+      left: 16px;
+      background: var(--neon);
+    }
+
+    .toggle:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
 
     /* ── Sign-in ── */
     #view-signin {
-      height: 100%; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center; gap: 8px; padding: 24px;
-      position: relative; overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 8px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
     }
+
     #view-signin video {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; opacity: 0.3; z-index: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.5;
+      z-index: 0;
+      pointer-events: none;
     }
+
     #view-signin .signin-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(5,5,8,0.4), rgba(5,5,8,0.75));
-      z-index: 0; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(5, 5, 8, 0.4), rgba(5, 5, 8, 0.75));
+      z-index: 0;
+      pointer-events: none;
     }
+
     #view-signin .signin-content {
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
     }
-    #view-signin .logo { margin-bottom: 8px; }
-    #view-signin h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-    #view-signin p  { font-size: 12px; color: var(--t3); line-height: 1.6; font-weight: 300; }
-    #view-signin .btn-primary { margin-top: 16px; }
+
+    #view-signin .logo {
+      margin-bottom: 8px;
+    }
+
+    #view-signin h2 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    #view-signin p {
+      font-size: 12px;
+      color: var(--t3);
+      line-height: 1.6;
+      font-weight: 300;
+    }
+
+    #view-signin .btn-primary {
+      margin-top: 16px;
+    }
+
     #signin-status {
-      font-family: 'Azeret Mono', monospace; font-size: 10px;
-      color: var(--t3); margin-top: 8px; min-height: 16px; letter-spacing: 0.5px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+      margin-top: 8px;
+      min-height: 16px;
+      letter-spacing: 0.5px;
     }
 
     /* ── Loading ── */
     #view-loading {
-      height: 100%; display: flex; align-items: center; justify-content: center;
-      font-family: 'Azeret Mono', monospace; font-size: 10px; letter-spacing: 1px; color: var(--t3);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--t3);
     }
 
     /* ── Dots ── */
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lift); flex-shrink: 0; }
-    .dot.on   { background: var(--ok);   box-shadow: 0 0 6px var(--ok); }
-    .dot.warn { background: var(--warn); box-shadow: 0 0 5px rgba(255,171,0,0.5); }
-    .dot.err  { background: var(--err); }
-    .dot.pulse { background: var(--neon); animation: pulse 1.5s infinite; }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--lift);
+      flex-shrink: 0;
+    }
+
+    .dot.on {
+      background: var(--ok);
+      box-shadow: 0 0 6px var(--ok);
+    }
+
+    .dot.warn {
+      background: var(--warn);
+      box-shadow: 0 0 5px rgba(255, 171, 0, 0.5);
+    }
+
+    .dot.err {
+      background: var(--err);
+    }
+
+    .dot.pulse {
+      background: var(--neon);
+      animation: pulse 1.5s infinite;
+    }
+
     @keyframes pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(0,255,135,0.6); }
-      70%  { box-shadow: 0 0 0 8px rgba(0,255,135,0); }
-      100% { box-shadow: 0 0 0 0 rgba(0,255,135,0); }
+      0% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6);
+      }
+
+      70% {
+        box-shadow: 0 0 0 8px rgba(0, 255, 135, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0);
+      }
     }
 
     /* ── Compact status bar (collapsed state) ── */
     #toolbar {
-      display: none; height: 30px;
-      align-items: stretch; cursor: pointer;
+      display: none;
+      height: 30px;
+      align-items: stretch;
+      cursor: pointer;
       border-top: 1px solid var(--border);
     }
-    .toolbar-chips { display: flex; flex: 1; }
+
+    .toolbar-chips {
+      display: flex;
+      flex: 1;
+    }
+
     .toolbar-chip {
-      display: flex; align-items: center; gap: 7px;
-      flex: 1; padding: 0 12px;
-      background: var(--layer); border-right: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex: 1;
+      padding: 0 12px;
+      background: var(--layer);
+      border-right: 1px solid var(--border);
       transition: background 0.12s;
     }
-    .toolbar-chip:last-child { border-right: none; }
-    .toolbar-chip:hover { background: var(--surface); }
-    .chip-status {
-      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 0.3px;
-      color: var(--t3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+
+    .toolbar-chip:last-child {
+      border-right: none;
     }
-    .toolbar-chip.active .chip-status { color: var(--neon); }
-    .chip-status.warn { color: var(--warn); }
-    .chip-status.ok   { color: var(--ok); }
+
+    .toolbar-chip:hover {
+      background: var(--surface);
+    }
+
+    .chip-status {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3px;
+      color: var(--t3);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar-chip.active .chip-status {
+      color: var(--neon);
+    }
+
+    .chip-status.warn {
+      color: var(--warn);
+    }
+
+    .chip-status.ok {
+      color: var(--ok);
+    }
 
     /* ── Main view ── */
-    #view-main { height: 100%; display: flex; flex-direction: column; }
+    #view-main {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
 
     .header-bar {
       height: 38px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px; flex-shrink: 0; background: var(--void);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+      background: var(--void);
     }
+
     /* Left side is the full collapse click target */
     .header-left {
-      display: flex; align-items: center; gap: 8px;
-      height: 100%; cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 100%;
+      cursor: pointer;
       padding: 0 4px 0 0;
     }
-    .header-left:hover .btn-minimize { background: rgba(255,255,255,0.09); border-color: var(--border-md); color: var(--t2); }
+
+    .header-left:hover .btn-minimize {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: var(--border-md);
+      color: var(--t2);
+    }
+
     .btn-minimize {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 26px; height: 22px;
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 2px;
-      color: var(--t3); font-family: 'Azeret Mono', monospace; font-size: 13px; line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--t3);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 13px;
+      line-height: 1;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
       cursor: pointer;
     }
+
     .header-brand {
-      font-family: 'Azeret Mono', monospace; font-size: 11px;
-      color: var(--t3); text-transform: uppercase; letter-spacing: 2px; line-height: 1;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 11px;
+      color: var(--t3);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      line-height: 1;
       user-select: none;
     }
+
     .tier-badge {
-      font-family: 'Azeret Mono', monospace; font-size: 10px; letter-spacing: 0.5px;
-      padding: 2px 6px; border-radius: 2px;
-      background: rgba(255,255,255,0.05); color: var(--t3);
-      border: 1px solid var(--border); text-transform: uppercase;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--t3);
+      border: 1px solid var(--border);
+      text-transform: uppercase;
     }
 
     .tab-nav {
       height: 30px;
-      display: flex; align-items: center;
-      padding: 0 16px; gap: 16px; flex-shrink: 0;
-      border-bottom: 1px solid var(--border); background: var(--void);
-    }
-    .tab-btn {
-      font-family: 'Azeret Mono', monospace; font-size: 11px; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--t3); background: transparent;
-      padding: 9px 0; position: relative; line-height: 1;
-    }
-    .tab-btn:hover { color: var(--t2); opacity: 1; }
-    .tab-btn.active { color: var(--t1); padding: 8px 0; }
-    .tab-btn.active::after {
-      content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
-      height: 2px; background: var(--neon);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--void);
     }
 
-    .tab-panel { display: none; flex: 1; min-height: 0; flex-direction: column; }
-    .tab-panel.active { display: flex; }
+    .tab-btn {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--t3);
+      background: transparent;
+      padding: 9px 0;
+      position: relative;
+      line-height: 1;
+    }
+
+    .tab-btn:hover {
+      color: var(--t2);
+      opacity: 1;
+    }
+
+    .tab-btn.active {
+      color: var(--t1);
+      padding: 8px 0;
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--neon);
+    }
+
+    .tab-panel {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
 
     .scroll-area {
-      flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px;
-      display: flex; flex-direction: column; gap: 10px;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .scroll-area::-webkit-scrollbar { width: 3px; }
-    .scroll-area::-webkit-scrollbar-track { background: transparent; }
-    .scroll-area::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
 
-    #tab-sync .scroll-area { overflow: hidden; }
-    #tab-sync .feed { flex: 1; max-height: none; }
+    .scroll-area::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    .scroll-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .scroll-area::-webkit-scrollbar-thumb {
+      background: var(--border-md);
+      border-radius: 2px;
+    }
+
+    #tab-sync .scroll-area {
+      overflow: hidden;
+    }
+
+    #tab-sync .feed {
+      flex: 1;
+      max-height: none;
+    }
 
     .sec-label {
-      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
-      color: var(--t3); text-transform: uppercase; margin-bottom: 7px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-bottom: 7px;
     }
 
     /* ── Card ── */
     .card {
-      background: var(--layer); border: 1px solid var(--border);
-      padding: 12px 14px; display: flex; align-items: center; gap: 12px;
-      transition: border-color 0.15s; border-radius: 2px; flex-shrink: 0;
+      background: var(--layer);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.15s;
+      border-radius: 2px;
+      flex-shrink: 0;
     }
-    .card.active { border-color: rgba(0,255,135,0.25); background: rgba(0,255,135,0.04); }
+
+    .card.active {
+      border-color: rgba(0, 255, 135, 0.25);
+      background: rgba(0, 255, 135, 0.04);
+    }
+
     .card-icon {
-      width: 32px; height: 32px; background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border); border-radius: 2px;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
       color: var(--t3);
     }
-    .card-body { flex: 1; }
-    .card-title { font-size: 13px; font-weight: 600; color: var(--t1); line-height: 1.2; }
-    .card-status {
-      font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 300;
-      color: var(--t3); margin-top: 3px; transition: color 0.2s;
+
+    .card-body {
+      flex: 1;
     }
-    .card-status.ok   { color: var(--ok); }
-    .card-status.warn { color: var(--warn); }
-    .card-status.neon { color: var(--neon); }
-    .card-status.err  { color: var(--err); }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--t1);
+      line-height: 1.2;
+    }
+
+    .card-status {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--t3);
+      margin-top: 3px;
+      transition: color 0.2s;
+    }
+
+    .card-status.ok {
+      color: var(--ok);
+    }
+
+    .card-status.warn {
+      color: var(--warn);
+    }
+
+    .card-status.neon {
+      color: var(--neon);
+    }
+
+    .card-status.err {
+      color: var(--err);
+    }
 
     /* ── Activity feed ── */
     .feed {
-      background: var(--deep); border: 1px solid var(--border);
+      background: var(--deep);
+      border: 1px solid var(--border);
       min-height: 80px;
-      display: flex; flex-direction: column; padding: 10px 12px;
-      overflow: hidden; border-radius: 2px;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 12px;
+      overflow: hidden;
+      border-radius: 2px;
     }
+
     .feed-title {
-      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
-      color: var(--t3); text-transform: uppercase; margin-bottom: 8px; flex-shrink: 0;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      flex-shrink: 0;
     }
-    .feed-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; }
-    .feed-list::-webkit-scrollbar { width: 2px; }
-    .feed-list::-webkit-scrollbar-thumb { background: var(--border-md); }
+
+    .feed-list {
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feed-list::-webkit-scrollbar {
+      width: 2px;
+    }
+
+    .feed-list::-webkit-scrollbar-thumb {
+      background: var(--border-md);
+    }
+
     .feed-row {
-      display: flex; align-items: baseline; gap: 6px;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
       padding: 2px 0;
-      font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 300; line-height: 1.6;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      font-weight: 300;
+      line-height: 1.6;
     }
-    .feed-time { color: var(--t3); font-size: 10px; flex-shrink: 0; white-space: nowrap; }
-    .feed-msg { flex: 1; }
-    .feed-empty { color: var(--t3); font-family: 'Azeret Mono', monospace; font-size: 10px; }
+
+    .feed-time {
+      color: var(--t3);
+      font-size: 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .feed-msg {
+      flex: 1;
+    }
+
+    .feed-empty {
+      color: var(--t3);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+    }
 
     /* ── Sticky footer ── */
     .tab-footer {
-      padding: 10px 16px 12px; flex-shrink: 0;
-      border-top: 1px solid var(--border); background: var(--void);
+      padding: 10px 16px 12px;
+      flex-shrink: 0;
+      border-top: 1px solid var(--border);
+      background: var(--void);
     }
 
     /* ── Compose ── */
-    .sel-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-    .sel-chip {
-      font-size: 10px; font-weight: 500; color: var(--t2);
-      background: var(--surface); border: 1px solid var(--border); padding: 3px 8px;
+    .sel-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
     }
-    .sel-chip.empty { color: var(--t3); font-style: italic; border-style: dashed; }
 
-    #resultPanel { display: none; flex-direction: column; border: 1px solid var(--neon); background: var(--deep); }
-    #resultPanel.visible { display: flex; }
+    .sel-chip {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--t2);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 3px 8px;
+    }
+
+    .sel-chip.empty {
+      color: var(--t3);
+      font-style: italic;
+      border-style: dashed;
+    }
+
+    #resultPanel {
+      display: none;
+      flex-direction: column;
+      border: 1px solid var(--neon);
+      background: var(--deep);
+    }
+
+    #resultPanel.visible {
+      display: flex;
+    }
+
     .result-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 10px; border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
     }
+
     .result-target {
-      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1px;
-      text-transform: uppercase; color: var(--neon);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--neon);
     }
-    .result-actions { display: flex; gap: 5px; }
+
+    .result-actions {
+      display: flex;
+      gap: 5px;
+    }
+
     #resultText {
-      font-family: 'Azeret Mono', monospace; font-size: 10px; font-weight: 300;
-      color: var(--t2); line-height: 1.7; padding: 10px;
-      min-height: 220px; max-height: 360px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      font-weight: 300;
+      color: var(--t2);
+      line-height: 1.7;
+      padding: 10px;
+      min-height: 220px;
+      max-height: 360px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
-    #resultText::-webkit-scrollbar { width: 2px; }
-    #resultText::-webkit-scrollbar-thumb { background: var(--border-md); }
+
+    #resultText::-webkit-scrollbar {
+      width: 2px;
+    }
+
+    #resultText::-webkit-scrollbar-thumb {
+      background: var(--border-md);
+    }
+
     .credit-row {
-      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
-      padding: 8px 16px; border-top: 1px solid var(--border);
-      font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
       background: var(--void);
     }
-    .credit-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
+
+    .credit-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--neon);
+      flex-shrink: 0;
+    }
 
     /* ── Settings ── */
-    .settings-card { background: var(--layer); border: 1px solid var(--border); padding: 11px; }
+    .settings-card {
+      background: var(--layer);
+      border: 1px solid var(--border);
+      padding: 11px;
+    }
+
     .settings-title {
-      font-family: 'Azeret Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
-      color: var(--t3); text-transform: uppercase; margin-bottom: 10px;
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      color: var(--t3);
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
+
     .settings-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 5px 0; border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
     }
-    .settings-row:last-child { border-bottom: none; }
-    .settings-key { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3); }
-    .settings-val { font-size: 12px; font-weight: 600; color: var(--t1); }
-    .credits-bar { height: 3px; background: var(--border); margin-top: 8px; overflow: hidden; }
-    .credits-fill { height: 100%; background: var(--neon); transition: width 0.4s; }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-key {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+    }
+
+    .settings-val {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--t1);
+    }
+
+    .credits-bar {
+      height: 3px;
+      background: var(--border);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .credits-fill {
+      height: 100%;
+      background: var(--neon);
+      transition: width 0.4s;
+    }
 
     /* ── Vars tab: project browser ── */
     .project-row {
-      display: flex; flex-direction: column; gap: 3px;
-      padding: 8px 10px; cursor: pointer; margin-bottom: 4px;
-      background: var(--layer); border: 1px solid var(--border); border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 8px 10px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      background: var(--layer);
+      border: 1px solid var(--border);
+      border-radius: 4px;
       transition: border-color 0.15s, background 0.15s;
     }
-    .project-row:hover { border-color: var(--border-md); background: var(--surface); }
-    .project-row.selected { border-color: rgba(0,255,135,0.3); background: rgba(0,255,135,0.04); }
-    .project-name { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .project-meta { font-family: 'Azeret Mono', monospace; font-size: 9px; color: var(--t3); }
-    .cat-check { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 8px; border-radius: 3px; }
-    .cat-check:hover { background: rgba(255,255,255,0.03); }
-    .cat-check input[type="checkbox"] { width: 12px; height: 12px; cursor: pointer; accent-color: var(--neon); flex-shrink: 0; }
-    .cat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .cat-name { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t2); flex: 1; }
-    .cat-count { font-family: 'Azeret Mono', monospace; font-size: 10px; color: var(--t3); }
+
+    .project-row:hover {
+      border-color: var(--border-md);
+      background: var(--surface);
+    }
+
+    .project-row.selected {
+      border-color: rgba(0, 255, 135, 0.3);
+      background: rgba(0, 255, 135, 0.04);
+    }
+
+    .project-name {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-meta {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 9px;
+      color: var(--t3);
+    }
+
+    .cat-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 5px 8px;
+      border-radius: 3px;
+    }
+
+    .cat-check:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .cat-check input[type="checkbox"] {
+      width: 12px;
+      height: 12px;
+      cursor: pointer;
+      accent-color: var(--neon);
+      flex-shrink: 0;
+    }
+
+    .cat-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .cat-name {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t2);
+      flex: 1;
+    }
+
+    .cat-count {
+      font-family: 'Azeret Mono', monospace;
+      font-size: 10px;
+      color: var(--t3);
+    }
   </style>
 </head>
 
@@ -379,10 +942,11 @@
     <div class="signin-content">
       <div class="logo">
         <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
-          <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="1.5" fill="none"/>
-          <rect x="2" y="22" width="32" height="10" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none"/>
-          <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5"/>
-          <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="1.5" fill="none" />
+          <rect x="2" y="22" width="32" height="10" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none" />
+          <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5" />
+          <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" fill="none" />
         </svg>
       </div>
       <h2>subsrf</h2>
@@ -409,20 +973,23 @@
     <div id="toolbar" onclick="setMinimized(false)">
       <div class="toolbar-chips">
         <span class="toolbar-chip" id="tcExtChip">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z" />
           </svg>
           <span class="chip-status warn" id="tcExtLabel">Waiting for selection...</span>
           <span class="dot warn" id="tcExtDot"></span>
         </span>
         <span class="toolbar-chip" id="tcAiChip">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="7" width="16" height="13" rx="2"/>
-            <path d="M12 7V4M9 4h6"/>
-            <circle cx="9" cy="13" r="1.2" fill="currentColor"/>
-            <circle cx="15" cy="13" r="1.2" fill="currentColor"/>
-            <path d="M9 17h6"/>
-            <path d="M2 11h2M20 11h2"/>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="16" height="13" rx="2" />
+            <path d="M12 7V4M9 4h6" />
+            <circle cx="9" cy="13" r="1.2" fill="currentColor" />
+            <circle cx="15" cy="13" r="1.2" fill="currentColor" />
+            <path d="M9 17h6" />
+            <path d="M2 11h2M20 11h2" />
           </svg>
           <span class="chip-status" id="tcAiLabel">Idle</span>
           <span class="dot" id="tcAiDot"></span>
@@ -445,8 +1012,10 @@
         <div class="card" id="extCard">
           <div class="card-icon">
             <!-- puzzle piece (extension) -->
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z" />
             </svg>
           </div>
           <div class="card-body">
@@ -459,13 +1028,14 @@
         <div class="card" id="aiCard">
           <div class="card-icon">
             <!-- robot / smart_toy -->
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="4" y="7" width="16" height="13" rx="2"/>
-              <path d="M12 7V4M9 4h6"/>
-              <circle cx="9" cy="13" r="1.2" fill="currentColor"/>
-              <circle cx="15" cy="13" r="1.2" fill="currentColor"/>
-              <path d="M9 17h6"/>
-              <path d="M2 11h2M20 11h2"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="7" width="16" height="13" rx="2" />
+              <path d="M12 7V4M9 4h6" />
+              <circle cx="9" cy="13" r="1.2" fill="currentColor" />
+              <circle cx="15" cy="13" r="1.2" fill="currentColor" />
+              <path d="M9 17h6" />
+              <path d="M2 11h2M20 11h2" />
             </svg>
           </div>
           <div class="card-body">
@@ -479,7 +1049,8 @@
         <div style="margin-top:2px;">
           <div class="sec-label">Subsrf Scan</div>
           <div style="display:flex;gap:6px;align-items:center;">
-            <div style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
+            <div
+              style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
               <input id="scanUrlInput" type="text" placeholder="stripe.com" style="
                 flex:1;background:transparent;border:none;outline:none;
                 color:var(--t1);font-family:'Azeret Mono',monospace;
@@ -493,8 +1064,10 @@
               font-family:'Azeret Mono',monospace;font-size:9px;color:var(--neon);
               white-space:nowrap;letter-spacing:0.5px;
             ">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
               </svg>
               Scan →
             </button>
@@ -531,9 +1104,10 @@
             <span class="result-target">BRIEF</span>
             <div class="result-actions">
               <button class="btn-icon" id="btnCopyResult">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="9" y="9" width="13" height="13" rx="2"/>
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                 </svg>
                 Copy
               </button>
@@ -553,9 +1127,11 @@
 
       <div class="tab-footer">
         <button class="btn-primary locked" id="btnCompose">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z"/>
-            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z" />
+            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3" />
           </svg>
           <span id="btnComposeLabel">Select something in Figma</span>
         </button>
@@ -570,7 +1146,9 @@
         <div>
           <div class="sec-label">Scanned projects</div>
           <div id="projectsList">
-            <div style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">Loading…</div>
+            <div
+              style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">
+              Loading…</div>
           </div>
         </div>
 
@@ -599,10 +1177,13 @@
           </div>
         </div>
 
-        <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-top:10px;"></div>
+        <div id="importVarsStatus"
+          style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-top:10px;">
+        </div>
 
         <!-- Typography — imported as Figma text styles, not variables -->
-        <div id="varsTextStyles" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div id="varsTextStyles"
+          style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
           <div class="sec-label">Typography</div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;">
             <div style="display:flex;align-items:center;gap:8px;">
@@ -611,21 +1192,32 @@
             </div>
             <span class="cat-count" id="countTypography">–</span>
           </div>
-          <div style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);padding:0 8px 6px;line-height:1.6;">Font families &amp; sizes as Figma text styles</div>
-          <div id="textStylesStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-bottom:6px;"></div>
-          <button class="btn-secondary" id="btnImportTextStyles" disabled onclick="importTextStylesFromProject()" style="width:100%;">Import Text Styles</button>
+          <div
+            style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);padding:0 8px 6px;line-height:1.6;">
+            Font families &amp; sizes as Figma text styles</div>
+          <div id="textStylesStatus"
+            style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-bottom:6px;">
+          </div>
+          <button class="btn-secondary" id="btnImportTextStyles" disabled onclick="importTextStylesFromProject()"
+            style="width:100%;">Import Text Styles</button>
         </div>
 
         <!-- Manual JSON paste fallback -->
         <details style="margin-top:16px;">
-          <summary style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          <summary
+            style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
             Paste JSON manually
           </summary>
           <div style="margin-top:8px;">
             <button id="btnImportFile" class="btn-secondary" style="width:100%;gap:7px;margin-bottom:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
               Import JSON file
             </button>
@@ -636,14 +1228,16 @@
               line-height:1.6;padding:8px 10px;outline:none;
               transition:border-color 0.15s;
             " oninput="checkImportBtn()"></textarea>
-            <button class="btn-secondary" id="btnImportVarsManual" disabled onclick="importVariables()" style="width:100%;margin-top:6px;">Import from JSON</button>
+            <button class="btn-secondary" id="btnImportVarsManual" disabled onclick="importVariables()"
+              style="width:100%;margin-top:6px;">Import from JSON</button>
           </div>
         </details>
 
       </div>
 
       <div class="tab-footer">
-        <button class="btn-primary" id="btnImportVars" disabled onclick="importVarsFromProject()">Import Variables</button>
+        <button class="btn-primary" id="btnImportVars" disabled onclick="importVarsFromProject()">Import
+          Variables</button>
       </div>
     </div>
 
@@ -665,7 +1259,9 @@
             <span class="settings-key">Credits</span>
             <span class="settings-val" id="settingsCredits" style="color:var(--neon);">0</span>
           </div>
-          <div class="credits-bar"><div class="credits-fill" id="creditsFill" style="width:0%"></div></div>
+          <div class="credits-bar">
+            <div class="credits-fill" id="creditsFill" style="width:0%"></div>
+          </div>
         </div>
 
         <button class="btn-secondary" id="btnSignOut" style="width:100%;margin-top:4px;">Sign out</button>
@@ -707,12 +1303,12 @@
     function storageDel(key) { parent.postMessage({ pluginMessage: { type: 'DEL_STORAGE', key } }, '*'); }
 
     function showView(name) {
-      document.getElementById('view-loading').style.display  = name === 'loading'  ? 'flex'  : 'none';
-      document.getElementById('view-signin').style.display   = name === 'signin'   ? 'flex'  : 'none';
-      document.getElementById('view-main').style.display     = name === 'main'     ? 'flex'  : 'none';
+      document.getElementById('view-loading').style.display = name === 'loading' ? 'flex' : 'none';
+      document.getElementById('view-signin').style.display = name === 'signin' ? 'flex' : 'none';
+      document.getElementById('view-main').style.display = name === 'main' ? 'flex' : 'none';
       if (name === 'signin') {
         const v = document.querySelector('#view-signin video');
-        if (v) v.play().catch(() => {});
+        if (v) v.play().catch(() => { });
       }
     }
 
@@ -801,10 +1397,12 @@
         syncBtn.disabled = false;
         syncBtn.textContent = 'Sync to Figma (' + elements.length + ')';
         syncBtn.classList.remove('locked');
-        syncBtn.onclick = function() {
-          parent.postMessage({ pluginMessage: {
-            type: 'IMPORT_ELEMENTS', elements: elements, context: data.page || {}, tier: tier
-          } }, '*');
+        syncBtn.onclick = function () {
+          parent.postMessage({
+            pluginMessage: {
+              type: 'IMPORT_ELEMENTS', elements: elements, context: data.page || {}, tier: tier
+            }
+          }, '*');
           addLog('Synced ' + elements.length + ' elements', 'ok');
           syncBtn.disabled = true;
         };
@@ -823,7 +1421,7 @@
         syncBtn.disabled = false;
         syncBtn.textContent = '⚡ Upgrade to Sync';
         syncBtn.classList.add('locked');
-        syncBtn.onclick = function() { window.open(BRIDGE + '/#pricing', '_blank'); };
+        syncBtn.onclick = function () { window.open(BRIDGE + '/#pricing', '_blank'); };
       } else {
         document.getElementById('extDot').className = 'dot warn';
         document.getElementById('extStatus').className = 'card-status warn';
@@ -948,7 +1546,7 @@
         const orig = btn.innerHTML;
         btn.innerHTML = ICO.check + ' Copied!';
         setTimeout(() => { btn.innerHTML = orig; }, 2000);
-      } catch (_e) {}
+      } catch (_e) { }
     });
 
     async function checkState() {
@@ -1009,17 +1607,17 @@
       const elements = data?.elements || [];
       const hasEl = elements.length > 0;
       const extLabel = document.getElementById('tcExtLabel');
-      const extDot   = document.getElementById('tcExtDot');
+      const extDot = document.getElementById('tcExtDot');
       extDot.className = hasEl ? 'dot on' : 'dot warn';
       extLabel.className = 'chip-status' + (hasEl ? ' ok' : ' warn');
       extLabel.textContent = hasEl ? elements.length + ' elements' : document.getElementById('extStatus').textContent;
       document.getElementById('tcExtChip').classList.toggle('active', hasEl);
 
       const aiLabel = document.getElementById('tcAiLabel');
-      const aiDot   = document.getElementById('tcAiDot');
+      const aiDot = document.getElementById('tcAiDot');
       const srcLabel = document.getElementById('aiStatus');
-      const srcDot   = document.getElementById('aiDot');
-      aiDot.className   = srcDot.className;
+      const srcDot = document.getElementById('aiDot');
+      aiDot.className = srcDot.className;
       aiLabel.className = 'chip-status' + (srcLabel.className.includes('ok') ? ' ok' : srcLabel.className.includes('neon') ? ' ok' : '');
       aiLabel.textContent = isComposing ? 'Composing…' : srcLabel.textContent;
     }
@@ -1036,7 +1634,7 @@
           applyTier(d.tier || getTier());
           if (session) { session.credits = d.balance ?? 0; storageSet('subsrf_session', session); }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     function startPolling() {
@@ -1097,9 +1695,11 @@
           }
           const data = await res.json();
           clearInterval(oauthPollInterval);
-          session = { accessToken: data.accessToken, refreshToken: data.refreshToken || null,
+          session = {
+            accessToken: data.accessToken, refreshToken: data.refreshToken || null,
             expiresAt: data.expiresAt || (Date.now() + 3600000), tier: data.tier,
-            email: data.email, credits: data.credits || 0 };
+            email: data.email, credits: data.credits || 0
+          };
           storageSet('subsrf_session', session);
           document.getElementById('settingsEmail').textContent = session.email || '—';
           showView('main');
@@ -1107,7 +1707,7 @@
           updateCredits(session.credits || 0, session.tier || 'free');
           startPolling();
           addLog('Signed in as ' + session.email);
-        } catch (_) {}
+        } catch (_) { }
       }, 2000);
     }
 
@@ -1131,8 +1731,8 @@
     function setMinimized(min) {
       isMinimized = min;
       document.getElementById('minimizeIcon').textContent = min ? '+' : '—';
-      document.getElementById('toolbar').style.display    = min ? 'flex' : 'none';
-      document.querySelector('.tab-nav').style.display    = min ? 'none' : '';
+      document.getElementById('toolbar').style.display = min ? 'flex' : 'none';
+      document.querySelector('.tab-nav').style.display = min ? 'none' : '';
       document.querySelectorAll('.tab-panel').forEach(p => { p.style.display = min ? 'none' : ''; });
       document.body.classList.toggle('compact', min);
       parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 360, height: min ? MINI_H : FULL_H } }, '*');
@@ -1157,7 +1757,7 @@
       if (!raw) return;
       const clean = raw.replace(/^https?:\/\//, '');
       let target = 'https://scan.subsrf.dev/?url=' + encodeURIComponent(clean);
-      if (session?.accessToken)  target += '&token='   + encodeURIComponent(session.accessToken);
+      if (session?.accessToken) target += '&token=' + encodeURIComponent(session.accessToken);
       if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
       window.open(target, '_blank');
     }
@@ -1290,7 +1890,7 @@
     }
 
     function escapeHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function checkImportBtn() {
@@ -1364,7 +1964,7 @@
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ queryId: msg.queryId, result: msg.result, error: msg.error })
           });
-        } catch (_) {}
+        } catch (_) { }
         return;
       }
 
@@ -1403,9 +2003,10 @@
             method: 'POST', headers: h,
             body: JSON.stringify({ elements: msg.elements, context: { title: 'Figma Selection' } })
           });
-        } catch (_) {}
+        } catch (_) { }
       }
     };
   </script>
 </body>
+
 </html>
