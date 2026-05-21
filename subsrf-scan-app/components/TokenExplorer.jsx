@@ -21,7 +21,6 @@ const CATEGORIES = [
   { id: 'radius',     label: 'Radius',     dot: '#fb923c' },
   { id: 'shadows',    label: 'Shadows',    dot: '#e879f9' },
   { id: 'animations', label: 'Animations', dot: '#34d399' },
-  { id: 'curate',     label: 'Curate',     dot: '#00FF87' },
   { id: 'health',     label: 'Health',     dot: '#FFB020' },
   { id: 'component',  label: 'Components', dot: '#c084fc' },
   { id: 'ai',         label: 'AI Analysis', dot: '#00FF87' },
@@ -179,6 +178,43 @@ export default function TokenExplorer({ tokens, sourceUrl, projectSlug, onSaveCu
               </div>
             );
           })}
+        </div>
+
+        {/* Curate section */}
+        <div style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--border)', marginBottom: 8 }}>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9, letterSpacing: 2,
+            textTransform: 'uppercase', color: 'var(--t3)', padding: '8px 0', marginBottom: 8,
+          }}>Curation</div>
+          {(() => {
+            const active = activeCategory === 'curate';
+            const count = tokenCount(tokens, activeMode, 'curate', curatedTokens);
+            return (
+              <div onClick={() => handleCategorySelect('curate')} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '7px 10px', borderRadius: 6, cursor: 'pointer',
+                transition: 'background 0.12s',
+                background: active ? 'rgba(0,255,135,0.06)' : 'transparent',
+                border: active ? '1px solid rgba(0,255,135,0.2)' : '1px solid transparent',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--neon)' : '#00FF87', flexShrink: 0,
+                    boxShadow: active ? '0 0 8px rgba(0,255,135,0.6)' : 'none',
+                    transition: 'box-shadow 0.15s',
+                  }} />
+                  <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: active ? 'var(--neon)' : 'rgba(242,242,244,0.55)' }}>Curate</span>
+                </div>
+                <span style={{
+                  fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                  color: active ? 'var(--neon)' : 'var(--t3)',
+                  background: active ? 'rgba(0,255,135,0.1)' : 'var(--layer)',
+                  padding: '1px 6px', borderRadius: 3,
+                  border: active ? '1px solid rgba(0,255,135,0.1)' : '1px solid var(--border)',
+                }}>{count}</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* AI Intelligence section */}
