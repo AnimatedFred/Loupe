@@ -112,7 +112,7 @@
     }
     #view-signin video {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      object-fit: cover; opacity: 0.18; z-index: 0; pointer-events: none;
+      object-fit: cover; opacity: 0.3; z-index: 0; pointer-events: none;
     }
     #view-signin .signin-overlay {
       position: absolute; inset: 0;
@@ -710,6 +710,10 @@
       document.getElementById('view-loading').style.display  = name === 'loading'  ? 'flex'  : 'none';
       document.getElementById('view-signin').style.display   = name === 'signin'   ? 'flex'  : 'none';
       document.getElementById('view-main').style.display     = name === 'main'     ? 'flex'  : 'none';
+      if (name === 'signin') {
+        const v = document.querySelector('#view-signin video');
+        if (v) v.play().catch(() => {});
+      }
     }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
