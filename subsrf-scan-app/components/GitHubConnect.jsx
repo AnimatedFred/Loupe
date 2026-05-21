@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '../context/UserContext';
 
 export default function GitHubConnect({ onReposLoaded }) {
@@ -8,6 +8,8 @@ export default function GitHubConnect({ onReposLoaded }) {
   const [status, setStatus] = useState(null); // { connected, installations }
   const [loading, setLoading] = useState(true);
   const [waitingForPopup, setWaitingForPopup] = useState(false);
+  const popupRef = useRef(null);
+  const pollRef = useRef(null);
 
   const checkStatus = () => {
     if (!session?.access_token) return;
@@ -19,6 +21,7 @@ export default function GitHubConnect({ onReposLoaded }) {
         setStatus(data);
         if (data.connected) {
           setWaitingForPopup(false);
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
           loadRepos();
         }
       })
@@ -30,6 +33,16 @@ export default function GitHubConnect({ onReposLoaded }) {
     checkStatus();
   }, [session?.access_token]);
 
+  // Primary signal: postMessage from the popup callback page
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.data?.type === 'github_connected') checkStatus();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [session?.access_token]);
+
+  // Fallback: focus event (unreliable but harmless)
   useEffect(() => {
     const onFocus = () => {
       if (waitingForPopup) checkStatus();
@@ -37,6 +50,11 @@ export default function GitHubConnect({ onReposLoaded }) {
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [waitingForPopup, session?.access_token]);
+
+  // Cleanup poll interval on unmount
+  useEffect(() => {
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
 
   async function loadRepos() {
     if (!session?.access_token) return;
@@ -51,7 +69,20 @@ export default function GitHubConnect({ onReposLoaded }) {
 
   function handleConnect() {
     setWaitingForPopup(true);
-    window.open(`/api/github/install?userId=${session.user.id}`, 'github_install', 'width=800,height=700,left=200,top=100');
+    popupRef.current = window.open(
+      `/api/github/install?userId=${session.user.id}`,
+      'github_install',
+      'width=800,height=700,left=200,top=100'
+    );
+    // Fallback: poll for popup close in case postMessage is blocked
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => {
+      if (popupRef.current?.closed) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+        checkStatus();
+      }
+    }, 500);
   }
 
   if (loading) {

@@ -69,6 +69,9 @@ export async function GET(request) {
             <h2>Connected Successfully!</h2>
             <p style="color: #888;">You can close this window and return to the Scan app.</p>
             <script>
+              if (window.opener) {
+                try { window.opener.postMessage({ type: 'github_connected' }, '*'); } catch(e) {}
+              }
               setTimeout(() => window.close(), 1500);
             </script>
           </div>
