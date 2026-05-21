@@ -31,7 +31,7 @@ const ANALYZING_STEPS = [
 ];
 
 export default function CodeSuggestDashboard() {
-  const { session } = useUser() || {};
+  const { session, refreshProfile } = useUser() || {};
   const [repos, setRepos]           = useState([]);
   const [selectedRepo, setSelectedRepo] = useState(null);
   const [result, setResult]         = useState(null);
@@ -72,6 +72,7 @@ export default function CodeSuggestDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Analysis failed');
       setResult(data);
+      refreshProfile?.(); // Refresh credits instantly on success
     } catch (err) {
       setError(err.message);
     } finally {
@@ -193,7 +194,15 @@ export default function CodeSuggestDashboard() {
                     <Spinner />
                     Analyzing…
                   </>
-                ) : 'Analyze Codebase →'}
+                ) : (
+                  <>
+                    Analyze Codebase
+                    <span style={{
+                      background: 'rgba(5,5,8,0.15)', padding: '2px 6px',
+                      borderRadius: 3, fontSize: 8, letterSpacing: 1,
+                    }}>1 CR</span>
+                  </>
+                )}
               </button>
             )}
           </div>
