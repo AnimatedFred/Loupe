@@ -1174,8 +1174,8 @@
             <div class="project-meta">${timeAgo(p.updated_at)} · ${p.counts.colors} colors · ${p.counts.spacing} spacing</div>
           </div>
         `).join('');
-      } catch {
-        list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--err);padding:12px 0;text-align:center;">Failed to load projects</div>';
+      } catch (e) {
+        list.innerHTML = `<div style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--err);padding:12px 0;text-align:center;">Failed to load projects<br><span style="color:var(--t3);font-size:9px;">${escapeHtml(e?.message || String(e))}</span></div>`;
       }
     }
 
