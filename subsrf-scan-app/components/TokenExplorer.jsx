@@ -58,6 +58,14 @@ export default function TokenExplorer({ tokens, sourceUrl, projectSlug, onSaveCu
   const primaryMode = tokens?.hasDark ? 'dark' : 'light';
   const activeMode = hasBothModes ? mode : primaryMode;
 
+  // Detect if dark/light token sets are identical (site ignores prefers-color-scheme)
+  const modesAreSame = hasBothModes && (() => {
+    const d = tokens?.dark?.colors;
+    const l = tokens?.light?.colors;
+    if (!d || !l || d.length !== l.length) return false;
+    return d.slice(0, 3).every((t, i) => t.value === l[i]?.value);
+  })();
+
   const tokenData = tokens?.[activeMode];
   const hostname = (() => {
     try { return new URL(sourceUrl.startsWith('http') ? sourceUrl : 'https://' + sourceUrl).hostname; }
@@ -267,6 +275,15 @@ export default function TokenExplorer({ tokens, sourceUrl, projectSlug, onSaveCu
                 }}>{m}</button>
               ))}
             </div>
+            {modesAreSame && (
+              <div style={{
+                marginTop: 8,
+                fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                color: 'rgba(242,242,244,0.3)', lineHeight: 1.6, letterSpacing: 0.3,
+              }}>
+                Site doesn't implement <code style={{ color: 'rgba(242,242,244,0.45)' }}>prefers-color-scheme</code> — both modes are identical.
+              </div>
+            )}
           </div>
         )}
         {hasBothModes && activeCategory === 'curate' && curatedTokens !== null && (
