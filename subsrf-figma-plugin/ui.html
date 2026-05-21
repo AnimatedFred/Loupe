@@ -578,16 +578,25 @@
               <span class="cat-name">Radius</span>
               <span class="cat-count" id="countRadius">–</span>
             </label>
-            <label class="cat-check">
-              <input type="checkbox" id="chkTypography" checked>
-              <span class="cat-dot" style="background:#06D6A0;"></span>
-              <span class="cat-name">Font sizes</span>
-              <span class="cat-count" id="countTypography">–</span>
-            </label>
           </div>
         </div>
 
         <div id="importVarsStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-top:10px;"></div>
+
+        <!-- Typography — imported as Figma text styles, not variables -->
+        <div id="varsTextStyles" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <div class="sec-label">Typography</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="cat-dot" style="background:#AA87FF;"></span>
+              <span class="cat-name">Text styles</span>
+            </div>
+            <span class="cat-count" id="countTypography">–</span>
+          </div>
+          <div style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);padding:0 8px 6px;line-height:1.6;">Font families &amp; sizes as Figma text styles</div>
+          <div id="textStylesStatus" style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-bottom:6px;"></div>
+          <button class="btn-secondary" id="btnImportTextStyles" disabled onclick="importTextStylesFromProject()" style="width:100%;">Import Text Styles</button>
+        </div>
 
         <!-- Manual JSON paste fallback -->
         <details style="margin-top:16px;">
@@ -1191,7 +1200,9 @@
       document.getElementById('countRadius').textContent = project.counts.radius;
       document.getElementById('countTypography').textContent = project.counts.typography;
       document.getElementById('varsCategorySection').style.display = 'block';
+      document.getElementById('varsTextStyles').style.display = 'block';
       document.getElementById('btnImportVars').disabled = false;
+      document.getElementById('btnImportTextStyles').disabled = false;
     }
 
     async function importVarsFromProject() {
@@ -1200,7 +1211,6 @@
       if (document.getElementById('chkColors').checked) cats.push('colors');
       if (document.getElementById('chkSpacing').checked) cats.push('spacing');
       if (document.getElementById('chkRadius').checked) cats.push('radius');
-      if (document.getElementById('chkTypography').checked) cats.push('typography');
       if (cats.length === 0) {
         document.getElementById('importVarsStatus').textContent = 'Select at least one category';
         return;
@@ -1218,6 +1228,28 @@
         if (!data.variables) throw new Error(data.error || 'No variables returned');
         statusEl.textContent = `Importing ${data.variables.length} variables…`;
         parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data } }, '*');
+      } catch (e) {
+        statusEl.style.color = 'var(--err)';
+        statusEl.textContent = '✗ ' + e.message;
+        btn.disabled = false;
+      }
+    }
+
+    async function importTextStylesFromProject() {
+      if (!selectedProject || !session) return;
+      const btn = document.getElementById('btnImportTextStyles');
+      const statusEl = document.getElementById('textStylesStatus');
+      btn.disabled = true;
+      statusEl.style.color = 'var(--t3)';
+      statusEl.textContent = 'Fetching typography…';
+      try {
+        const res = await fetch(`${SCAN}/api/figma/projects/${selectedProject.slug}/typography`, {
+          headers: { 'Authorization': 'Bearer ' + session.accessToken },
+        });
+        const data = await res.json();
+        if (!data.styles) throw new Error(data.error || 'No styles returned');
+        statusEl.textContent = `Importing ${data.styles.length} text styles…`;
+        parent.postMessage({ pluginMessage: { type: 'IMPORT_TEXT_STYLES', styles: data.styles } }, '*');
       } catch (e) {
         statusEl.style.color = 'var(--err)';
         statusEl.textContent = '✗ ' + e.message;
@@ -1318,6 +1350,19 @@
         const statusEl = document.getElementById('importVarsStatus');
         if (selectedProject) document.getElementById('btnImportVars').disabled = false;
         checkImportBtn();
+        if (msg.error) {
+          statusEl.style.color = 'var(--err)';
+          statusEl.textContent = '✗ ' + msg.error;
+        } else {
+          statusEl.style.color = 'var(--ok)';
+          statusEl.textContent = `✓ ${msg.created} created, ${msg.skipped} skipped`;
+        }
+        return;
+      }
+
+      if (msg.type === 'IMPORT_TEXT_STYLES_RESULT') {
+        const statusEl = document.getElementById('textStylesStatus');
+        document.getElementById('btnImportTextStyles').disabled = false;
         if (msg.error) {
           statusEl.style.color = 'var(--err)';
           statusEl.textContent = '✗ ' + msg.error;

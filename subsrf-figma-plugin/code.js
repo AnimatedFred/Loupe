@@ -603,6 +603,42 @@ figma.ui.onmessage = async (msg) => {
     }
     return;
   }
+
+  // ── Import Text Styles from Subsrf Scan typography ─────────────────────────
+  if (msg.type === 'IMPORT_TEXT_STYLES') {
+    (async function() {
+      try {
+        var styles = msg.styles;
+        var created = 0;
+        var skipped = 0;
+        var loadedFonts = {};
+
+        for (var i = 0; i < styles.length; i++) {
+          var s = styles[i];
+          var fontKey = s.fontFamily + '::' + s.fontStyle;
+          try {
+            if (!loadedFonts[fontKey]) {
+              await figma.loadFontAsync({ family: s.fontFamily, style: s.fontStyle });
+              loadedFonts[fontKey] = true;
+            }
+            var existing = figma.getLocalTextStyles()
+              .find(function(ts) { return ts.name === s.name; });
+            var textStyle = existing || figma.createTextStyle();
+            textStyle.name = s.name;
+            textStyle.fontName = { family: s.fontFamily, style: s.fontStyle };
+            textStyle.fontSize = s.fontSize;
+            created++;
+          } catch (_e) { skipped++; }
+        }
+
+        figma.ui.postMessage({ type: 'IMPORT_TEXT_STYLES_RESULT', created: created, skipped: skipped });
+        figma.notify('Text styles: ' + created + ' created' + (skipped ? ', ' + skipped + ' skipped' : ''));
+      } catch (err) {
+        figma.ui.postMessage({ type: 'IMPORT_TEXT_STYLES_RESULT', error: err.message });
+      }
+    })();
+    return;
+  }
 };
 
 function parseAllShadows(cssShadow) {

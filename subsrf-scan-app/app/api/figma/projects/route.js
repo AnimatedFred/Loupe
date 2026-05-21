@@ -37,7 +37,7 @@ export async function GET(request) {
         colors: t?.colors?.length ?? 0,
         spacing: t?.spacing?.length ?? 0,
         radius: t?.radius?.length ?? 0,
-        typography: t?.typography?.sizes?.length ?? 0,
+        typography: (t?.typography?.sizes?.length ?? 0) + (t?.typography?.families?.length ?? 0),
       },
     };
   });
