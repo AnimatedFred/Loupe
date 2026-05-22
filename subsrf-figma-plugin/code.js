@@ -611,21 +611,35 @@ figma.ui.onmessage = async (msg) => {
         var styles = msg.styles;
         var created = 0;
         var skipped = 0;
-        var loadedFonts = {};
+        var resolvedFonts = {}; // originalKey → { family, style } (after fallback)
 
         for (var i = 0; i < styles.length; i++) {
           var s = styles[i];
-          var fontKey = s.fontFamily + '::' + s.fontStyle;
+          var fontFamily = s.fontFamily;
+          var fontStyle = s.fontStyle || 'Regular';
+          var fontKey = fontFamily + '::' + fontStyle;
+
           try {
-            if (!loadedFonts[fontKey]) {
-              await figma.loadFontAsync({ family: s.fontFamily, style: s.fontStyle });
-              loadedFonts[fontKey] = true;
+            var resolved;
+            if (resolvedFonts[fontKey]) {
+              resolved = resolvedFonts[fontKey];
+            } else {
+              try {
+                await figma.loadFontAsync({ family: fontFamily, style: fontStyle });
+                resolved = { family: fontFamily, style: fontStyle };
+              } catch (_fontErr) {
+                // Font not in Figma's library — fall back to Inter so the style still gets created
+                await figma.loadFontAsync({ family: 'Inter', style: 'Regular' });
+                resolved = { family: 'Inter', style: 'Regular' };
+              }
+              resolvedFonts[fontKey] = resolved;
             }
+
             var existing = figma.getLocalTextStyles()
               .find(function(ts) { return ts.name === s.name; });
             var textStyle = existing || figma.createTextStyle();
             textStyle.name = s.name;
-            textStyle.fontName = { family: s.fontFamily, style: s.fontStyle };
+            textStyle.fontName = resolved;
             textStyle.fontSize = s.fontSize;
             created++;
           } catch (_e) { skipped++; }
