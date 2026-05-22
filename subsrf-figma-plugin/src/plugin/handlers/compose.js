@@ -13,7 +13,10 @@ export async function handleCompose(_msg) {
     rootNodes = sel[0].children;
   }
 
-  const depth = rootNodes.length > 4 ? 4 : 6;
+  // Deeper traversal for single complex selections; shallower when many nodes chosen
+  const count = rootNodes.length;
+  const depth = count === 1 ? 10 : count <= 3 ? 7 : count <= 6 ? 5 : 4;
+
   const nodes = Array.from(rootNodes).slice(0, 20).map(n => extractNodeFull(n, 0, depth));
   figma.ui.postMessage({ type: 'SELECTION_DATA', nodes });
 }

@@ -7,6 +7,14 @@ export function resolveVarName(id) {
   } catch (_) { return null; }
 }
 
+function resolveStyleName(id) {
+  if (!id) return null;
+  try {
+    const s = figma.getStyleById(id);
+    return s ? s.name : null;
+  } catch (_) { return null; }
+}
+
 function gradientCss(f) {
   const stops = (f.gradientStops || []).map(s =>
     rgbToHex(s.color.r, s.color.g, s.color.b) + ' ' + Math.round(s.position * 100) + '%'
@@ -16,6 +24,8 @@ function gradientCss(f) {
   return f.type.replace('GRADIENT_', '').toLowerCase() + `-gradient(${stops})`;
 }
 
+const MAX_CHILDREN = 40;
+
 export function extractNodeFull(node, depth, maxDepth) {
   if (!node) return null;
   const info = { id: node.id, name: node.name, type: node.type };
@@ -24,6 +34,25 @@ export function extractNodeFull(node, depth, maxDepth) {
   if ('height' in node) info.height = Math.round(node.height);
   if ('x' in node) info.x = Math.round(node.x);
   if ('y' in node) info.y = Math.round(node.y);
+
+  // How this node sizes itself inside an auto-layout parent
+  if (node.layoutSizingHorizontal && node.layoutSizingHorizontal !== 'FIXED') {
+    info.sizingH = node.layoutSizingHorizontal; // FILL | HUG
+  }
+  if (node.layoutSizingVertical && node.layoutSizingVertical !== 'FIXED') {
+    info.sizingV = node.layoutSizingVertical; // FILL | HUG
+  }
+  // Auto-layout child alignment and grow within parent
+  if (node.layoutAlign && node.layoutAlign !== 'MIN' && node.layoutAlign !== 'INHERIT') {
+    info.layoutAlign = node.layoutAlign; // CENTER | MAX | STRETCH
+  }
+  if (node.layoutGrow && node.layoutGrow !== 0) {
+    info.layoutGrow = node.layoutGrow;
+  }
+  // Absolute-positioned child inside an auto-layout parent
+  if (node.layoutPositioning === 'ABSOLUTE') {
+    info.layoutPositioning = 'ABSOLUTE';
+  }
 
   if ('blendMode' in node && node.blendMode !== 'NORMAL' && node.blendMode !== 'PASS_THROUGH') {
     info.blendMode = node.blendMode;
@@ -39,6 +68,8 @@ export function extractNodeFull(node, depth, maxDepth) {
   if ('fills' in node && Array.isArray(node.fills)) {
     const visible = node.fills.filter(f => f.visible !== false);
     if (visible.length > 0) {
+      const styleName = resolveStyleName(node.fillStyleId);
+      if (styleName) info.fillStyle = styleName;
       info.fills = visible.map((f, i) => {
         if (f.type === 'SOLID') {
           const hex = rgbToHex(f.color.r, f.color.g, f.color.b);
@@ -78,12 +109,15 @@ export function extractNodeFull(node, depth, maxDepth) {
   if ('effects' in node && Array.isArray(node.effects)) {
     const visible = node.effects.filter(e => e.visible !== false);
     if (visible.length > 0) {
+      const styleName = resolveStyleName(node.effectStyleId);
+      if (styleName) info.effectStyle = styleName;
       info.effects = visible.map(e => {
         const out = { type: e.type };
         if ('radius' in e) out.radius = e.radius;
         if ('spread' in e) out.spread = e.spread;
         if (e.offset) out.offset = { x: e.offset.x, y: e.offset.y };
-        if (e.color) out.color = rgbToHex(e.color.r, e.color.g, e.color.b);
+        if (e.color) out.color = rgbToHex(e.color.r, e.color.g, e.color.b) +
+          (e.color.a < 1 ? ` (${Math.round(e.color.a * 100)}% opacity)` : '');
         return out;
       });
     }
@@ -92,19 +126,25 @@ export function extractNodeFull(node, depth, maxDepth) {
   if ('opacity' in node && node.opacity !== 1) info.opacity = node.opacity;
 
   if ('layoutMode' in node && node.layoutMode !== 'NONE') {
-    info.layout = {
+    const layout = {
       mode: node.layoutMode,
       gap: node.itemSpacing || 0,
       padding: { top: node.paddingTop || 0, right: node.paddingRight || 0, bottom: node.paddingBottom || 0, left: node.paddingLeft || 0 },
       primaryAxis: node.primaryAxisAlignItems,
       counterAxis: node.counterAxisAlignItems,
-      wrap: node.layoutWrap === 'WRAP',
+      primaryAxisSizing: node.primaryAxisSizingMode,
+      counterAxisSizing: node.counterAxisSizingMode,
     };
+    if (node.layoutWrap === 'WRAP') layout.wrap = true;
+    if (node.counterAxisSpacing) layout.counterAxisGap = node.counterAxisSpacing;
+    info.layout = layout;
   }
 
   if (node.type === 'TEXT') {
     try {
       info.text = node.characters;
+      const styleName = resolveStyleName(node.textStyleId);
+      if (styleName) info.textStyle = styleName;
       if (typeof node.fontSize === 'number') {
         const fsTok = bv.fontSize ? resolveVarName(bv.fontSize.id) : null;
         info.fontSize = fsTok ? `${node.fontSize} (${fsTok})` : node.fontSize;
@@ -113,13 +153,19 @@ export function extractNodeFull(node, depth, maxDepth) {
         info.fontFamily = node.fontName.family;
         info.fontStyle  = node.fontName.style;
       }
+      if (typeof node.fontWeight === 'number') info.fontWeight = node.fontWeight;
       if (node.textAlignHorizontal) info.textAlign = node.textAlignHorizontal;
+      if (node.textAlignVertical && node.textAlignVertical !== 'TOP') info.textAlignV = node.textAlignVertical;
       if (node.textCase && node.textCase !== 'ORIGINAL') info.textCase = node.textCase;
+      if (node.textDecoration && node.textDecoration !== 'NONE') info.textDecoration = node.textDecoration;
       if (typeof node.lineHeight === 'object' && node.lineHeight.unit !== 'AUTO') {
         info.lineHeight = node.lineHeight.value + (node.lineHeight.unit === 'PERCENT' ? '%' : 'px');
       }
       if (typeof node.letterSpacing === 'object') {
         info.letterSpacing = node.letterSpacing.value + (node.letterSpacing.unit === 'PERCENT' ? '%' : 'px');
+      }
+      if (typeof node.paragraphSpacing === 'number' && node.paragraphSpacing > 0) {
+        info.paragraphSpacing = node.paragraphSpacing;
       }
     } catch (_) {}
   }
@@ -132,17 +178,35 @@ export function extractNodeFull(node, depth, maxDepth) {
       if (node.parent && node.parent.type === 'COMPONENT_SET') {
         info.variants = node.parent.children.map(s => ({ name: s.name, variantProperties: s.variantProperties }));
       }
+      if (node.description) info.description = node.description;
     } catch (_) {}
   }
   if (node.type === 'INSTANCE') {
-    try { info.mainComponentName = node.mainComponent ? node.mainComponent.name : null; } catch (_) {}
     try {
+      info.mainComponentName = node.mainComponent ? node.mainComponent.name : null;
+      if (node.mainComponent?.description) info.componentDescription = node.mainComponent.description;
       if (node.variantProperties && Object.keys(node.variantProperties).length > 0) info.variantProperties = node.variantProperties;
+      // Exposed component properties (text, boolean, instance-swap)
+      if (node.componentProperties && Object.keys(node.componentProperties).length > 0) {
+        info.componentProperties = Object.fromEntries(
+          Object.entries(node.componentProperties).map(([k, v]) => [k, { type: v.type, value: v.value }])
+        );
+      }
     } catch (_) {}
   }
 
+  // Interactions (simplified — just record what triggers exist)
+  try {
+    if ('reactions' in node && Array.isArray(node.reactions) && node.reactions.length > 0) {
+      info.interactions = node.reactions.map(r => r.trigger?.type).filter(Boolean);
+    }
+  } catch (_) {}
+
   if (depth < maxDepth && 'children' in node && Array.isArray(node.children) && node.children.length > 0) {
-    info.children = node.children.slice(0, 30).map(c => extractNodeFull(c, depth + 1, maxDepth));
+    const total = node.children.length;
+    const slice = node.children.slice(0, MAX_CHILDREN);
+    info.children = slice.map(c => extractNodeFull(c, depth + 1, maxDepth));
+    if (total > MAX_CHILDREN) info.childrenTruncated = `${total - MAX_CHILDREN} more children not shown`;
   }
 
   return info;
