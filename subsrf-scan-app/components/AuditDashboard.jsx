@@ -147,7 +147,7 @@ export default function AuditDashboard({ tokens }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      {/* ── Connect + Repo picker ── */}
+      {/* ── GitHub connection + repo picker (shared) ── */}
       <div style={{
         background: 'var(--layer)', border: '1px solid var(--border)',
         borderRadius: 6, padding: 16,
@@ -161,7 +161,6 @@ export default function AuditDashboard({ tokens }) {
               letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
               marginBottom: 8,
             }}>Repository</div>
-
             <select
               value={selectedRepo?.fullName || ''}
               onChange={e => {
@@ -173,8 +172,7 @@ export default function AuditDashboard({ tokens }) {
                 width: '100%', padding: '8px 12px', borderRadius: 4,
                 background: 'var(--surface)', border: '1px solid var(--border)',
                 color: 'var(--t1)', fontFamily: "'Azeret Mono', monospace", fontSize: 12,
-                cursor: 'pointer', outline: 'none',
-                appearance: 'none',
+                cursor: 'pointer', outline: 'none', appearance: 'none',
               }}
             >
               <option value="">Select a repository…</option>
@@ -184,77 +182,144 @@ export default function AuditDashboard({ tokens }) {
                 </option>
               ))}
             </select>
-
-            {selectedRepo && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{
-                  fontFamily: "'Azeret Mono', monospace", fontSize: 9,
-                  letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
-                  marginBottom: 6,
-                }}>
-                  Subsrf project
-                  {linkedSlug && (
-                    <span style={{ color: '#00FF87', marginLeft: 8 }}>● linked</span>
-                  )}
-                </div>
-                <select
-                  value={linkedSlug || ''}
-                  disabled={linkSaving}
-                  onChange={e => saveLink(e.target.value || null)}
-                  style={{
-                    width: '100%', padding: '8px 12px', borderRadius: 4,
-                    background: 'var(--surface)',
-                    border: `1px solid ${linkedSlug ? 'rgba(0,255,135,0.25)' : 'var(--border)'}`,
-                    color: linkedSlug ? 'var(--t1)' : 'var(--t3)',
-                    fontFamily: "'Azeret Mono', monospace", fontSize: 11,
-                    cursor: 'pointer', outline: 'none', appearance: 'none',
-                    opacity: linkSaving ? 0.5 : 1,
-                  }}
-                >
-                  <option value="">No project linked — webhook won't fire</option>
-                  {projects.map(p => (
-                    <option key={p.slug} value={p.slug}>
-                      {p.source_url} ({p.counts.colors} colors, {p.counts.spacing} spacing)
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {selectedRepo && (
-              <button
-                onClick={handleRunAudit}
-                disabled={auditing}
-                style={{
-                  marginTop: 12, width: '100%', padding: '10px 16px',
-                  borderRadius: 4, border: 'none', cursor: 'pointer',
-                  background: auditing ? 'var(--lift)' : '#00FF87',
-                  color: auditing ? 'var(--t2)' : '#050508',
-                  fontFamily: "'Azeret Mono', monospace", fontSize: 11,
-                  fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  opacity: auditing ? 0.6 : 1,
-                  transition: 'background 0.15s',
-                }}
-              >
-                {auditing ? (
-                  <>
-                    <span style={{
-                      display: 'inline-block', width: 12, height: 12,
-                      border: '2px solid var(--t3)', borderTopColor: 'var(--neon)',
-                      borderRadius: '50%',
-                      animation: 'spin 0.8s linear infinite',
-                    }} />
-                    Auditing…
-                  </>
-                ) : (
-                  <>Run Audit →</>
-                )}
-              </button>
-            )}
           </div>
         )}
       </div>
+
+      {/* ── Section 1: PR Integration / Webhook ── */}
+      {selectedRepo && (
+        <div style={{
+          background: 'var(--layer)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+            letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
+          }}>PR Integration</div>
+
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+            color: 'var(--t3)', lineHeight: 1.7,
+          }}>
+            Link a Subsrf project to this repo. When a PR is opened, Subsrf will
+            automatically audit and fix hardcoded design tokens in the diff.
+          </div>
+
+          <div>
+            <div style={{
+              fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+              letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
+              marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              Subsrf project
+              {linkedSlug && (
+                <span style={{ color: '#00FF87' }}>● linked</span>
+              )}
+            </div>
+            <select
+              value={linkedSlug || ''}
+              disabled={linkSaving}
+              onChange={e => saveLink(e.target.value || null)}
+              style={{
+                width: '100%', padding: '8px 12px', borderRadius: 4,
+                background: 'var(--surface)',
+                border: `1px solid ${linkedSlug ? 'rgba(0,255,135,0.25)' : 'var(--border)'}`,
+                color: linkedSlug ? 'var(--t1)' : 'var(--t3)',
+                fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+                cursor: 'pointer', outline: 'none', appearance: 'none',
+                opacity: linkSaving ? 0.5 : 1,
+              }}
+            >
+              <option value="">No project linked</option>
+              {projects.map(p => (
+                <option key={p.slug} value={p.slug}>
+                  {p.source_url} ({p.counts.colors} colors, {p.counts.spacing} spacing)
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {linkedSlug && (
+            <a
+              href={`https://github.com/${selectedRepo.fullName}/compare`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '9px 16px', borderRadius: 4,
+                background: 'transparent',
+                border: '1px solid rgba(0,255,135,0.3)',
+                color: '#00FF87',
+                fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+                fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+                textDecoration: 'none',
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(0,255,135,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(0,255,135,0.5)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'rgba(0,255,135,0.3)';
+              }}
+            >
+              Open PR on GitHub ↗
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* ── Section 2: Manual Audit ── */}
+      {selectedRepo && (
+        <div style={{
+          background: 'var(--layer)', border: '1px solid var(--border)',
+          borderRadius: 6, padding: 16, display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+            letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
+          }}>Manual Audit</div>
+
+          <div style={{
+            fontFamily: "'Azeret Mono', monospace", fontSize: 10,
+            color: 'var(--t3)', lineHeight: 1.7,
+          }}>
+            Scan the entire default branch for hardcoded design values and see
+            which files don't use tokens.
+          </div>
+
+          <button
+            onClick={handleRunAudit}
+            disabled={auditing}
+            style={{
+              width: '100%', padding: '10px 16px',
+              borderRadius: 4, border: 'none', cursor: 'pointer',
+              background: auditing ? 'var(--lift)' : '#00FF87',
+              color: auditing ? 'var(--t2)' : '#050508',
+              fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+              fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              opacity: auditing ? 0.6 : 1,
+              transition: 'background 0.15s',
+            }}
+          >
+            {auditing ? (
+              <>
+                <span style={{
+                  display: 'inline-block', width: 12, height: 12,
+                  border: '2px solid var(--t3)', borderTopColor: 'var(--neon)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }} />
+                Auditing…
+              </>
+            ) : (
+              <>Run Audit →</>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ── Error ── */}
       {error && (

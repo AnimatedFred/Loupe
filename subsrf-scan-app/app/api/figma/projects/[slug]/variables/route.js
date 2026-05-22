@@ -73,8 +73,8 @@ export async function GET(request, { params }) {
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404, headers: CORS });
 
   const tokens = data.tokens;
-  const hasDark = !!tokens?.hasDark;
-  const hasLight = !!tokens?.hasLight;
+  const hasDark = !!(tokens?.hasDark || tokens?.dark);
+  const hasLight = !!(tokens?.hasLight || tokens?.light);
   const modes = hasDark && hasLight ? ['Dark', 'Light'] : hasDark ? ['Dark'] : hasLight ? ['Light'] : ['Default'];
   const primaryMode = modes[0];
 

@@ -38,7 +38,12 @@ export async function GET(request, { params }) {
   if (error || !data) return NextResponse.json({ error: 'Not found' }, { status: 404, headers: CORS });
 
   const tokens = data.tokens;
-  const t = tokens?.[tokens?.hasDark ? 'dark' : tokens?.hasLight ? 'light' : null];
+  const mode = tokens?.hasDark ? 'dark'
+    : tokens?.hasLight ? 'light'
+    : tokens?.dark ? 'dark'
+    : tokens?.light ? 'light'
+    : null;
+  const t = tokens?.[mode];
   if (!t) return NextResponse.json({ styles: [] }, { headers: CORS });
 
   const families = [...(t.typography?.families ?? [])].sort((a, b) => (b.frequency || 0) - (a.frequency || 0));
