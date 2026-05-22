@@ -1339,6 +1339,22 @@ app.post('/api/auth/refresh', async (req, res) => {
 
 // Brain header prepended to all Subsrf AI outputs so the receiving AI knows exactly
 // how to implement the UI — stack, fidelity, motion, and accessibility requirements.
+function countNodesInPayload(nodes) {
+  function walk(n) {
+    let c = 1;
+    if (n && Array.isArray(n.children)) for (const ch of n.children) c += walk(ch);
+    return c;
+  }
+  return (nodes || []).reduce((sum, n) => sum + walk(n), 0);
+}
+
+function calculateComposeCost(nodeCount) {
+  if (nodeCount <= 50)  return 1;
+  if (nodeCount <= 150) return 2;
+  if (nodeCount <= 400) return 3;
+  return 4;
+}
+
 const IMPLEMENTATION_BRAIN = `\
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🧠  Subsrf — Frontend Implementation Brief
@@ -1383,17 +1399,22 @@ app.post('/api/ai/compose', async (req, res) => {
 
   const isPaid = auth.tier === 'starter' || auth.tier === 'pro';
   if (!isPaid) return res.status(403).json({ error: 'Compose requires a paid plan' });
-  if (auth.credits < 1) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'AI not configured on server' });
 
   const { nodes = [] } = req.body;
 
+  // Calculate cost from actual node count in payload (client hint is for display only)
+  const totalNodes = countNodesInPayload(nodes);
+  const cost = calculateComposeCost(totalNodes);
+
+  if (auth.credits < cost) return res.status(402).json({ error: 'insufficient_credits', balance: auth.credits, cost });
+
   let newBalance;
   try {
     if (supabase) {
-      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: 1 });
+      const { data, error } = await supabase.rpc('deduct_credits', { user_id: auth.user.id, amount: cost });
       if (error) throw new Error(error.message);
       newBalance = data;
     } else {
@@ -1402,13 +1423,13 @@ app.post('/api/ai/compose', async (req, res) => {
       const r = await fetch(`${supabaseUrl}/rest/v1/rpc/deduct_credits`, {
         method: 'POST',
         headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: auth.user.id, amount: 1 })
+        body: JSON.stringify({ user_id: auth.user.id, amount: cost })
       });
       if (!r.ok) throw new Error(`Deduct RPC failed: ${r.status}`);
       newBalance = await r.json();
     }
   } catch (e) {
-    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0 });
+    if (e.message === 'insufficient_credits') return res.status(402).json({ error: 'insufficient_credits', balance: 0, cost });
     return res.status(500).json({ error: e.message });
   }
 
@@ -1522,22 +1543,22 @@ ${JSON.stringify(nodes, null, 1)}`;
 
     const finalPrompt = IMPLEMENTATION_BRAIN + rawText;
 
-    console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${finalPrompt.length} chars`);
-    res.json({ ok: true, prompt: finalPrompt, balance: newBalance });
+    console.error(`[Subsrf Compose] brief for ${auth.user.email} — ${nodes.length} nodes, ${totalNodes} total, cost ${cost} — ${finalPrompt.length} chars`);
+    res.json({ ok: true, prompt: finalPrompt, balance: newBalance, cost });
 
   } catch (e) {
     console.error('[Subsrf Compose] Error:', e.message);
-    // Refund the credit
+    // Refund the actual amount deducted
     try {
       if (supabase) {
-        await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: 1 });
+        await supabase.rpc('refund_credits', { user_id: auth.user.id, amount: cost });
       } else {
         const supabaseUrl = process.env.SUPABASE_URL || 'https://yzrtbovsxnlaivkofvul.supabase.co';
         const token = req.headers.authorization?.slice(7);
         await fetch(`${supabaseUrl}/rest/v1/rpc/refund_credits`, {
           method: 'POST',
           headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: auth.user.id, amount: 1 })
+          body: JSON.stringify({ user_id: auth.user.id, amount: cost })
         });
       }
     } catch (_) {}

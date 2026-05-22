@@ -17,11 +17,21 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'READ_SELECTION')  return handleCompose(msg);
 };
 
+function countNodes(node) {
+  let n = 1;
+  if ('children' in node && Array.isArray(node.children)) {
+    for (const c of node.children) n += countNodes(c);
+  }
+  return n;
+}
+
 figma.on('selectionchange', () => {
   const sel = figma.currentPage.selection;
+  const nodeCount = sel.reduce((sum, n) => sum + countNodes(n), 0);
   figma.ui.postMessage({
     type: 'SELECTION_CHANGED',
     count: sel.length,
+    nodeCount,
     nodes: sel.slice(0, 20).map(n => ({
       id: n.id, name: n.name, type: n.type,
       width:  'width'  in n ? Math.round(n.width)  : null,

@@ -8,7 +8,15 @@ let pollInterval = null;
 let oauthPollInterval = null;
 
 let currentSelNodes = [];
+let currentNodeCount = 0;
 let isComposing = false;
+
+function calculateCost(nodeCount) {
+  if (nodeCount <= 50)  return 1;
+  if (nodeCount <= 150) return 2;
+  if (nodeCount <= 400) return 3;
+  return 4;
+}
 
 const ICO = {
   copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
@@ -184,6 +192,7 @@ function updateComposeBtn() {
   const isPaid = tier === 'starter' || tier === 'pro';
   const credits = getCredits();
   const hasSel = currentSelNodes.length > 0;
+  const cost = calculateCost(currentNodeCount);
 
   btn.classList.remove('locked', 'loading');
 
@@ -191,9 +200,6 @@ function updateComposeBtn() {
     btn.disabled = false;
     btn.classList.add('locked');
     label.textContent = '⚡ Upgrade to Compose';
-  } else if (credits < 1) {
-    btn.disabled = true;
-    label.textContent = 'No credits remaining';
   } else if (!hasSel) {
     btn.disabled = true;
     label.textContent = 'Select something in Figma';
@@ -201,14 +207,18 @@ function updateComposeBtn() {
     btn.disabled = true;
     btn.classList.add('loading');
     label.textContent = 'Composing…';
+  } else if (credits < cost) {
+    btn.disabled = true;
+    label.textContent = `Not enough credits (need ${cost})`;
   } else {
     btn.disabled = false;
-    label.textContent = 'Generate Brief';
+    label.textContent = `Generate Brief · ${cost} credit${cost !== 1 ? 's' : ''}`;
   }
 }
 
-function updateSelChips(nodes) {
+function updateSelChips(nodes, nodeCount) {
   currentSelNodes = nodes || [];
+  currentNodeCount = nodeCount || 0;
   const el = document.getElementById('selChips');
   if (!nodes || nodes.length === 0) {
     el.innerHTML = '<span class="sel-chip empty">Nothing selected in Figma</span>';
@@ -243,7 +253,7 @@ async function runCompose(nodes) {
     if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
     const res = await fetch(BRIDGE + '/api/ai/compose', {
       method: 'POST', headers,
-      body: JSON.stringify({ nodes })
+      body: JSON.stringify({ nodes, nodeCount: currentNodeCount })
     });
     if (res.status === 402) { updateCredits(0, getTier()); throw new Error('No credits remaining'); }
     if (res.status === 403) { throw new Error('Upgrade required'); }
@@ -251,7 +261,8 @@ async function runCompose(nodes) {
     const data = await res.json();
     if (typeof data.balance === 'number') { updateCredits(data.balance, getTier()); if (session) { session.credits = data.balance; storageSet('subsrf_session', session); } }
     showResult(data.prompt || '');
-    addLog('Brief generated', 'ai');
+    const spent = data.cost || 1;
+    addLog(`Brief generated — ${spent} credit${spent !== 1 ? 's' : ''} used`, 'ai');
   } catch (e) {
     const row = document.getElementById('creditRow');
     const orig = row.innerHTML;
@@ -520,7 +531,7 @@ window.onmessage = async (event) => {
   }
 
   if (msg.type === 'SELECTION_CHANGED') {
-    updateSelChips(msg.nodes || []);
+    updateSelChips(msg.nodes || [], msg.nodeCount || 0);
     return;
   }
 
