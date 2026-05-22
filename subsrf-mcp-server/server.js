@@ -1428,7 +1428,7 @@ From the node data, extract and name:
 - Visual treatments: shadows (exact box-shadow values), gradients (exact stops), blur effects, borders.
 
 STEP 3 — MAP COMPONENT ARCHITECTURE
-Break the UI into named semantic sections. For each:
+Break the UI into named semantic sections. Cover EVERY section visible in the node tree — do not stop early or summarise multiple sections as one. For each:
 - Name it by purpose (Hero Section, Navbar, Stats Bar, Feature Cards Grid, Pricing Tiers, CTA Banner, Footer)
 - Describe its layout strategy: flex (direction, gap, alignment), CSS grid (columns, gap), or absolute
 - Note key dimensions, padding, and child components
@@ -1483,6 +1483,7 @@ STRICT RULES:
 - Never say "some padding" or "moderate spacing" — always derive px values from the node data or mark as "~approx"
 - Name every color with a semantic token (bg-void, text-primary, accent-neon) — never use hex as the name
 - The brief must work verbatim when pasted into any AI coding tool
+- Every section in the node tree must appear in the Component Architecture — never truncate or omit sections
 - Output ONLY the markdown brief. No preamble. No JSON wrappers. No code fences. No "Here is your brief:".`;
 
   const userContent = `Figma selection (${nodes.length} node${nodes.length !== 1 ? 's' : ''}):
@@ -1490,7 +1491,7 @@ ${JSON.stringify(nodes, null, 1)}`;
 
   try {
     const abortCtrl = new AbortController();
-    const abortTimer = setTimeout(() => abortCtrl.abort(), 40000);
+    const abortTimer = setTimeout(() => abortCtrl.abort(), 90000);
     let aiRes;
     try {
       aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -1500,7 +1501,7 @@ ${JSON.stringify(nodes, null, 1)}`;
         body: JSON.stringify({
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: userContent }] }],
-          generationConfig: { maxOutputTokens: 4000 }
+          generationConfig: { maxOutputTokens: 16000, thinkingConfig: { thinkingBudget: 0 } }
         })
       });
     } finally {
