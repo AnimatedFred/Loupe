@@ -849,85 +849,7 @@
       transition: width 0.4s;
     }
 
-    /* ── Vars tab: project browser ── */
-    .project-row {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      padding: 8px 10px;
-      cursor: pointer;
-      margin-bottom: 4px;
-      background: var(--layer);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      transition: border-color 0.15s, background 0.15s;
-    }
 
-    .project-row:hover {
-      border-color: var(--border-md);
-      background: var(--surface);
-    }
-
-    .project-row.selected {
-      border-color: rgba(0, 255, 135, 0.3);
-      background: rgba(0, 255, 135, 0.04);
-    }
-
-    .project-name {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t1);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .project-meta {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      color: var(--t3);
-    }
-
-    .cat-check {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      padding: 5px 8px;
-      border-radius: 3px;
-    }
-
-    .cat-check:hover {
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .cat-check input[type="checkbox"] {
-      width: 12px;
-      height: 12px;
-      cursor: pointer;
-      accent-color: var(--neon);
-      flex-shrink: 0;
-    }
-
-    .cat-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .cat-name {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t2);
-      flex: 1;
-    }
-
-    .cat-count {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
-    }
   </style>
 </head>
 
@@ -1001,7 +923,6 @@
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="sync">SYNC</button>
       <button class="tab-btn" data-tab="compose">COMPOSE</button>
-      <button class="tab-btn" data-tab="vars">VARS</button>
       <button class="tab-btn" data-tab="settings">SETTINGS</button>
     </div>
 
@@ -1138,109 +1059,6 @@
       </div>
     </div>
 
-    <!-- ═══════════ TAB: VARS ═══════════ -->
-    <div class="tab-panel" id="tab-vars">
-      <div class="scroll-area">
-
-        <!-- Project browser -->
-        <div>
-          <div class="sec-label">Scanned projects</div>
-          <div id="projectsList">
-            <div
-              style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">
-              Loading…</div>
-          </div>
-        </div>
-
-        <!-- Category selector — shown after a project is selected -->
-        <div id="varsCategorySection" style="display:none;margin-top:12px;">
-          <div class="sec-label">Categories to import</div>
-          <div style="margin-top:4px;">
-            <label class="cat-check">
-              <input type="checkbox" id="chkColors" checked>
-              <span class="cat-dot" style="background:#FF6B9D;"></span>
-              <span class="cat-name">Colors</span>
-              <span class="cat-count" id="countColors">–</span>
-            </label>
-            <label class="cat-check">
-              <input type="checkbox" id="chkSpacing" checked>
-              <span class="cat-dot" style="background:#7B9FF5;"></span>
-              <span class="cat-name">Spacing</span>
-              <span class="cat-count" id="countSpacing">–</span>
-            </label>
-            <label class="cat-check">
-              <input type="checkbox" id="chkRadius" checked>
-              <span class="cat-dot" style="background:#FFD166;"></span>
-              <span class="cat-name">Radius</span>
-              <span class="cat-count" id="countRadius">–</span>
-            </label>
-          </div>
-        </div>
-
-        <div id="importVarsStatus"
-          style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-top:10px;">
-        </div>
-
-        <!-- Typography — imported as Figma text styles, not variables -->
-        <div id="varsTextStyles"
-          style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-          <div class="sec-label">Typography</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="cat-dot" style="background:#AA87FF;"></span>
-              <span class="cat-name">Text styles</span>
-            </div>
-            <span class="cat-count" id="countTypography">–</span>
-          </div>
-          <div
-            style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);padding:0 8px 6px;line-height:1.6;">
-            Font families &amp; sizes as Figma text styles</div>
-          <div id="textStylesStatus"
-            style="font-size:11px;color:var(--t3);font-family:'Azeret Mono',monospace;min-height:16px;text-align:center;margin-bottom:6px;">
-          </div>
-          <button class="btn-secondary" id="btnImportTextStyles" disabled onclick="importTextStylesFromProject()"
-            style="width:100%;">Import Text Styles</button>
-        </div>
-
-        <!-- Manual JSON paste fallback -->
-        <details style="margin-top:16px;">
-          <summary
-            style="font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-            Paste JSON manually
-          </summary>
-          <div style="margin-top:8px;">
-            <button id="btnImportFile" class="btn-secondary" style="width:100%;gap:7px;margin-bottom:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Import JSON file
-            </button>
-            <textarea id="importVarsInput" placeholder='{"name":"…","modes":[…],"variables":[…]}' style="
-              width:100%;height:180px;resize:none;box-sizing:border-box;
-              background:var(--void);border:1px solid var(--border);border-radius:4px;
-              color:var(--t2);font-family:'Azeret Mono',monospace;font-size:10px;
-              line-height:1.6;padding:8px 10px;outline:none;
-              transition:border-color 0.15s;
-            " oninput="checkImportBtn()"></textarea>
-            <button class="btn-secondary" id="btnImportVarsManual" disabled onclick="importVariables()"
-              style="width:100%;margin-top:6px;">Import from JSON</button>
-          </div>
-        </details>
-
-      </div>
-
-      <div class="tab-footer">
-        <button class="btn-primary" id="btnImportVars" disabled onclick="importVarsFromProject()">Import
-          Variables</button>
-      </div>
-    </div>
-
     <!-- ═══════════ TAB: SETTINGS ═══════════ -->
     <div class="tab-panel" id="tab-settings">
       <div class="scroll-area">
@@ -1318,7 +1136,6 @@
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-        if (btn.dataset.tab === 'vars') loadProjects();
       });
     });
 
@@ -1762,164 +1579,6 @@
       window.open(target, '_blank');
     }
 
-    document.getElementById('btnImportFile').addEventListener('click', () => {
-      document.getElementById('filePickerInput').click();
-    });
-
-    document.getElementById('filePickerInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      e.target.value = '';
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        document.getElementById('importVarsInput').value = ev.target.result;
-        checkImportBtn();
-        importVariables();
-      };
-      reader.readAsText(file);
-    });
-
-    // ── Vars tab: project browser ─────────────────────────────────────────────
-    const SCAN = 'https://scan.subsrf.dev';
-    let selectedProject = null;
-    const projectsMap = new Map();
-
-    async function loadProjects() {
-      if (!session) return;
-      const list = document.getElementById('projectsList');
-      list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--t3);padding:12px 0;text-align:center;">Loading…</div>';
-      try {
-        const res = await fetch(SCAN + '/api/figma/projects', {
-          headers: { 'Authorization': 'Bearer ' + session.accessToken },
-        });
-        const data = await res.json();
-        if (!data.projects || data.projects.length === 0) {
-          list.innerHTML = '<div style="font-family:\'Azeret Mono\',monospace;font-size:10px;color:var(--t3);padding:16px 0;text-align:center;">No scanned projects yet.<br>Visit scan.subsrf.dev to scan a site.</div>';
-          return;
-        }
-        projectsMap.clear();
-        data.projects.forEach(p => projectsMap.set(p.slug, p));
-        list.innerHTML = data.projects.map(p => `
-          <div class="project-row" data-slug="${p.slug}" onclick="selectProject('${p.slug}')">
-            <div class="project-name">${escapeHtml(p.source_url)}</div>
-            <div class="project-meta">${timeAgo(p.updated_at)} · ${p.counts.colors} colors · ${p.counts.spacing} spacing</div>
-          </div>
-        `).join('');
-      } catch (e) {
-        list.innerHTML = `<div style="font-family:'Azeret Mono',monospace;font-size:10px;color:var(--err);padding:12px 0;text-align:center;">Failed to load projects<br><span style="color:var(--t3);font-size:9px;">${escapeHtml(e?.message || String(e))}</span></div>`;
-      }
-    }
-
-    function selectProject(slug) {
-      const project = projectsMap.get(slug);
-      if (!project) return;
-      document.querySelectorAll('.project-row').forEach(r => r.classList.remove('selected'));
-      const row = document.querySelector(`.project-row[data-slug="${slug}"]`);
-      if (row) row.classList.add('selected');
-      selectedProject = project;
-      document.getElementById('countColors').textContent = project.counts.colors;
-      document.getElementById('countSpacing').textContent = project.counts.spacing;
-      document.getElementById('countRadius').textContent = project.counts.radius;
-      document.getElementById('countTypography').textContent = project.counts.typography;
-      document.getElementById('varsCategorySection').style.display = 'block';
-      document.getElementById('varsTextStyles').style.display = 'block';
-      document.getElementById('btnImportVars').disabled = false;
-      document.getElementById('btnImportTextStyles').disabled = false;
-    }
-
-    async function importVarsFromProject() {
-      if (!selectedProject || !session) return;
-      const cats = [];
-      if (document.getElementById('chkColors').checked) cats.push('colors');
-      if (document.getElementById('chkSpacing').checked) cats.push('spacing');
-      if (document.getElementById('chkRadius').checked) cats.push('radius');
-      if (cats.length === 0) {
-        document.getElementById('importVarsStatus').textContent = 'Select at least one category';
-        return;
-      }
-      const btn = document.getElementById('btnImportVars');
-      const statusEl = document.getElementById('importVarsStatus');
-      btn.disabled = true;
-      statusEl.style.color = 'var(--t3)';
-      statusEl.textContent = 'Fetching variables…';
-      try {
-        const res = await fetch(`${SCAN}/api/figma/projects/${selectedProject.slug}/variables?categories=${cats.join(',')}`, {
-          headers: { 'Authorization': 'Bearer ' + session.accessToken },
-        });
-        const data = await res.json();
-        if (!data.variables) throw new Error(data.error || 'No variables returned');
-        statusEl.textContent = `Importing ${data.variables.length} variables…`;
-        parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data } }, '*');
-      } catch (e) {
-        statusEl.style.color = 'var(--err)';
-        statusEl.textContent = '✗ ' + e.message;
-        btn.disabled = false;
-      }
-    }
-
-    async function importTextStylesFromProject() {
-      if (!selectedProject || !session) return;
-      const btn = document.getElementById('btnImportTextStyles');
-      const statusEl = document.getElementById('textStylesStatus');
-      btn.disabled = true;
-      statusEl.style.color = 'var(--t3)';
-      statusEl.textContent = 'Fetching typography…';
-      try {
-        const res = await fetch(`${SCAN}/api/figma/projects/${selectedProject.slug}/typography`, {
-          headers: { 'Authorization': 'Bearer ' + session.accessToken },
-        });
-        const data = await res.json();
-        if (!data.styles) throw new Error(data.error || 'No styles returned');
-        statusEl.textContent = `Importing ${data.styles.length} text styles…`;
-        parent.postMessage({ pluginMessage: { type: 'IMPORT_TEXT_STYLES', styles: data.styles } }, '*');
-      } catch (e) {
-        statusEl.style.color = 'var(--err)';
-        statusEl.textContent = '✗ ' + e.message;
-        btn.disabled = false;
-      }
-    }
-
-    function timeAgo(iso) {
-      const diff = Date.now() - new Date(iso).getTime();
-      const m = Math.floor(diff / 60000);
-      if (m < 1) return 'just now';
-      if (m < 60) return m + 'm ago';
-      const h = Math.floor(m / 60);
-      if (h < 24) return h + 'h ago';
-      return Math.floor(h / 24) + 'd ago';
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function checkImportBtn() {
-      const val = document.getElementById('importVarsInput').value.trim();
-      document.getElementById('btnImportVarsManual').disabled = !val;
-    }
-
-    function importVariables() {
-      const raw = document.getElementById('importVarsInput').value.trim();
-      const statusEl = document.getElementById('importVarsStatus');
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch {
-        statusEl.style.color = 'var(--err)';
-        statusEl.textContent = '✗ Invalid JSON';
-        return;
-      }
-      if (!parsed.variables || !Array.isArray(parsed.variables)) {
-        statusEl.style.color = 'var(--err)';
-        statusEl.textContent = '✗ Missing "variables" array';
-        return;
-      }
-      statusEl.style.color = 'var(--t3)';
-      statusEl.textContent = 'Importing…';
-      document.getElementById('btnImportVarsManual').disabled = true;
-      parent.postMessage({ pluginMessage: { type: 'IMPORT_VARIABLES', data: parsed } }, '*');
-    }
-
     window.onmessage = async (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
@@ -1968,32 +1627,7 @@
         return;
       }
 
-      if (msg.type === 'IMPORT_VARIABLES_RESULT') {
-        const statusEl = document.getElementById('importVarsStatus');
-        if (selectedProject) document.getElementById('btnImportVars').disabled = false;
-        checkImportBtn();
-        if (msg.error) {
-          statusEl.style.color = 'var(--err)';
-          statusEl.textContent = '✗ ' + msg.error;
-        } else {
-          statusEl.style.color = 'var(--ok)';
-          statusEl.textContent = `✓ ${msg.created} created, ${msg.skipped} skipped`;
-        }
-        return;
-      }
 
-      if (msg.type === 'IMPORT_TEXT_STYLES_RESULT') {
-        const statusEl = document.getElementById('textStylesStatus');
-        document.getElementById('btnImportTextStyles').disabled = false;
-        if (msg.error) {
-          statusEl.style.color = 'var(--err)';
-          statusEl.textContent = '✗ ' + msg.error;
-        } else {
-          statusEl.style.color = 'var(--ok)';
-          statusEl.textContent = `✓ ${msg.created} created, ${msg.skipped} skipped`;
-        }
-        return;
-      }
 
       if (msg.type === 'SEND_SELECTION_TO_BRIDGE') {
         try {
