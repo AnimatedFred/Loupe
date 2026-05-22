@@ -2,6 +2,7 @@
   "name": "subsrf-figma-plugin",
   "private": true,
   "scripts": {
+    "prepare": "node build.js",
     "build": "node build.js",
     "watch": "node build.js --watch",
     "prod":  "node build.js --prod"
