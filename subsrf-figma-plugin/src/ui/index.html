@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>/* INLINE_CSS */</style>
+</head>
+
+<body>
+
+  <div id="view-loading" style="display:none">Loading…</div>
+
+  <!-- Sign-in -->
+  <div id="view-signin" style="display:none">
+    <video autoplay muted loop playsinline src="https://scan.subsrf.dev/Hero.mp4"></video>
+    <div class="signin-overlay"></div>
+    <div class="signin-content">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
+          <rect x="2" y="8" width="32" height="10" stroke="#00FF87" stroke-width="1.5" fill="none" />
+          <rect x="2" y="22" width="32" height="10" stroke="rgba(0,255,135,0.3)" stroke-width="1.5" fill="none" />
+          <line x1="18" y1="8" x2="18" y2="22" stroke="#00FF87" stroke-width="1.5" />
+          <path d="M14 19 L18 23 L22 19" stroke="#00FF87" stroke-width="1.5" stroke-linecap="round"
+            stroke-linejoin="round" fill="none" />
+        </svg>
+      </div>
+      <h2>subsrf</h2>
+      <p>Sign in to connect the Figma plugin<br>to your Subsrf account.</p>
+      <button class="btn-primary" id="btnSignIn">Sign in with Google</button>
+      <div id="signin-status"></div>
+      <button class="btn-secondary" id="btnSignInCancel" style="display:none;margin-top:8px;width:100%;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Main UI -->
+  <div id="view-main" style="display:none">
+
+    <!-- Header — always visible, acts as expand trigger when collapsed -->
+    <div class="header-bar">
+      <div class="header-left" id="btnMinimize" role="button" aria-label="Collapse plugin">
+        <span class="btn-minimize" id="minimizeIcon">—</span>
+        <span class="header-brand">SUBSRF</span>
+      </div>
+      <span class="tier-badge" id="tierBadge">FREE</span>
+    </div>
+
+    <!-- Status chips — only visible when collapsed -->
+    <div id="toolbar" onclick="setMinimized(false)">
+      <div class="toolbar-chips">
+        <span class="toolbar-chip" id="tcExtChip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z" />
+          </svg>
+          <span class="chip-status warn" id="tcExtLabel">Waiting for selection...</span>
+          <span class="dot warn" id="tcExtDot"></span>
+        </span>
+        <span class="toolbar-chip" id="tcAiChip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="7" width="16" height="13" rx="2" />
+            <path d="M12 7V4M9 4h6" />
+            <circle cx="9" cy="13" r="1.2" fill="currentColor" />
+            <circle cx="15" cy="13" r="1.2" fill="currentColor" />
+            <path d="M9 17h6" />
+            <path d="M2 11h2M20 11h2" />
+          </svg>
+          <span class="chip-status" id="tcAiLabel">Idle</span>
+          <span class="dot" id="tcAiDot"></span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Tab nav -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="sync">SYNC</button>
+      <button class="tab-btn" data-tab="compose">COMPOSE</button>
+      <button class="tab-btn" data-tab="settings">SETTINGS</button>
+    </div>
+
+    <!-- ═══════════ TAB: SYNC ═══════════ -->
+    <div class="tab-panel active" id="tab-sync">
+      <div class="scroll-area">
+
+        <div class="card" id="extCard">
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5a2.5 2.5 0 00-5 0V5H4a2 2 0 00-2 2v3.8h1.5a2.7 2.7 0 010 5.4H2V20a2 2 0 002 2h3.8v-1.5a2.7 2.7 0 015.4 0V22H17a2 2 0 002-2v-4h1.5a2.5 2.5 0 000-5z" />
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-title">Chrome Extension</div>
+            <div class="card-status warn" id="extStatus">Waiting for selection...</div>
+          </div>
+          <div class="dot warn" id="extDot"></div>
+        </div>
+
+        <div class="card" id="aiCard">
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="7" width="16" height="13" rx="2" />
+              <path d="M12 7V4M9 4h6" />
+              <circle cx="9" cy="13" r="1.2" fill="currentColor" />
+              <circle cx="15" cy="13" r="1.2" fill="currentColor" />
+              <path d="M9 17h6" />
+              <path d="M2 11h2M20 11h2" />
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-title">AI Connection</div>
+            <div class="card-status" id="aiStatus">Idle</div>
+          </div>
+          <div class="dot" id="aiDot"></div>
+        </div>
+
+        <!-- ── Subsrf Scan row ── -->
+        <div style="margin-top:2px;">
+          <div class="sec-label">Subsrf Scan</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div
+              style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
+              <input id="scanUrlInput" type="text" placeholder="stripe.com" style="
+                flex:1;background:transparent;border:none;outline:none;
+                color:var(--t1);font-family:'Azeret Mono',monospace;
+                font-size:10px;padding:9px 0;
+              " oninput="this.dataset.userEdited='1'" />
+            </div>
+            <button onclick="openScan()" style="
+              background:var(--neon-dim);border:1px solid rgba(0,255,135,0.2);border-radius:2px;
+              padding:0 12px;height:36px;cursor:pointer;
+              display:inline-flex;align-items:center;gap:5px;
+              font-family:'Azeret Mono',monospace;font-size:9px;color:var(--neon);
+              white-space:nowrap;letter-spacing:0.5px;
+            ">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              Scan →
+            </button>
+          </div>
+        </div>
+
+        <div class="feed">
+          <div class="feed-title">Activity Feed</div>
+          <div class="feed-list" id="feedList">
+            <div class="feed-empty">Waiting for activity…</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab-footer">
+        <button class="btn-primary" id="syncBtn" disabled>Sync to Figma</button>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB: COMPOSE ═══════════ -->
+    <div class="tab-panel" id="tab-compose">
+      <div class="scroll-area" id="composeScroll">
+
+        <div>
+          <div class="sec-label">Figma selection</div>
+          <div class="sel-chips" id="selChips">
+            <span class="sel-chip empty">Nothing selected in Figma</span>
+          </div>
+        </div>
+
+        <div id="resultPanel">
+          <div class="result-header">
+            <span class="result-target">BRIEF</span>
+            <div class="result-actions">
+              <button class="btn-icon" id="btnCopyResult">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                Copy
+              </button>
+            </div>
+          </div>
+          <div id="resultText"></div>
+        </div>
+
+      </div>
+
+      <div class="credit-row" id="creditRow">
+        <span class="credit-dot"></span>
+        <span id="creditBalText">0 credits</span>
+        <span style="color:var(--t4)">·</span>
+        <span>1 credit per compose</span>
+      </div>
+
+      <div class="tab-footer">
+        <button class="btn-primary locked" id="btnCompose">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.963 0L14.063 8.5A2 2 0 0115.5 9.937l6.135 1.581a.5.5 0 010 .964L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.963 0z" />
+            <path d="M20 3v4M22 5h-4M4 17v2M5 18H3" />
+          </svg>
+          <span id="btnComposeLabel">Select something in Figma</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB: SETTINGS ═══════════ -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="scroll-area">
+
+        <div class="settings-card">
+          <div class="settings-title">Account</div>
+          <div class="settings-row">
+            <span class="settings-key">Email</span>
+            <span class="settings-val" id="settingsEmail" style="font-size:11px;color:var(--t2);">—</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-key">Plan</span>
+            <span class="settings-val" id="settingsTier">Free</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-key">Credits</span>
+            <span class="settings-val" id="settingsCredits" style="color:var(--neon);">0</span>
+          </div>
+          <div class="credits-bar">
+            <div class="credits-fill" id="creditsFill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <button class="btn-secondary" id="btnSignOut" style="width:100%;margin-top:4px;">Sign out</button>
+        <div style="height:8px;"></div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>/* INLINE_JS */</script>
+</body>
+
+</html>

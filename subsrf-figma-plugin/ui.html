@@ -6,851 +6,730 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;500;600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
-  <style>
-    :root {
-      --void: #050508;
-      --deep: #0C0C12;
-      --layer: #111118;
-      --surface: #18181F;
-      --lift: #202028;
-      --border: rgba(242, 242, 244, 0.08);
-      --border-md: rgba(242, 242, 244, 0.12);
-      --neon: #00FF87;
-      --neon-dim: rgba(0, 255, 135, 0.10);
-      --t1: #F2F2F4;
-      --t2: rgba(242, 242, 244, 0.55);
-      --t3: rgba(242, 242, 244, 0.28);
-      --t4: rgba(242, 242, 244, 0.10);
-      --ok: #39D98A;
-      --warn: #FFAB00;
-      --err: #FF4D4D;
-    }
-
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Manrope', sans-serif;
-      background: var(--void);
-      color: var(--t1);
-      overflow: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.03;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    }
-
-    /* inline SVG icons */
-    .ico {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .ico svg {
-      display: block;
-    }
-
-    /* ── Button reset ── */
-    button {
-      all: unset;
-      box-sizing: border-box;
-      cursor: pointer;
-      font-family: 'Manrope', sans-serif;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.15s;
-    }
-
-    button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      width: 100%;
-      background: var(--neon);
-      color: var(--void);
-      padding: 12px;
-      font-family: 'Azeret Mono', monospace;
-      font-weight: 400;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      gap: 6px;
-    }
-
-    .btn-primary:not(:disabled):hover {
-      opacity: 0.9;
-    }
-
-    .btn-primary.locked {
-      background: var(--surface);
-      color: var(--t3);
-      border: 1px solid var(--border);
-      font-family: 'Manrope', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0;
-      text-transform: none;
-    }
-
-    .btn-primary.locked:hover {
-      opacity: 1;
-      border-color: var(--border-md);
-      color: var(--t2);
-    }
-
-    .btn-primary.loading {
-      opacity: 0.6;
-      cursor: wait;
-    }
-
-    .btn-secondary {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--t2);
-      border: 1px solid var(--border-md);
-      padding: 9px;
-      font-weight: 600;
-      font-size: 12px;
-    }
-
-    .btn-secondary:not(:disabled):hover {
-      color: var(--t1);
-      background: rgba(255, 255, 255, 0.08);
-      opacity: 1;
-    }
-
-    .btn-icon {
-      background: var(--surface);
-      color: var(--t2);
-      border: 1px solid var(--border);
-      padding: 5px 9px;
-      font-size: 11px;
-      font-weight: 600;
-      gap: 4px;
-    }
-
-    .btn-icon:not(:disabled):hover {
-      border-color: var(--border-md);
-      color: var(--t1);
-      opacity: 1;
-    }
-
-    .btn-minimize {
-      background: transparent;
-      border: none;
-      padding: 0;
-      color: var(--t3);
-      font-family: 'Azeret Mono', monospace;
-      font-size: 11px;
-      line-height: 1;
-    }
-
-    .btn-minimize:hover {
-      color: var(--t2);
-      opacity: 1;
-    }
-
-    .toggle {
-      width: 32px;
-      height: 18px;
-      background: var(--lift);
-      border-radius: 9px;
-      position: relative;
-      flex-shrink: 0;
-      border: 1px solid transparent;
-    }
-
-    .toggle::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--t3);
-      transition: left 0.2s, background 0.2s;
-    }
-
-    .toggle.on {
-      background: rgba(0, 255, 135, 0.12);
-      border-color: rgba(0, 255, 135, 0.25);
-    }
-
-    .toggle.on::after {
-      left: 16px;
-      background: var(--neon);
-    }
-
-    .toggle:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    /* ── Sign-in ── */
-    #view-signin {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 8px;
-      padding: 24px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #view-signin video {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.5;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    #view-signin .signin-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(5, 5, 8, 0.4), rgba(5, 5, 8, 0.75));
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    #view-signin .signin-content {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    #view-signin .logo {
-      margin-bottom: 8px;
-    }
-
-    #view-signin h2 {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-    }
-
-    #view-signin p {
-      font-size: 15px;
-      color: var(--t2);
-      line-height: 1.6;
-      font-weight: 300;
-    }
-
-    #view-signin .btn-primary {
-      margin-top: 16px;
-    }
-
-    #signin-status {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
-      margin-top: 8px;
-      min-height: 16px;
-      letter-spacing: 0.5px;
-    }
-
-    /* ── Loading ── */
-    #view-loading {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 1px;
-      color: var(--t3);
-    }
-
-    /* ── Dots ── */
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--lift);
-      flex-shrink: 0;
-    }
-
-    .dot.on {
-      background: var(--ok);
-      box-shadow: 0 0 6px var(--ok);
-    }
-
-    .dot.warn {
-      background: var(--warn);
-      box-shadow: 0 0 5px rgba(255, 171, 0, 0.5);
-    }
-
-    .dot.err {
-      background: var(--err);
-    }
-
-    .dot.pulse {
-      background: var(--neon);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6);
-      }
-
-      70% {
-        box-shadow: 0 0 0 8px rgba(0, 255, 135, 0);
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(0, 255, 135, 0);
-      }
-    }
-
-    /* ── Compact status bar (collapsed state) ── */
-    #toolbar {
-      display: none;
-      height: 30px;
-      align-items: stretch;
-      cursor: pointer;
-      border-top: 1px solid var(--border);
-    }
-
-    .toolbar-chips {
-      display: flex;
-      flex: 1;
-    }
-
-    .toolbar-chip {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      flex: 1;
-      padding: 0 12px;
-      background: var(--layer);
-      border-right: 1px solid var(--border);
-      transition: background 0.12s;
-    }
-
-    .toolbar-chip:last-child {
-      border-right: none;
-    }
-
-    .toolbar-chip:hover {
-      background: var(--surface);
-    }
-
-    .chip-status {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.3px;
-      color: var(--t3);
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .toolbar-chip.active .chip-status {
-      color: var(--neon);
-    }
-
-    .chip-status.warn {
-      color: var(--warn);
-    }
-
-    .chip-status.ok {
-      color: var(--ok);
-    }
-
-    /* ── Main view ── */
-    #view-main {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .header-bar {
-      height: 38px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      flex-shrink: 0;
-      background: var(--void);
-    }
-
-    /* Left side is the full collapse click target */
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      height: 100%;
-      cursor: pointer;
-      padding: 0 4px 0 0;
-    }
-
-    .header-left:hover .btn-minimize {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: var(--border-md);
-      color: var(--t2);
-    }
-
-    .btn-minimize {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 26px;
-      height: 22px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      color: var(--t3);
-      font-family: 'Azeret Mono', monospace;
-      font-size: 13px;
-      line-height: 1;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-      cursor: pointer;
-    }
-
-    .header-brand {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 11px;
-      color: var(--t3);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      line-height: 1;
-      user-select: none;
-    }
-
-    .tier-badge {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.5px;
-      padding: 2px 6px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--t3);
-      border: 1px solid var(--border);
-      text-transform: uppercase;
-    }
-
-    .tab-nav {
-      height: 30px;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 16px;
-      flex-shrink: 0;
-      border-bottom: 1px solid var(--border);
-      background: var(--void);
-    }
-
-    .tab-btn {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--t3);
-      background: transparent;
-      padding: 9px 0;
-      position: relative;
-      line-height: 1;
-    }
-
-    .tab-btn:hover {
-      color: var(--t2);
-      opacity: 1;
-    }
-
-    .tab-btn.active {
-      color: var(--t1);
-      padding: 8px 0;
-    }
-
-    .tab-btn.active::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: var(--neon);
-    }
-
-    .tab-panel {
-      display: none;
-      flex: 1;
-      min-height: 0;
-      flex-direction: column;
-    }
-
-    .tab-panel.active {
-      display: flex;
-    }
-
-    .scroll-area {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .scroll-area::-webkit-scrollbar {
-      width: 3px;
-    }
-
-    .scroll-area::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .scroll-area::-webkit-scrollbar-thumb {
-      background: var(--border-md);
-      border-radius: 2px;
-    }
-
-    #tab-sync .scroll-area {
-      overflow: hidden;
-    }
-
-    #tab-sync .feed {
-      flex: 1;
-      max-height: none;
-    }
-
-    .sec-label {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      color: var(--t3);
-      text-transform: uppercase;
-      margin-bottom: 7px;
-    }
-
-    /* ── Card ── */
-    .card {
-      background: var(--layer);
-      border: 1px solid var(--border);
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: border-color 0.15s;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
-    .card.active {
-      border-color: rgba(0, 255, 135, 0.25);
-      background: rgba(0, 255, 135, 0.04);
-    }
-
-    .card-icon {
-      width: 32px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--t3);
-    }
-
-    .card-body {
-      flex: 1;
-    }
-
-    .card-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--t1);
-      line-height: 1.2;
-    }
-
-    .card-status {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      font-weight: 300;
-      color: var(--t3);
-      margin-top: 3px;
-      transition: color 0.2s;
-    }
-
-    .card-status.ok {
-      color: var(--ok);
-    }
-
-    .card-status.warn {
-      color: var(--warn);
-    }
-
-    .card-status.neon {
-      color: var(--neon);
-    }
-
-    .card-status.err {
-      color: var(--err);
-    }
-
-    /* ── Activity feed ── */
-    .feed {
-      background: var(--deep);
-      border: 1px solid var(--border);
-      min-height: 80px;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 12px;
-      overflow: hidden;
-      border-radius: 2px;
-    }
-
-    .feed-title {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      color: var(--t3);
-      text-transform: uppercase;
-      margin-bottom: 8px;
-      flex-shrink: 0;
-    }
-
-    .feed-list {
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .feed-list::-webkit-scrollbar {
-      width: 2px;
-    }
-
-    .feed-list::-webkit-scrollbar-thumb {
-      background: var(--border-md);
-    }
-
-    .feed-row {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      padding: 2px 0;
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      font-weight: 300;
-      line-height: 1.6;
-    }
-
-    .feed-time {
-      color: var(--t3);
-      font-size: 10px;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-
-    .feed-msg {
-      flex: 1;
-    }
-
-    .feed-empty {
-      color: var(--t3);
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-    }
-
-    /* ── Sticky footer ── */
-    .tab-footer {
-      padding: 10px 16px 12px;
-      flex-shrink: 0;
-      border-top: 1px solid var(--border);
-      background: var(--void);
-    }
-
-    /* ── Compose ── */
-    .sel-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-    }
-
-    .sel-chip {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--t2);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 3px 8px;
-    }
-
-    .sel-chip.empty {
-      color: var(--t3);
-      font-style: italic;
-      border-style: dashed;
-    }
-
-    #resultPanel {
-      display: none;
-      flex-direction: column;
-      border: 1px solid var(--neon);
-      background: var(--deep);
-    }
-
-    #resultPanel.visible {
-      display: flex;
-    }
-
-    .result-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .result-target {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--neon);
-    }
-
-    .result-actions {
-      display: flex;
-      gap: 5px;
-    }
-
-    #resultText {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      font-weight: 300;
-      color: var(--t2);
-      line-height: 1.7;
-      padding: 10px;
-      min-height: 220px;
-      max-height: 360px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    #resultText::-webkit-scrollbar {
-      width: 2px;
-    }
-
-    #resultText::-webkit-scrollbar-thumb {
-      background: var(--border-md);
-    }
-
-    .credit-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-      padding: 8px 16px;
-      border-top: 1px solid var(--border);
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
-      background: var(--void);
-    }
-
-    .credit-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: var(--neon);
-      flex-shrink: 0;
-    }
-
-    /* ── Settings ── */
-    .settings-card {
-      background: var(--layer);
-      border: 1px solid var(--border);
-      padding: 11px;
-    }
-
-    .settings-title {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 1.5px;
-      color: var(--t3);
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    .settings-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 5px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .settings-row:last-child {
-      border-bottom: none;
-    }
-
-    .settings-key {
-      font-family: 'Azeret Mono', monospace;
-      font-size: 10px;
-      color: var(--t3);
-    }
-
-    .settings-val {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--t1);
-    }
-
-    .credits-bar {
-      height: 3px;
-      background: var(--border);
-      margin-top: 8px;
-      overflow: hidden;
-    }
-
-    .credits-fill {
-      height: 100%;
-      background: var(--neon);
-      transition: width 0.4s;
-    }
-
-
-  </style>
+  <style>/* src/ui/styles/main.css */
+:root {
+  --void: #050508;
+  --deep: #0C0C12;
+  --layer: #111118;
+  --surface: #18181F;
+  --lift: #202028;
+  --border: rgba(242, 242, 244, 0.08);
+  --border-md: rgba(242, 242, 244, 0.12);
+  --neon: #00FF87;
+  --neon-dim: rgba(0, 255, 135, 0.10);
+  --t1: #F2F2F4;
+  --t2: rgba(242, 242, 244, 0.55);
+  --t3: rgba(242, 242, 244, 0.28);
+  --t4: rgba(242, 242, 244, 0.10);
+  --ok: #39D98A;
+  --warn: #FFAB00;
+  --err: #FF4D4D;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  font-family: "Manrope", sans-serif;
+  background: var(--void);
+  color: var(--t1);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ico svg {
+  display: block;
+}
+button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: "Manrope", sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.btn-primary {
+  width: 100%;
+  background: var(--neon);
+  color: var(--void);
+  padding: 12px;
+  font-family: "Azeret Mono", monospace;
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  gap: 6px;
+}
+.btn-primary:not(:disabled):hover {
+  opacity: 0.9;
+}
+.btn-primary.locked {
+  background: var(--surface);
+  color: var(--t3);
+  border: 1px solid var(--border);
+  font-family: "Manrope", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.btn-primary.locked:hover {
+  opacity: 1;
+  border-color: var(--border-md);
+  color: var(--t2);
+}
+.btn-primary.loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+.btn-secondary {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--t2);
+  border: 1px solid var(--border-md);
+  padding: 9px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.btn-secondary:not(:disabled):hover {
+  color: var(--t1);
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+.btn-icon {
+  background: var(--surface);
+  color: var(--t2);
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 4px;
+}
+.btn-icon:not(:disabled):hover {
+  border-color: var(--border-md);
+  color: var(--t1);
+  opacity: 1;
+}
+.btn-minimize {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--t3);
+  font-family: "Azeret Mono", monospace;
+  font-size: 11px;
+  line-height: 1;
+}
+.btn-minimize:hover {
+  color: var(--t2);
+  opacity: 1;
+}
+.toggle {
+  width: 32px;
+  height: 18px;
+  background: var(--lift);
+  border-radius: 9px;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--t3);
+  transition: left 0.2s, background 0.2s;
+}
+.toggle.on {
+  background: rgba(0, 255, 135, 0.12);
+  border-color: rgba(0, 255, 135, 0.25);
+}
+.toggle.on::after {
+  left: 16px;
+  background: var(--neon);
+}
+.toggle:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+#view-signin {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+#view-signin video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+#view-signin .signin-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(5, 5, 8, 0.4),
+      rgba(5, 5, 8, 0.75));
+  z-index: 0;
+  pointer-events: none;
+}
+#view-signin .signin-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+#view-signin .logo {
+  margin-bottom: 8px;
+}
+#view-signin h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+#view-signin p {
+  font-size: 15px;
+  color: var(--t2);
+  line-height: 1.6;
+  font-weight: 300;
+}
+#view-signin .btn-primary {
+  margin-top: 16px;
+}
+#signin-status {
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  color: var(--t3);
+  margin-top: 8px;
+  min-height: 16px;
+  letter-spacing: 0.5px;
+}
+#view-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--t3);
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lift);
+  flex-shrink: 0;
+}
+.dot.on {
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok);
+}
+.dot.warn {
+  background: var(--warn);
+  box-shadow: 0 0 5px rgba(255, 171, 0, 0.5);
+}
+.dot.err {
+  background: var(--err);
+}
+.dot.pulse {
+  background: var(--neon);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(0, 255, 135, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 135, 0);
+  }
+}
+#toolbar {
+  display: none;
+  height: 30px;
+  align-items: stretch;
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+}
+.toolbar-chips {
+  display: flex;
+  flex: 1;
+}
+.toolbar-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  padding: 0 12px;
+  background: var(--layer);
+  border-right: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.toolbar-chip:last-child {
+  border-right: none;
+}
+.toolbar-chip:hover {
+  background: var(--surface);
+}
+.chip-status {
+  font-family: "Azeret Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  color: var(--t3);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toolbar-chip.active .chip-status {
+  color: var(--neon);
+}
+.chip-status.warn {
+  color: var(--warn);
+}
+.chip-status.ok {
+  color: var(--ok);
+}
+#view-main {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.header-bar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  background: var(--void);
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  cursor: pointer;
+  padding: 0 4px 0 0;
+}
+.header-left:hover .btn-minimize {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--border-md);
+  color: var(--t2);
+}
+.btn-minimize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--t3);
+  font-family: "Azeret Mono", monospace;
+  font-size: 13px;
+  line-height: 1;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+  cursor: pointer;
+}
+.header-brand {
+  font-family: "Azeret Mono", monospace;
+  font-size: 11px;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  line-height: 1;
+  user-select: none;
+}
+.tier-badge {
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--t3);
+  border: 1px solid var(--border);
+  text-transform: uppercase;
+}
+.tab-nav {
+  height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 16px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--void);
+}
+.tab-btn {
+  font-family: "Azeret Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t3);
+  background: transparent;
+  padding: 9px 0;
+  position: relative;
+  line-height: 1;
+}
+.tab-btn:hover {
+  color: var(--t2);
+  opacity: 1;
+}
+.tab-btn.active {
+  color: var(--t1);
+  padding: 8px 0;
+}
+.tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--neon);
+}
+.tab-panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.tab-panel.active {
+  display: flex;
+}
+.scroll-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.scroll-area::-webkit-scrollbar {
+  width: 3px;
+}
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--border-md);
+  border-radius: 2px;
+}
+#tab-sync .scroll-area {
+  overflow: hidden;
+}
+#tab-sync .feed {
+  flex: 1;
+  max-height: none;
+}
+.sec-label {
+  font-family: "Azeret Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.15s;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.card.active {
+  border-color: rgba(0, 255, 135, 0.25);
+  background: rgba(0, 255, 135, 0.04);
+}
+.card-icon {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--t3);
+}
+.card-body {
+  flex: 1;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t1);
+  line-height: 1.2;
+}
+.card-status {
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--t3);
+  margin-top: 3px;
+  transition: color 0.2s;
+}
+.card-status.ok {
+  color: var(--ok);
+}
+.card-status.warn {
+  color: var(--warn);
+}
+.card-status.neon {
+  color: var(--neon);
+}
+.card-status.err {
+  color: var(--err);
+}
+.feed {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.feed-title {
+  font-family: "Azeret Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+.feed-list {
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.feed-list::-webkit-scrollbar {
+  width: 2px;
+}
+.feed-list::-webkit-scrollbar-thumb {
+  background: var(--border-md);
+}
+.feed-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 2px 0;
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  font-weight: 300;
+  line-height: 1.6;
+}
+.feed-time {
+  color: var(--t3);
+  font-size: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.feed-msg {
+  flex: 1;
+}
+.feed-empty {
+  color: var(--t3);
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+}
+.tab-footer {
+  padding: 10px 16px 12px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--void);
+}
+.sel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.sel-chip {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--t2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+}
+.sel-chip.empty {
+  color: var(--t3);
+  font-style: italic;
+  border-style: dashed;
+}
+#resultPanel {
+  display: none;
+  flex-direction: column;
+  border: 1px solid var(--neon);
+  background: var(--deep);
+}
+#resultPanel.visible {
+  display: flex;
+}
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.result-target {
+  font-family: "Azeret Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--neon);
+}
+.result-actions {
+  display: flex;
+  gap: 5px;
+}
+#resultText {
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  font-weight: 300;
+  color: var(--t2);
+  line-height: 1.7;
+  padding: 10px;
+  min-height: 220px;
+  max-height: 360px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#resultText::-webkit-scrollbar {
+  width: 2px;
+}
+#resultText::-webkit-scrollbar-thumb {
+  background: var(--border-md);
+}
+.credit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  color: var(--t3);
+  background: var(--void);
+}
+.credit-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--neon);
+  flex-shrink: 0;
+}
+.settings-card {
+  background: var(--layer);
+  border: 1px solid var(--border);
+  padding: 11px;
+}
+.settings-title {
+  font-family: "Azeret Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: var(--t3);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child {
+  border-bottom: none;
+}
+.settings-key {
+  font-family: "Azeret Mono", monospace;
+  font-size: 10px;
+  color: var(--t3);
+}
+.settings-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--t1);
+}
+.credits-bar {
+  height: 3px;
+  background: var(--border);
+  margin-top: 8px;
+  overflow: hidden;
+}
+.credits-fill {
+  height: 100%;
+  background: var(--neon);
+  transition: width 0.4s;
+}
+</style>
 </head>
 
 <body>
@@ -932,7 +811,6 @@
 
         <div class="card" id="extCard">
           <div class="card-icon">
-            <!-- puzzle piece (extension) -->
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
               stroke-linecap="round" stroke-linejoin="round">
               <path
@@ -948,7 +826,6 @@
 
         <div class="card" id="aiCard">
           <div class="card-icon">
-            <!-- robot / smart_toy -->
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
               stroke-linecap="round" stroke-linejoin="round">
               <rect x="4" y="7" width="16" height="13" rx="2" />
@@ -1090,557 +967,564 @@
 
   </div>
 
-  <input type="file" id="filePickerInput" accept=".json" style="display:none">
-
-  <script>
-    const BRIDGE = 'https://api.subsrf.dev';
-    let session = null;
-    let lastData = null;
-    let lastProcessedAiId = 0;
-    let lastProcessedSyncId = '';
-    let lastProcessedQueryId = 0;
-    let pollInterval = null;
-    let oauthPollInterval = null;
-
-    let currentSelNodes = [];
-    let isComposing = false;
-
-    // SVG snippets for dynamic icon injection
-    const ICO = {
-      copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
-      check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-      open: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`
-    };
-
-    // ── Storage bridge ────────────────────────────────────────────────────────
-    const storageCbs = {};
-    function storageGet(key) {
-      return new Promise(r => { storageCbs[key] = r; parent.postMessage({ pluginMessage: { type: 'GET_STORAGE', key } }, '*'); });
-    }
-    function storageSet(key, value) { parent.postMessage({ pluginMessage: { type: 'SET_STORAGE', key, value } }, '*'); }
-    function storageDel(key) { parent.postMessage({ pluginMessage: { type: 'DEL_STORAGE', key } }, '*'); }
-
-    function showView(name) {
-      document.getElementById('view-loading').style.display = name === 'loading' ? 'flex' : 'none';
-      document.getElementById('view-signin').style.display = name === 'signin' ? 'flex' : 'none';
-      document.getElementById('view-main').style.display = name === 'main' ? 'flex' : 'none';
-      if (name === 'signin') {
-        const v = document.querySelector('#view-signin video');
-        if (v) v.play().catch(() => { });
-      }
-    }
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-      });
+  <script>(() => {
+  // src/ui/js/main.js
+  var BRIDGE = "https://api.subsrf.dev";
+  var session = null;
+  var lastData = null;
+  var lastProcessedAiId = 0;
+  var lastProcessedSyncId = "";
+  var lastProcessedQueryId = 0;
+  var pollInterval = null;
+  var oauthPollInterval = null;
+  var currentSelNodes = [];
+  var isComposing = false;
+  var ICO = {
+    copy: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+    check: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+    open: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`
+  };
+  var storageCbs = {};
+  function storageGet(key) {
+    return new Promise((r) => {
+      storageCbs[key] = r;
+      parent.postMessage({ pluginMessage: { type: "GET_STORAGE", key } }, "*");
     });
-
-    function applyTier(tier) {
-      const badge = document.getElementById('tierBadge');
-      if (tier === 'pro') {
-        badge.textContent = 'PRO';
-        badge.style.cssText = 'background:rgba(0,255,135,0.10);color:#00FF87;border:1px solid rgba(0,255,135,0.2);border-radius:2px;';
-        document.getElementById('settingsTier').textContent = 'Pro';
-        document.getElementById('settingsTier').style.color = 'var(--neon)';
-      } else if (tier === 'starter') {
-        badge.textContent = 'STARTER';
-        badge.style.cssText = 'background:rgba(255,171,0,0.08);color:#FFAB00;border:1px solid rgba(255,171,0,0.25);border-radius:2px;';
-        document.getElementById('settingsTier').textContent = 'Starter';
-        document.getElementById('settingsTier').style.color = 'var(--warn)';
-      } else {
-        badge.textContent = 'FREE';
-        badge.style.cssText = 'background:rgba(255,255,255,0.05);color:rgba(242,242,244,0.28);border:1px solid rgba(242,242,244,0.08);border-radius:2px;';
-        document.getElementById('settingsTier').textContent = 'Free';
-        document.getElementById('settingsTier').style.color = 'var(--t1)';
-      }
-      updateComposeBtn();
+  }
+  function storageSet(key, value) {
+    parent.postMessage({ pluginMessage: { type: "SET_STORAGE", key, value } }, "*");
+  }
+  function storageDel(key) {
+    parent.postMessage({ pluginMessage: { type: "DEL_STORAGE", key } }, "*");
+  }
+  function showView(name) {
+    document.getElementById("view-loading").style.display = name === "loading" ? "flex" : "none";
+    document.getElementById("view-signin").style.display = name === "signin" ? "flex" : "none";
+    document.getElementById("view-main").style.display = name === "main" ? "flex" : "none";
+    if (name === "signin") {
+      const v = document.querySelector("#view-signin video");
+      if (v) v.play().catch(() => {
+      });
     }
-
-    function getTier() {
-      const t = document.getElementById('tierBadge').textContent.toLowerCase();
-      if (t === 'pro') return 'pro';
-      if (t === 'starter') return 'starter';
-      return 'free';
+  }
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+  function applyTier(tier) {
+    const badge = document.getElementById("tierBadge");
+    if (tier === "pro") {
+      badge.textContent = "PRO";
+      badge.style.cssText = "background:rgba(0,255,135,0.10);color:#00FF87;border:1px solid rgba(0,255,135,0.2);border-radius:2px;";
+      document.getElementById("settingsTier").textContent = "Pro";
+      document.getElementById("settingsTier").style.color = "var(--neon)";
+    } else if (tier === "starter") {
+      badge.textContent = "STARTER";
+      badge.style.cssText = "background:rgba(255,171,0,0.08);color:#FFAB00;border:1px solid rgba(255,171,0,0.25);border-radius:2px;";
+      document.getElementById("settingsTier").textContent = "Starter";
+      document.getElementById("settingsTier").style.color = "var(--warn)";
+    } else {
+      badge.textContent = "FREE";
+      badge.style.cssText = "background:rgba(255,255,255,0.05);color:rgba(242,242,244,0.28);border:1px solid rgba(242,242,244,0.08);border-radius:2px;";
+      document.getElementById("settingsTier").textContent = "Free";
+      document.getElementById("settingsTier").style.color = "var(--t1)";
     }
-
-    function getCredits() {
-      return parseInt(document.getElementById('settingsCredits').textContent) || 0;
-    }
-
-    function updateCredits(balance, tier) {
-      const bal = balance ?? 0;
-      document.getElementById('settingsCredits').textContent = bal;
-      document.getElementById('creditBalText').textContent = bal + ' credit' + (bal !== 1 ? 's' : '');
-      const max = tier === 'pro' ? 300 : tier === 'starter' ? 75 : 0;
-      document.getElementById('creditsFill').style.width = max > 0 ? Math.min(100, bal / max * 100) + '%' : '0%';
-      updateComposeBtn();
-    }
-
-    function addLog(msg, type) {
-      const list = document.getElementById('feedList');
-      const empty = list.querySelector('.feed-empty');
-      if (empty) empty.remove();
-      const row = document.createElement('div');
-      row.className = 'feed-row';
-      const now = new Date();
-      const t = '[' +
-        now.getHours().toString().padStart(2, '0') + ':' +
-        now.getMinutes().toString().padStart(2, '0') + ':' +
-        now.getSeconds().toString().padStart(2, '0') + ']';
-      const color = (type === 'ai' || type === 'ok') ? 'var(--neon)' : type === 'err' ? 'var(--err)' : 'var(--t2)';
-      row.innerHTML = '<span class="feed-time">' + t + '</span><span class="feed-msg" style="color:' + color + '">' + msg + '</span>';
-      list.appendChild(row);
-      list.scrollTop = list.scrollHeight;
-      while (list.children.length > 50) list.removeChild(list.firstChild);
-    }
-
-    function updateSyncTab(data) {
-      if (!data) return;
-      const tier = data.tier || 'free';
-      const isPaid = tier === 'starter' || tier === 'pro';
-      const elements = data.elements || [];
-      const syncBtn = document.getElementById('syncBtn');
-
-      if (isPaid && elements.length > 0) {
-        document.getElementById('extDot').className = 'dot on';
-        document.getElementById('extStatus').className = 'card-status ok';
-        document.getElementById('extStatus').textContent = elements.length + ' elements ready';
-        document.getElementById('extCard').classList.add('active');
-
-        syncBtn.disabled = false;
-        syncBtn.textContent = 'Sync to Figma (' + elements.length + ')';
-        syncBtn.classList.remove('locked');
-        syncBtn.onclick = function () {
-          parent.postMessage({
-            pluginMessage: {
-              type: 'IMPORT_ELEMENTS', elements: elements, context: data.page || {}, tier: tier
-            }
-          }, '*');
-          addLog('Synced ' + elements.length + ' elements', 'ok');
-          syncBtn.disabled = true;
-        };
-
-        const syncId = (elements[0]?.rect?.top || 0) + '-' + elements.length;
-        if (syncId !== lastProcessedSyncId) {
-          lastProcessedSyncId = syncId;
-          addLog('Received ' + elements.length + ' elements from selection', 'ok');
-        }
-      } else if (!isPaid) {
-        document.getElementById('extDot').className = 'dot';
-        document.getElementById('extStatus').className = 'card-status warn';
-        document.getElementById('extStatus').textContent = 'Upgrade to sync elements';
-        document.getElementById('extCard').classList.remove('active');
-
-        syncBtn.disabled = false;
-        syncBtn.textContent = '⚡ Upgrade to Sync';
-        syncBtn.classList.add('locked');
-        syncBtn.onclick = function () { window.open(BRIDGE + '/#pricing', '_blank'); };
-      } else {
-        document.getElementById('extDot').className = 'dot warn';
-        document.getElementById('extStatus').className = 'card-status warn';
-        document.getElementById('extStatus').textContent = 'Waiting for selection...';
-        document.getElementById('extCard').classList.remove('active');
-
+    updateComposeBtn();
+  }
+  function getTier() {
+    const t = document.getElementById("tierBadge").textContent.toLowerCase();
+    if (t === "pro") return "pro";
+    if (t === "starter") return "starter";
+    return "free";
+  }
+  function getCredits() {
+    return parseInt(document.getElementById("settingsCredits").textContent) || 0;
+  }
+  function updateCredits(balance, tier) {
+    const bal = balance != null ? balance : 0;
+    document.getElementById("settingsCredits").textContent = bal;
+    document.getElementById("creditBalText").textContent = bal + " credit" + (bal !== 1 ? "s" : "");
+    const max = tier === "pro" ? 300 : tier === "starter" ? 75 : 0;
+    document.getElementById("creditsFill").style.width = max > 0 ? Math.min(100, bal / max * 100) + "%" : "0%";
+    updateComposeBtn();
+  }
+  function addLog(msg, type) {
+    const list = document.getElementById("feedList");
+    const empty = list.querySelector(".feed-empty");
+    if (empty) empty.remove();
+    const row = document.createElement("div");
+    row.className = "feed-row";
+    const now = /* @__PURE__ */ new Date();
+    const t = "[" + now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0") + ":" + now.getSeconds().toString().padStart(2, "0") + "]";
+    const color = type === "ai" || type === "ok" ? "var(--neon)" : type === "err" ? "var(--err)" : "var(--t2)";
+    row.innerHTML = '<span class="feed-time">' + t + '</span><span class="feed-msg" style="color:' + color + '">' + msg + "</span>";
+    list.appendChild(row);
+    list.scrollTop = list.scrollHeight;
+    while (list.children.length > 50) list.removeChild(list.firstChild);
+  }
+  function updateSyncTab(data) {
+    var _a, _b, _c;
+    if (!data) return;
+    const tier = data.tier || "free";
+    const isPaid = tier === "starter" || tier === "pro";
+    const elements = data.elements || [];
+    const syncBtn = document.getElementById("syncBtn");
+    if (isPaid && elements.length > 0) {
+      document.getElementById("extDot").className = "dot on";
+      document.getElementById("extStatus").className = "card-status ok";
+      document.getElementById("extStatus").textContent = elements.length + " elements ready";
+      document.getElementById("extCard").classList.add("active");
+      syncBtn.disabled = false;
+      syncBtn.textContent = "Sync to Figma (" + elements.length + ")";
+      syncBtn.classList.remove("locked");
+      syncBtn.onclick = function() {
+        parent.postMessage({
+          pluginMessage: { type: "IMPORT_ELEMENTS", elements, context: data.page || {}, tier }
+        }, "*");
+        addLog("Synced " + elements.length + " elements", "ok");
         syncBtn.disabled = true;
-        syncBtn.textContent = 'Sync to Figma';
-        syncBtn.classList.remove('locked');
-        syncBtn.onclick = null;
+      };
+      const syncId = (((_b = (_a = elements[0]) == null ? void 0 : _a.rect) == null ? void 0 : _b.top) || 0) + "-" + elements.length;
+      if (syncId !== lastProcessedSyncId) {
+        lastProcessedSyncId = syncId;
+        addLog("Received " + elements.length + " elements from selection", "ok");
       }
-
-      // Auto-fill the scan URL input from the active page URL
-      if (data.page?.url) {
-        const inp = document.getElementById('scanUrlInput');
-        if (inp && !inp.dataset.userEdited) {
-          inp.value = data.page.url.replace(/^https?:\/\//, '');
+    } else if (!isPaid) {
+      document.getElementById("extDot").className = "dot";
+      document.getElementById("extStatus").className = "card-status warn";
+      document.getElementById("extStatus").textContent = "Upgrade to sync elements";
+      document.getElementById("extCard").classList.remove("active");
+      syncBtn.disabled = false;
+      syncBtn.textContent = "\u26A1 Upgrade to Sync";
+      syncBtn.classList.add("locked");
+      syncBtn.onclick = function() {
+        window.open(BRIDGE + "/#pricing", "_blank");
+      };
+    } else {
+      document.getElementById("extDot").className = "dot warn";
+      document.getElementById("extStatus").className = "card-status warn";
+      document.getElementById("extStatus").textContent = "Waiting for selection...";
+      document.getElementById("extCard").classList.remove("active");
+      syncBtn.disabled = true;
+      syncBtn.textContent = "Sync to Figma";
+      syncBtn.classList.remove("locked");
+      syncBtn.onclick = null;
+    }
+    if ((_c = data.page) == null ? void 0 : _c.url) {
+      const inp = document.getElementById("scanUrlInput");
+      if (inp && !inp.dataset.userEdited) {
+        inp.value = data.page.url.replace(/^https?:\/\//, "");
+      }
+    }
+  }
+  function openScan() {
+    const raw = document.getElementById("scanUrlInput").value.trim();
+    if (!raw) return;
+    const clean = raw.replace(/^https?:\/\//, "");
+    let target = "https://scan.subsrf.dev/?url=" + encodeURIComponent(clean);
+    if (session == null ? void 0 : session.accessToken) target += "&token=" + encodeURIComponent(session.accessToken);
+    if (session == null ? void 0 : session.refreshToken) target += "&refresh=" + encodeURIComponent(session.refreshToken);
+    window.open(target, "_blank");
+  }
+  function updateComposeBtn() {
+    const btn = document.getElementById("btnCompose");
+    const label = document.getElementById("btnComposeLabel");
+    const tier = getTier();
+    const isPaid = tier === "starter" || tier === "pro";
+    const credits = getCredits();
+    const hasSel = currentSelNodes.length > 0;
+    btn.classList.remove("locked", "loading");
+    if (!isPaid) {
+      btn.disabled = false;
+      btn.classList.add("locked");
+      label.textContent = "\u26A1 Upgrade to Compose";
+    } else if (credits < 1) {
+      btn.disabled = true;
+      label.textContent = "No credits remaining";
+    } else if (!hasSel) {
+      btn.disabled = true;
+      label.textContent = "Select something in Figma";
+    } else if (isComposing) {
+      btn.disabled = true;
+      btn.classList.add("loading");
+      label.textContent = "Composing\u2026";
+    } else {
+      btn.disabled = false;
+      label.textContent = "Generate Brief";
+    }
+  }
+  function updateSelChips(nodes) {
+    currentSelNodes = nodes || [];
+    const el = document.getElementById("selChips");
+    if (!nodes || nodes.length === 0) {
+      el.innerHTML = '<span class="sel-chip empty">Nothing selected in Figma</span>';
+    } else {
+      const max = 4;
+      let html = nodes.slice(0, max).map(
+        (n) => '<span class="sel-chip">' + (n.name || n.type || "Node").slice(0, 22) + "</span>"
+      ).join("");
+      if (nodes.length > max) html += '<span class="sel-chip">+' + (nodes.length - max) + " more</span>";
+      el.innerHTML = html;
+    }
+    updateComposeBtn();
+  }
+  document.getElementById("btnCompose").addEventListener("click", async () => {
+    const tier = getTier();
+    if (!(tier === "starter" || tier === "pro")) {
+      window.open(BRIDGE + "/#pricing", "_blank");
+      return;
+    }
+    if (isComposing) return;
+    isComposing = true;
+    updateComposeBtn();
+    document.getElementById("resultPanel").classList.remove("visible");
+    parent.postMessage({ pluginMessage: { type: "READ_SELECTION" } }, "*");
+  });
+  async function runCompose(nodes) {
+    if (!nodes || nodes.length === 0) {
+      isComposing = false;
+      updateComposeBtn();
+      return;
+    }
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (session == null ? void 0 : session.accessToken) headers["Authorization"] = "Bearer " + session.accessToken;
+      const res = await fetch(BRIDGE + "/api/ai/compose", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ nodes })
+      });
+      if (res.status === 402) {
+        updateCredits(0, getTier());
+        throw new Error("No credits remaining");
+      }
+      if (res.status === 403) {
+        throw new Error("Upgrade required");
+      }
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e.error || "Compose failed");
+      }
+      const data = await res.json();
+      if (typeof data.balance === "number") {
+        updateCredits(data.balance, getTier());
+        if (session) {
+          session.credits = data.balance;
+          storageSet("subsrf_session", session);
         }
       }
-    }
-
-    function updateComposeBtn() {
-      const btn = document.getElementById('btnCompose');
-      const label = document.getElementById('btnComposeLabel');
-      const tier = getTier();
-      const isPaid = tier === 'starter' || tier === 'pro';
-      const credits = getCredits();
-      const hasSel = currentSelNodes.length > 0;
-
-      btn.classList.remove('locked', 'loading');
-
-      if (!isPaid) {
-        btn.disabled = false;
-        btn.classList.add('locked');
-        label.textContent = '⚡ Upgrade to Compose';
-      } else if (credits < 1) {
-        btn.disabled = true;
-        label.textContent = 'No credits remaining';
-      } else if (!hasSel) {
-        btn.disabled = true;
-        label.textContent = 'Select something in Figma';
-      } else if (isComposing) {
-        btn.disabled = true;
-        btn.classList.add('loading');
-        label.textContent = 'Composing…';
-      } else {
-        btn.disabled = false;
-        label.textContent = 'Generate Brief';
-      }
-    }
-
-    function updateSelChips(nodes) {
-      currentSelNodes = nodes || [];
-      const el = document.getElementById('selChips');
-      if (!nodes || nodes.length === 0) {
-        el.innerHTML = '<span class="sel-chip empty">Nothing selected in Figma</span>';
-      } else {
-        const max = 4;
-        let html = nodes.slice(0, max).map(n =>
-          '<span class="sel-chip">' + (n.name || n.type || 'Node').slice(0, 22) + '</span>'
-        ).join('');
-        if (nodes.length > max) html += '<span class="sel-chip">+' + (nodes.length - max) + ' more</span>';
-        el.innerHTML = html;
-      }
+      showResult(data.prompt || "");
+      addLog("Brief generated", "ai");
+    } catch (e) {
+      const row = document.getElementById("creditRow");
+      const orig = row.innerHTML;
+      row.innerHTML = `<span style="color:var(--err);font-family:'Azeret Mono',monospace;font-size:10px;">Error: ` + e.message + "</span>";
+      setTimeout(() => {
+        row.innerHTML = orig;
+      }, 4e3);
+    } finally {
+      isComposing = false;
       updateComposeBtn();
     }
-
-    document.getElementById('btnCompose').addEventListener('click', async () => {
-      const tier = getTier();
-      if (!(tier === 'starter' || tier === 'pro')) {
-        window.open(BRIDGE + '/#pricing', '_blank');
+  }
+  function showResult(prompt) {
+    document.getElementById("resultText").textContent = prompt;
+    document.getElementById("resultPanel").classList.add("visible");
+    setTimeout(() => {
+      document.getElementById("resultPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 80);
+  }
+  document.getElementById("btnCopyResult").addEventListener("click", () => {
+    const text = document.getElementById("resultText").textContent;
+    const btn = document.getElementById("btnCopyResult");
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;opacity:0;pointer-events:none;";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      const orig = btn.innerHTML;
+      btn.innerHTML = ICO.check + " Copied!";
+      setTimeout(() => {
+        btn.innerHTML = orig;
+      }, 2e3);
+    } catch (_e) {
+    }
+  });
+  async function checkState() {
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (session == null ? void 0 : session.accessToken) headers["Authorization"] = "Bearer " + session.accessToken;
+      const res = await fetch(BRIDGE + "/api/state?source=figma", { headers });
+      if (!res.ok) throw new Error("offline");
+      const data = await res.json();
+      lastData = data;
+      const tier = data.tier || "free";
+      applyTier(tier);
+      if (typeof data.credits === "number") {
+        updateCredits(data.credits, tier);
+        if (session && session.credits !== data.credits) {
+          session.credits = data.credits;
+          storageSet("subsrf_session", session);
+        }
+      }
+      updateSyncTab(data);
+      if (data.aiMessage) {
+        document.getElementById("aiDot").className = "dot pulse";
+        document.getElementById("aiStatus").className = "card-status neon";
+        document.getElementById("aiStatus").textContent = "Command Ready";
+        document.getElementById("aiCard").classList.add("active");
+        if (data.aiMessage.id > lastProcessedAiId) {
+          lastProcessedAiId = data.aiMessage.id;
+          addLog("AI: " + data.aiMessage.type, "ai");
+          parent.postMessage({ pluginMessage: data.aiMessage }, "*");
+        }
+      } else {
+        const isPaid = tier === "starter" || tier === "pro";
+        document.getElementById("aiDot").className = isPaid ? "dot on" : "dot";
+        document.getElementById("aiStatus").className = isPaid ? "card-status ok" : "card-status";
+        document.getElementById("aiStatus").textContent = isPaid ? "Connected" : "Paid plan required";
+        document.getElementById("aiCard").classList.remove("active");
+      }
+      if (data.pendingQuery && data.pendingQuery.id > lastProcessedQueryId) {
+        lastProcessedQueryId = data.pendingQuery.id;
+        addLog("AI query #" + data.pendingQuery.id, "ai");
+        parent.postMessage({ pluginMessage: { type: "FIGMA_QUERY", queryId: data.pendingQuery.id, code: data.pendingQuery.code } }, "*");
+      }
+      if (isMinimized) syncToolbar(data);
+    } catch (_) {
+      document.getElementById("extStatus").className = "card-status err";
+      document.getElementById("extStatus").textContent = "Bridge offline";
+      document.getElementById("extDot").className = "dot err";
+    }
+  }
+  function syncToolbar(data) {
+    const elements = (data == null ? void 0 : data.elements) || [];
+    const hasEl = elements.length > 0;
+    const extLabel = document.getElementById("tcExtLabel");
+    const extDot = document.getElementById("tcExtDot");
+    extDot.className = hasEl ? "dot on" : "dot warn";
+    extLabel.className = "chip-status" + (hasEl ? " ok" : " warn");
+    extLabel.textContent = hasEl ? elements.length + " elements" : document.getElementById("extStatus").textContent;
+    document.getElementById("tcExtChip").classList.toggle("active", hasEl);
+    const aiLabel = document.getElementById("tcAiLabel");
+    const aiDot = document.getElementById("tcAiDot");
+    const srcLabel = document.getElementById("aiStatus");
+    const srcDot = document.getElementById("aiDot");
+    aiDot.className = srcDot.className;
+    aiLabel.className = "chip-status" + (srcLabel.className.includes("ok") ? " ok" : srcLabel.className.includes("neon") ? " ok" : "");
+    aiLabel.textContent = isComposing ? "Composing\u2026" : srcLabel.textContent;
+  }
+  async function fetchCredits() {
+    var _a, _b;
+    if (!(session == null ? void 0 : session.accessToken)) return;
+    try {
+      const res = await fetch(BRIDGE + "/api/credits/balance", {
+        headers: { "Authorization": "Bearer " + session.accessToken }
+      });
+      if (res.ok) {
+        const d = await res.json();
+        updateCredits((_a = d.balance) != null ? _a : 0, d.tier || getTier());
+        applyTier(d.tier || getTier());
+        if (session) {
+          session.credits = (_b = d.balance) != null ? _b : 0;
+          storageSet("subsrf_session", session);
+        }
+      }
+    } catch (_) {
+    }
+  }
+  function startPolling() {
+    if (pollInterval) clearInterval(pollInterval);
+    addLog("System initialized.");
+    fetchCredits().then(() => {
+      addLog("Connected to AI.", "ok");
+      addLog("Waiting for Chrome extension payload...");
+    });
+    checkState();
+    pollInterval = setInterval(checkState, 2e3);
+  }
+  async function refreshSession() {
+    if (!(session == null ? void 0 : session.refreshToken)) return false;
+    try {
+      const res = await fetch(BRIDGE + "/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: session.refreshToken })
+      });
+      if (!res.ok) {
+        session = null;
+        storageDel("subsrf_session");
+        showView("signin");
+        return false;
+      }
+      const data = await res.json();
+      session.accessToken = data.accessToken;
+      if (data.refreshToken) session.refreshToken = data.refreshToken;
+      session.expiresAt = Date.now() + (data.expiresIn || 3600) * 1e3;
+      if (data.tier) session.tier = data.tier;
+      if (data.email) session.email = data.email;
+      storageSet("subsrf_session", session);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+  function startOAuth() {
+    const state = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    document.getElementById("btnSignIn").disabled = true;
+    document.getElementById("btnSignInCancel").style.display = "";
+    document.getElementById("signin-status").textContent = "Opening browser\u2026";
+    window.open(BRIDGE + "/auth/figma/start?state=" + state, "_blank");
+    document.getElementById("signin-status").textContent = "Waiting for sign-in\u2026";
+    let attempts = 0;
+    oauthPollInterval = setInterval(async () => {
+      if (++attempts > 90) {
+        clearInterval(oauthPollInterval);
+        document.getElementById("signin-status").textContent = "Timed out. Try again.";
+        document.getElementById("btnSignIn").disabled = false;
+        document.getElementById("btnSignInCancel").style.display = "none";
         return;
       }
-      if (isComposing) return;
-      isComposing = true;
-      updateComposeBtn();
-      document.getElementById('resultPanel').classList.remove('visible');
-      parent.postMessage({ pluginMessage: { type: 'READ_SELECTION' } }, '*');
-    });
-
-    async function runCompose(nodes) {
-      if (!nodes || nodes.length === 0) { isComposing = false; updateComposeBtn(); return; }
       try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
-        const res = await fetch(BRIDGE + '/api/ai/compose', {
-          method: 'POST', headers,
-          body: JSON.stringify({ nodes })
-        });
-        if (res.status === 402) { updateCredits(0, getTier()); throw new Error('No credits remaining'); }
-        if (res.status === 403) { throw new Error('Upgrade required'); }
-        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || 'Compose failed'); }
-        const data = await res.json();
-        if (typeof data.balance === 'number') { updateCredits(data.balance, getTier()); if (session) { session.credits = data.balance; storageSet('subsrf_session', session); } }
-        showResult(data.prompt || '');
-        addLog('Brief generated', 'ai');
-      } catch (e) {
-        const row = document.getElementById('creditRow');
-        const orig = row.innerHTML;
-        row.innerHTML = '<span style="color:var(--err);font-family:\'Azeret Mono\',monospace;font-size:10px;">Error: ' + e.message + '</span>';
-        setTimeout(() => { row.innerHTML = orig; }, 4000);
-      } finally { isComposing = false; updateComposeBtn(); }
-    }
-
-    function showResult(prompt) {
-      document.getElementById('resultText').textContent = prompt;
-      document.getElementById('resultPanel').classList.add('visible');
-      setTimeout(() => { document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 80);
-    }
-
-    document.getElementById('btnCopyResult').addEventListener('click', () => {
-      const text = document.getElementById('resultText').textContent;
-      const btn = document.getElementById('btnCopyResult');
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        const orig = btn.innerHTML;
-        btn.innerHTML = ICO.check + ' Copied!';
-        setTimeout(() => { btn.innerHTML = orig; }, 2000);
-      } catch (_e) { }
-    });
-
-    async function checkState() {
-      try {
-        const headers = { 'Content-Type': 'application/json' };
-        if (session?.accessToken) headers['Authorization'] = 'Bearer ' + session.accessToken;
-        const res = await fetch(BRIDGE + '/api/state?source=figma', { headers });
-        if (!res.ok) throw new Error('offline');
-        const data = await res.json();
-        lastData = data;
-
-        const tier = data.tier || 'free';
-        applyTier(tier);
-        if (typeof data.credits === 'number') {
-          updateCredits(data.credits, tier);
-          if (session && session.credits !== data.credits) {
-            session.credits = data.credits;
-            storageSet('subsrf_session', session);
-          }
-        }
-
-        updateSyncTab(data);
-
-        if (data.aiMessage) {
-          document.getElementById('aiDot').className = 'dot pulse';
-          document.getElementById('aiStatus').className = 'card-status neon';
-          document.getElementById('aiStatus').textContent = 'Command Ready';
-          document.getElementById('aiCard').classList.add('active');
-          if (data.aiMessage.id > lastProcessedAiId) {
-            lastProcessedAiId = data.aiMessage.id;
-            addLog('AI: ' + data.aiMessage.type, 'ai');
-            parent.postMessage({ pluginMessage: data.aiMessage }, '*');
-          }
-        } else {
-          const isPaid = tier === 'starter' || tier === 'pro';
-          document.getElementById('aiDot').className = isPaid ? 'dot on' : 'dot';
-          document.getElementById('aiStatus').className = isPaid ? 'card-status ok' : 'card-status';
-          document.getElementById('aiStatus').textContent = isPaid ? 'Connected' : 'Paid plan required';
-          document.getElementById('aiCard').classList.remove('active');
-        }
-
-        if (data.pendingQuery && data.pendingQuery.id > lastProcessedQueryId) {
-          lastProcessedQueryId = data.pendingQuery.id;
-          addLog('AI query #' + data.pendingQuery.id, 'ai');
-          parent.postMessage({ pluginMessage: { type: 'FIGMA_QUERY', queryId: data.pendingQuery.id, code: data.pendingQuery.code } }, '*');
-        }
-
-        if (isMinimized) syncToolbar(data);
-
-      } catch (_) {
-        document.getElementById('extStatus').className = 'card-status err';
-        document.getElementById('extStatus').textContent = 'Bridge offline';
-        document.getElementById('extDot').className = 'dot err';
-      }
-    }
-
-    function syncToolbar(data) {
-      const elements = data?.elements || [];
-      const hasEl = elements.length > 0;
-      const extLabel = document.getElementById('tcExtLabel');
-      const extDot = document.getElementById('tcExtDot');
-      extDot.className = hasEl ? 'dot on' : 'dot warn';
-      extLabel.className = 'chip-status' + (hasEl ? ' ok' : ' warn');
-      extLabel.textContent = hasEl ? elements.length + ' elements' : document.getElementById('extStatus').textContent;
-      document.getElementById('tcExtChip').classList.toggle('active', hasEl);
-
-      const aiLabel = document.getElementById('tcAiLabel');
-      const aiDot = document.getElementById('tcAiDot');
-      const srcLabel = document.getElementById('aiStatus');
-      const srcDot = document.getElementById('aiDot');
-      aiDot.className = srcDot.className;
-      aiLabel.className = 'chip-status' + (srcLabel.className.includes('ok') ? ' ok' : srcLabel.className.includes('neon') ? ' ok' : '');
-      aiLabel.textContent = isComposing ? 'Composing…' : srcLabel.textContent;
-    }
-
-    async function fetchCredits() {
-      if (!session?.accessToken) return;
-      try {
-        const res = await fetch(BRIDGE + '/api/credits/balance', {
-          headers: { 'Authorization': 'Bearer ' + session.accessToken }
-        });
-        if (res.ok) {
-          const d = await res.json();
-          updateCredits(d.balance ?? 0, d.tier || getTier());
-          applyTier(d.tier || getTier());
-          if (session) { session.credits = d.balance ?? 0; storageSet('subsrf_session', session); }
-        }
-      } catch (_) { }
-    }
-
-    function startPolling() {
-      if (pollInterval) clearInterval(pollInterval);
-      addLog('System initialized.');
-      fetchCredits().then(() => {
-        addLog('Connected to AI.', 'ok');
-        addLog('Waiting for Chrome extension payload...');
-      });
-      checkState();
-      pollInterval = setInterval(checkState, 2000);
-    }
-
-    async function refreshSession() {
-      if (!session?.refreshToken) return false;
-      try {
-        const res = await fetch(BRIDGE + '/api/auth/refresh', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: session.refreshToken })
-        });
-        if (!res.ok) { session = null; storageDel('subsrf_session'); showView('signin'); return false; }
-        const data = await res.json();
-        session.accessToken = data.accessToken;
-        if (data.refreshToken) session.refreshToken = data.refreshToken;
-        session.expiresAt = Date.now() + (data.expiresIn || 3600) * 1000;
-        if (data.tier) session.tier = data.tier;
-        if (data.email) session.email = data.email;
-        storageSet('subsrf_session', session);
-        return true;
-      } catch (_) { return false; }
-    }
-
-    function startOAuth() {
-      const state = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-      document.getElementById('btnSignIn').disabled = true;
-      document.getElementById('btnSignInCancel').style.display = '';
-      document.getElementById('signin-status').textContent = 'Opening browser…';
-      window.open(BRIDGE + '/auth/figma/start?state=' + state, '_blank');
-      document.getElementById('signin-status').textContent = 'Waiting for sign-in…';
-      let attempts = 0;
-      oauthPollInterval = setInterval(async () => {
-        if (++attempts > 90) {
+        const res = await fetch(BRIDGE + "/api/auth/figma/session?state=" + state);
+        if (res.status === 404) return;
+        if (!res.ok) {
           clearInterval(oauthPollInterval);
-          document.getElementById('signin-status').textContent = 'Timed out. Try again.';
-          document.getElementById('btnSignIn').disabled = false;
-          document.getElementById('btnSignInCancel').style.display = 'none';
+          document.getElementById("signin-status").textContent = "Sign-in failed. Try again.";
+          document.getElementById("btnSignIn").disabled = false;
+          document.getElementById("btnSignInCancel").style.display = "none";
           return;
         }
-        try {
-          const res = await fetch(BRIDGE + '/api/auth/figma/session?state=' + state);
-          if (res.status === 404) return;
-          if (!res.ok) {
-            clearInterval(oauthPollInterval);
-            document.getElementById('signin-status').textContent = 'Sign-in failed. Try again.';
-            document.getElementById('btnSignIn').disabled = false;
-            document.getElementById('btnSignInCancel').style.display = 'none';
-            return;
-          }
-          const data = await res.json();
-          clearInterval(oauthPollInterval);
-          session = {
-            accessToken: data.accessToken, refreshToken: data.refreshToken || null,
-            expiresAt: data.expiresAt || (Date.now() + 3600000), tier: data.tier,
-            email: data.email, credits: data.credits || 0
-          };
-          storageSet('subsrf_session', session);
-          document.getElementById('settingsEmail').textContent = session.email || '—';
-          showView('main');
-          applyTier(session.tier || 'free');
-          updateCredits(session.credits || 0, session.tier || 'free');
-          startPolling();
-          addLog('Signed in as ' + session.email);
-        } catch (_) { }
-      }, 2000);
-    }
-
-    function cancelOAuth() {
-      if (oauthPollInterval) clearInterval(oauthPollInterval);
-      document.getElementById('btnSignIn').disabled = false;
-      document.getElementById('btnSignInCancel').style.display = 'none';
-      document.getElementById('signin-status').textContent = '';
-    }
-
-    function signOut() {
-      if (pollInterval) clearInterval(pollInterval);
-      session = null;
-      storageDel('subsrf_session');
-      showView('signin');
-    }
-
-    let isMinimized = false;
-    const FULL_H = 720, MINI_H = 68;
-
-    function setMinimized(min) {
-      isMinimized = min;
-      document.getElementById('minimizeIcon').textContent = min ? '+' : '—';
-      document.getElementById('toolbar').style.display = min ? 'flex' : 'none';
-      document.querySelector('.tab-nav').style.display = min ? 'none' : '';
-      document.querySelectorAll('.tab-panel').forEach(p => { p.style.display = min ? 'none' : ''; });
-      document.body.classList.toggle('compact', min);
-      parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 360, height: min ? MINI_H : FULL_H } }, '*');
-    }
-
-    document.getElementById('btnMinimize').addEventListener('click', (e) => {
-      e.stopPropagation();
-      setMinimized(!isMinimized);
+        const data = await res.json();
+        clearInterval(oauthPollInterval);
+        session = {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken || null,
+          expiresAt: data.expiresAt || Date.now() + 36e5,
+          tier: data.tier,
+          email: data.email,
+          credits: data.credits || 0
+        };
+        storageSet("subsrf_session", session);
+        document.getElementById("settingsEmail").textContent = session.email || "\u2014";
+        showView("main");
+        applyTier(session.tier || "free");
+        updateCredits(session.credits || 0, session.tier || "free");
+        startPolling();
+        addLog("Signed in as " + session.email);
+      } catch (_) {
+      }
+    }, 2e3);
+  }
+  function cancelOAuth() {
+    if (oauthPollInterval) clearInterval(oauthPollInterval);
+    document.getElementById("btnSignIn").disabled = false;
+    document.getElementById("btnSignInCancel").style.display = "none";
+    document.getElementById("signin-status").textContent = "";
+  }
+  function signOut() {
+    if (pollInterval) clearInterval(pollInterval);
+    session = null;
+    storageDel("subsrf_session");
+    showView("signin");
+  }
+  var isMinimized = false;
+  var FULL_H = 720;
+  var MINI_H = 68;
+  function setMinimized(min) {
+    isMinimized = min;
+    document.getElementById("minimizeIcon").textContent = min ? "+" : "\u2014";
+    document.getElementById("toolbar").style.display = min ? "flex" : "none";
+    document.querySelector(".tab-nav").style.display = min ? "none" : "";
+    document.querySelectorAll(".tab-panel").forEach((p) => {
+      p.style.display = min ? "none" : "";
     });
-    document.getElementById('btnSignIn').onclick = startOAuth;
-    document.getElementById('btnSignInCancel').onclick = cancelOAuth;
-    document.getElementById('btnSignOut').onclick = signOut;
-
-    showView('signin');
-    storageGet('subsrf_session');
-    setTimeout(() => {
-      if (document.getElementById('view-loading').style.display !== 'none') showView('signin');
-    }, 4000);
-
-    function openScan() {
-      const raw = document.getElementById('scanUrlInput').value.trim();
-      if (!raw) return;
-      const clean = raw.replace(/^https?:\/\//, '');
-      let target = 'https://scan.subsrf.dev/?url=' + encodeURIComponent(clean);
-      if (session?.accessToken) target += '&token=' + encodeURIComponent(session.accessToken);
-      if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
-      window.open(target, '_blank');
-    }
-
-    window.onmessage = async (event) => {
-      const msg = event.data.pluginMessage;
-      if (!msg) return;
-
-      if (msg.type === 'STORAGE_VALUE') {
-        const cb = storageCbs[msg.key];
-        if (cb) { delete storageCbs[msg.key]; cb(msg.value); }
-
-        if (msg.key === 'subsrf_session') {
-          if (msg.value?.accessToken) {
-            session = msg.value;
-            const now = Date.now();
-            if ((session.expiresAt || 0) > 0 && now > session.expiresAt - 300000) await refreshSession();
-            if (session) {
-              document.getElementById('settingsEmail').textContent = session.email || '—';
-              showView('main');
-              applyTier(session.tier || 'free');
-              updateCredits(session.credits || 0, session.tier || 'free');
-              startPolling();
-            }
-          } else {
-            showView('signin');
+    document.body.classList.toggle("compact", min);
+    parent.postMessage({ pluginMessage: { type: "RESIZE", width: 360, height: min ? MINI_H : FULL_H } }, "*");
+  }
+  document.getElementById("btnMinimize").addEventListener("click", (e) => {
+    e.stopPropagation();
+    setMinimized(!isMinimized);
+  });
+  document.getElementById("btnSignIn").onclick = startOAuth;
+  document.getElementById("btnSignInCancel").onclick = cancelOAuth;
+  document.getElementById("btnSignOut").onclick = signOut;
+  showView("signin");
+  storageGet("subsrf_session");
+  setTimeout(() => {
+    if (document.getElementById("view-loading").style.display !== "none") showView("signin");
+  }, 4e3);
+  window.onmessage = async (event) => {
+    var _a;
+    const msg = event.data.pluginMessage;
+    if (!msg) return;
+    if (msg.type === "STORAGE_VALUE") {
+      const cb = storageCbs[msg.key];
+      if (cb) {
+        delete storageCbs[msg.key];
+        cb(msg.value);
+      }
+      if (msg.key === "subsrf_session") {
+        if ((_a = msg.value) == null ? void 0 : _a.accessToken) {
+          session = msg.value;
+          const now = Date.now();
+          if ((session.expiresAt || 0) > 0 && now > session.expiresAt - 3e5) await refreshSession();
+          if (session) {
+            document.getElementById("settingsEmail").textContent = session.email || "\u2014";
+            showView("main");
+            applyTier(session.tier || "free");
+            updateCredits(session.credits || 0, session.tier || "free");
+            startPolling();
           }
+        } else {
+          showView("signin");
         }
-
-        return;
       }
-
-      if (msg.type === 'SELECTION_CHANGED') {
-        updateSelChips(msg.nodes || []);
-        return;
+      return;
+    }
+    if (msg.type === "SELECTION_CHANGED") {
+      updateSelChips(msg.nodes || []);
+      return;
+    }
+    if (msg.type === "SELECTION_DATA") {
+      if (isComposing) await runCompose(msg.nodes || []);
+      return;
+    }
+    if (msg.type === "QUERY_RESULT") {
+      try {
+        await fetch(BRIDGE + "/api/figma/result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ queryId: msg.queryId, result: msg.result, error: msg.error })
+        });
+      } catch (_) {
       }
-
-      if (msg.type === 'SELECTION_DATA') {
-        if (isComposing) await runCompose(msg.nodes || []);
-        return;
+      return;
+    }
+    if (msg.type === "SEND_SELECTION_TO_BRIDGE") {
+      try {
+        const h = { "Content-Type": "application/json" };
+        if (session == null ? void 0 : session.accessToken) h["Authorization"] = "Bearer " + session.accessToken;
+        await fetch(BRIDGE + "/api/figma/selection", {
+          method: "POST",
+          headers: h,
+          body: JSON.stringify({ elements: msg.elements, context: { title: "Figma Selection" } })
+        });
+      } catch (_) {
       }
-
-      if (msg.type === 'QUERY_RESULT') {
-        try {
-          await fetch(BRIDGE + '/api/figma/result', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ queryId: msg.queryId, result: msg.result, error: msg.error })
-          });
-        } catch (_) { }
-        return;
-      }
-
-
-
-      if (msg.type === 'SEND_SELECTION_TO_BRIDGE') {
-        try {
-          const h = { 'Content-Type': 'application/json' };
-          if (session?.accessToken) h['Authorization'] = 'Bearer ' + session.accessToken;
-          await fetch(BRIDGE + '/api/figma/selection', {
-            method: 'POST', headers: h,
-            body: JSON.stringify({ elements: msg.elements, context: { title: 'Figma Selection' } })
-          });
-        } catch (_) { }
-      }
-    };
-  </script>
+    }
+  };
+  window.openScan = openScan;
+  window.setMinimized = setMinimized;
+})();
+</script>
 </body>
 
 </html>

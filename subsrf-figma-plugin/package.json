@@ -1,0 +1,12 @@
+{
+  "name": "subsrf-figma-plugin",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch",
+    "prod":  "node build.js --prod"
+  },
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}
