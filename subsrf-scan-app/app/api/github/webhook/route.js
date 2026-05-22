@@ -81,18 +81,28 @@ export async function POST(req) {
     return NextResponse.json({ skipped: true, reason: 'installation not linked' });
   }
 
-  // Find the most recently updated scan project for this user to use as token source.
-  // In a future version, a per-repo mapping could specify which project to use.
+  // Look up the repo→project link for this specific repo
+  const repoFullName = `${owner}/${repo}`;
+  const { data: link } = await db
+    .from('repo_project_links')
+    .select('project_slug')
+    .eq('user_id', inst.user_id)
+    .eq('repo_full_name', repoFullName)
+    .single();
+
+  if (!link) {
+    return NextResponse.json({ skipped: true, reason: `no project linked to ${repoFullName}` });
+  }
+
   const { data: project } = await db
     .from('scan_projects')
     .select('slug, source_url, tokens, curated_tokens')
     .eq('user_id', inst.user_id)
-    .order('updated_at', { ascending: false })
-    .limit(1)
+    .eq('slug', link.project_slug)
     .single();
 
   if (!project) {
-    return NextResponse.json({ skipped: true, reason: 'no scan project found for user' });
+    return NextResponse.json({ skipped: true, reason: 'linked project not found' });
   }
 
   try {

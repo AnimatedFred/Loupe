@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 import GitHubConnect from './GitHubConnect';
 
@@ -27,6 +27,66 @@ export default function AuditDashboard({ tokens }) {
   const [error, setError] = useState(null);
   const [severityFilter, setSeverityFilter] = useState('all');
   const [expandedFile, setExpandedFile] = useState(null);
+
+  // Repo→project link state
+  const [projects, setProjects] = useState([]);
+  const [linkedSlug, setLinkedSlug] = useState(null);
+  const [linkSaving, setLinkSaving] = useState(false);
+
+  // Load scan projects once on mount
+  useEffect(() => {
+    if (!session?.access_token) return;
+    fetch('/api/figma/projects', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(r => r.json())
+      .then(d => setProjects(d.projects || []))
+      .catch(() => {});
+  }, [session?.access_token]);
+
+  // Load the existing link whenever a repo is selected
+  useEffect(() => {
+    if (!selectedRepo || !session?.access_token) { setLinkedSlug(null); return; }
+    fetch(`/api/github/links?repo=${encodeURIComponent(selectedRepo.fullName)}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+      .then(r => r.json())
+      .then(d => setLinkedSlug(d.links?.[0]?.project_slug || null))
+      .catch(() => setLinkedSlug(null));
+  }, [selectedRepo?.fullName, session?.access_token]);
+
+  async function saveLink(projectSlug) {
+    if (!selectedRepo || !session?.access_token) return;
+    setLinkSaving(true);
+    try {
+      if (projectSlug) {
+        await fetch('/api/github/links', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            repoFullName: selectedRepo.fullName,
+            projectSlug,
+            installationId: selectedRepo.installationId,
+          }),
+        });
+        setLinkedSlug(projectSlug);
+      } else {
+        await fetch('/api/github/links', {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ repoFullName: selectedRepo.fullName }),
+        });
+        setLinkedSlug(null);
+      }
+    } catch {}
+    setLinkSaving(false);
+  }
 
   async function handleRunAudit() {
     if (!selectedRepo || !session?.access_token || !tokens) return;
@@ -124,6 +184,42 @@ export default function AuditDashboard({ tokens }) {
                 </option>
               ))}
             </select>
+
+            {selectedRepo && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{
+                  fontFamily: "'Azeret Mono', monospace", fontSize: 9,
+                  letterSpacing: 2, textTransform: 'uppercase', color: 'var(--t3)',
+                  marginBottom: 6,
+                }}>
+                  Subsrf project
+                  {linkedSlug && (
+                    <span style={{ color: '#00FF87', marginLeft: 8 }}>● linked</span>
+                  )}
+                </div>
+                <select
+                  value={linkedSlug || ''}
+                  disabled={linkSaving}
+                  onChange={e => saveLink(e.target.value || null)}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: 4,
+                    background: 'var(--surface)',
+                    border: `1px solid ${linkedSlug ? 'rgba(0,255,135,0.25)' : 'var(--border)'}`,
+                    color: linkedSlug ? 'var(--t1)' : 'var(--t3)',
+                    fontFamily: "'Azeret Mono', monospace", fontSize: 11,
+                    cursor: 'pointer', outline: 'none', appearance: 'none',
+                    opacity: linkSaving ? 0.5 : 1,
+                  }}
+                >
+                  <option value="">No project linked — webhook won't fire</option>
+                  {projects.map(p => (
+                    <option key={p.slug} value={p.slug}>
+                      {p.source_url} ({p.counts.colors} colors, {p.counts.spacing} spacing)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {selectedRepo && (
               <button
