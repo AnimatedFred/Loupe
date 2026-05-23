@@ -185,14 +185,17 @@ async function loadVarsProjects() {
   const el = document.getElementById('varsProjectsList');
   el.innerHTML = '<div style="font-size:10px;color:var(--t3);font-family:\'Azeret Mono\',monospace;padding:6px 0;">Loading…</div>';
   try {
-    const res = await fetch(SCAN + '/api/project', {
+    const res = await fetch(BRIDGE + '/api/scan/projects', {
       headers: { 'Authorization': 'Bearer ' + session.accessToken }
     });
-    if (!res.ok) throw new Error('Failed');
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || 'HTTP ' + res.status);
+    }
     const data = await res.json();
     renderVarsProjects(data.projects || []);
-  } catch (_) {
-    el.innerHTML = '<div style="font-size:10px;color:var(--err);font-family:\'Azeret Mono\',monospace;padding:6px 0;">Failed to load projects</div>';
+  } catch (e) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--err);font-family:\'Azeret Mono\',monospace;padding:6px 0;">Failed: ' + e.message + '</div>';
   }
 }
 
@@ -220,7 +223,7 @@ async function selectVarsProject(slug, el) {
   if (el) el.style.borderColor = 'var(--neon)';
   document.getElementById('varsImportPanel').style.display = 'none';
   try {
-    const res = await fetch(SCAN + '/api/project/' + slug, {
+    const res = await fetch(BRIDGE + '/api/scan/project/' + slug, {
       headers: { 'Authorization': 'Bearer ' + session.accessToken }
     });
     if (!res.ok) throw new Error('Not found');

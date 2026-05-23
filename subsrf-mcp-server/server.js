@@ -1197,6 +1197,40 @@ app.post('/api/user/figma-pat', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Scan app proxy ────────────────────────────────────────────────────────────
+// Proxies scan.subsrf.dev API through the bridge so the Figma plugin avoids
+// cross-origin issues (bridge already has CORS configured for figma.com).
+const SCAN_APP_URL = 'https://scan.subsrf.dev';
+
+app.get('/api/scan/projects', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const r = await fetch(`${SCAN_APP_URL}/api/project`, {
+      headers: { 'Authorization': req.headers.authorization, 'Content-Type': 'application/json' }
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: 'Scan app unreachable: ' + e.message });
+  }
+});
+
+app.get('/api/scan/project/:slug', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+  const slug = req.params.slug.replace(/[^a-zA-Z0-9_-]/g, '');
+  try {
+    const r = await fetch(`${SCAN_APP_URL}/api/project/${slug}`, {
+      headers: { 'Authorization': req.headers.authorization, 'Content-Type': 'application/json' }
+    });
+    const data = await r.json();
+    res.status(r.status).json(data);
+  } catch (e) {
+    res.status(502).json({ error: 'Scan app unreachable: ' + e.message });
+  }
+});
+
 // ── Figma Plugin OAuth ────────────────────────────────────────────────────────
 // Pending sessions keyed by state UUID — TTL 10 minutes
 const figmaAuthSessions = new Map();
