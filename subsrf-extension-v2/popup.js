@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnClick.onclick = () => ensureAndExecute((id) => setMode(id, 'click'));
   btnArea.onclick = () => ensureAndExecute((id) => setMode(id, 'region'));
 
-  btnFullPage.onclick = () => {
+btnFullPage.onclick = () => {
     ensureAndExecute((id) => {
       chrome.tabs.sendMessage(id, { type: 'TRIGGER_FULL_PAGE' });
       setTimeout(() => window.close(), 100);
@@ -198,6 +198,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   loadAuthState();
+
+  // ── Scan FAB toggle ───────────────────────────────────────────────────────
+  function applyFabToggle(enabled) {
+    const checkbox = document.getElementById('fab-toggle');
+    const track = document.getElementById('fab-toggle-track');
+    const thumb = document.getElementById('fab-toggle-thumb');
+    if (!checkbox) return;
+    checkbox.checked = enabled;
+    track.style.background = enabled ? 'rgba(0,255,135,0.18)' : 'var(--lift)';
+    track.style.borderColor = enabled ? 'rgba(0,255,135,0.35)' : 'var(--border)';
+    thumb.style.background = enabled ? 'var(--neon)' : 'var(--t3)';
+    thumb.style.transform = enabled ? 'translateX(14px)' : 'translateX(0)';
+  }
+
+  chrome.storage.local.get('subsrf_scan_fab_enabled', (data) => {
+    const enabled = data.subsrf_scan_fab_enabled !== false; // default on
+    applyFabToggle(enabled);
+  });
+
+  document.getElementById('fab-toggle')?.addEventListener('change', (e) => {
+    const enabled = e.target.checked;
+    applyFabToggle(enabled);
+    chrome.storage.local.set({ subsrf_scan_fab_enabled: enabled });
+    // Tell content scripts on all tabs to show/hide the fab
+    chrome.tabs.query({}, (tabs) => {
+      for (const tab of tabs) {
+        chrome.tabs.sendMessage(tab.id, { type: 'SET_SCAN_FAB', enabled }).catch(() => {});
+      }
+    });
+  });
 
   // MCP copy button
   document.getElementById('btn-copy-mcp')?.addEventListener('click', () => {

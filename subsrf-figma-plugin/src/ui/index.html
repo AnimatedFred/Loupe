@@ -79,6 +79,7 @@
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="sync">SYNC</button>
       <button class="tab-btn" data-tab="compose">COMPOSE</button>
+      <button class="tab-btn" data-tab="vars">VARS</button>
       <button class="tab-btn" data-tab="settings">SETTINGS</button>
     </div>
 
@@ -120,36 +121,7 @@
           <div class="dot" id="aiDot"></div>
         </div>
 
-        <!-- ── Subsrf Scan row ── -->
-        <div style="margin-top:2px;">
-          <div class="sec-label">Subsrf Scan</div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <div
-              style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
-              <input id="scanUrlInput" type="text" placeholder="stripe.com" style="
-                flex:1;background:transparent;border:none;outline:none;
-                color:var(--t1);font-family:'Azeret Mono',monospace;
-                font-size:10px;padding:9px 0;
-              " oninput="this.dataset.userEdited='1'" />
-            </div>
-            <button onclick="openScan()" style="
-              background:var(--neon-dim);border:1px solid rgba(0,255,135,0.2);border-radius:2px;
-              padding:0 12px;height:36px;cursor:pointer;
-              display:inline-flex;align-items:center;gap:5px;
-              font-family:'Azeret Mono',monospace;font-size:9px;color:var(--neon);
-              white-space:nowrap;letter-spacing:0.5px;
-            ">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              Scan →
-            </button>
-          </div>
-        </div>
-
-        <div class="feed">
+<div class="feed">
           <div class="feed-title">Activity Feed</div>
           <div class="feed-list" id="feedList">
             <div class="feed-empty">Waiting for activity…</div>
@@ -210,6 +182,66 @@
           </svg>
           <span id="btnComposeLabel">Select something in Figma</span>
         </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB: VARS ═══════════ -->
+    <div class="tab-panel" id="tab-vars">
+      <div class="scroll-area">
+
+        <!-- New Scan shortcut -->
+        <div>
+          <div class="sec-label">New Scan</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <div style="flex:1;display:flex;align-items:center;background:var(--layer);border:1px solid var(--border);border-radius:2px;overflow:hidden;padding:0 10px;">
+              <input id="scanUrlInput" type="text" placeholder="stripe.com" style="flex:1;background:transparent;border:none;outline:none;color:var(--t1);font-family:'Azeret Mono',monospace;font-size:10px;padding:9px 0;" oninput="this.dataset.userEdited='1'" />
+            </div>
+            <button onclick="openScan()" style="background:var(--neon-dim);border:1px solid rgba(0,255,135,0.2);border-radius:2px;padding:0 12px;height:36px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:'Azeret Mono',monospace;font-size:9px;color:var(--neon);white-space:nowrap;letter-spacing:0.5px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Scan →
+            </button>
+          </div>
+        </div>
+
+        <!-- Scanned projects -->
+        <div style="margin-top:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div class="sec-label" style="margin:0;">Scanned Projects</div>
+            <button onclick="loadVarsProjects()" id="btnRefreshProjects" style="background:none;border:none;cursor:pointer;font-family:'Azeret Mono',monospace;font-size:9px;color:var(--t3);padding:2px 4px;letter-spacing:0.5px;">Refresh</button>
+          </div>
+          <div id="varsProjectsList">
+            <div style="font-size:10px;color:var(--t3);font-family:'Azeret Mono',monospace;padding:6px 0;">Sign in and scan a site to see projects here.</div>
+          </div>
+        </div>
+
+        <!-- Import panel — shown after selecting a project -->
+        <div id="varsImportPanel" style="display:none;margin-top:12px;">
+          <div class="sec-label">Import as Figma Variables</div>
+          <div style="font-size:10px;color:var(--t2);font-family:'Azeret Mono',monospace;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="varsSelectedUrl">—</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button class="btn-secondary" id="btnImportColors" style="display:flex;justify-content:space-between;align-items:center;font-size:11px;">
+              <span>Colors</span>
+              <span style="font-size:9px;color:var(--t3);font-family:'Azeret Mono',monospace;" id="colorsCount">—</span>
+            </button>
+            <button class="btn-secondary" id="btnImportSpacing" style="display:flex;justify-content:space-between;align-items:center;font-size:11px;">
+              <span>Spacing</span>
+              <span style="font-size:9px;color:var(--t3);font-family:'Azeret Mono',monospace;" id="spacingCount">—</span>
+            </button>
+            <button class="btn-secondary" id="btnImportRounding" style="display:flex;justify-content:space-between;align-items:center;font-size:11px;">
+              <span>Rounding</span>
+              <span style="font-size:9px;color:var(--t3);font-family:'Azeret Mono',monospace;" id="roundingCount">—</span>
+            </button>
+          </div>
+          <div id="varsImportStatus" style="font-size:9px;font-family:'Azeret Mono',monospace;color:var(--t3);margin-top:6px;min-height:14px;"></div>
+        </div>
+
+        <!-- JSON paste import -->
+        <div style="margin-top:12px;">
+          <div class="sec-label">Import JSON</div>
+          <textarea id="varsJsonInput" style="width:100%;height:90px;background:var(--layer);border:1px solid var(--border);border-radius:2px;color:var(--t2);font-family:'Azeret Mono',monospace;font-size:9px;padding:8px;outline:none;resize:none;line-height:1.6;" placeholder='Paste token JSON from Subsrf Scan or Style Dictionary…'></textarea>
+          <button class="btn-secondary" id="btnImportJson" style="margin-top:5px;width:100%;font-size:11px;">Import from JSON</button>
+        </div>
+
       </div>
     </div>
 

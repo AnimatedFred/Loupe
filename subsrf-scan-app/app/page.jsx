@@ -19,6 +19,17 @@ export default function Home() {
   const [savedProjects, setSavedProjects] = useState([]);
   const [loadingProject, setLoadingProject] = useState(null);
   const { user, session, signOut, credits, tier } = useUser() || {};
+  // Auto-fill URL from ?url= and start scan when autoScan=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlParam = params.get('url');
+    if (!urlParam) return;
+    setUrlInput(urlParam);
+    if (params.get('autoScan') === '1') {
+      handleExtract(urlParam);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!session?.access_token) return;

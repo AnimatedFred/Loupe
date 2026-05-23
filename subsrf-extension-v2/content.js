@@ -528,6 +528,18 @@
       return true;
     }
 
+    if (msg.type === 'SET_SCAN_FAB') {
+      const fab = document.getElementById('subsrf-scan-fab');
+      if (msg.enabled) {
+        if (!fab) createScanButton();
+        else fab.style.setProperty('display', 'flex', 'important');
+      } else {
+        if (fab) fab.style.setProperty('display', 'none', 'important');
+      }
+      sendResponse({ ok: true });
+      return true;
+    }
+
     if (msg.type === 'CLEAR_SELECTION') {
       highlightedElements.forEach(h => h.box.remove());
       highlightedElements = [];
@@ -538,6 +550,71 @@
     }
 
     return false; // Don't keep port open for unhandled message types
+  });
+
+  // ── Floating Scan Button ──────────────────────────────────────────────────
+  function createScanButton() {
+    if (document.getElementById('subsrf-scan-fab')) return;
+
+    const iconUrl = chrome.runtime.getURL('icons/icon16.png');
+    const fab = document.createElement('button');
+    fab.id = 'subsrf-scan-fab';
+    fab.innerHTML = `
+      <img src="${iconUrl}" width="15" height="15" style="display:block;flex-shrink:0;" />
+      <span style="font-family:'Azeret Mono',monospace;font-size:11px;font-weight:400;letter-spacing:0.3px;color:#00FF87;">Scan website tokens</span>
+    `;
+    fab.style.cssText = `
+      all: initial !important;
+      position: fixed !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      z-index: 2147483646 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      background: #111118 !important;
+      border: 1px solid rgba(0,255,135,0.25) !important;
+      border-radius: 100px !important;
+      padding: 8px 16px 8px 12px !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,255,135,0.06) !important;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s !important;
+      white-space: nowrap !important;
+      user-select: none !important;
+    `;
+
+    fab.onmouseenter = () => {
+      fab.style.setProperty('background', '#18181F', 'important');
+      fab.style.setProperty('border-color', 'rgba(0,255,135,0.5)', 'important');
+      fab.style.setProperty('box-shadow', '0 4px 32px rgba(0,0,0,0.7), 0 0 16px rgba(0,255,135,0.08)', 'important');
+    };
+    fab.onmouseleave = () => {
+      fab.style.setProperty('background', '#111118', 'important');
+      fab.style.setProperty('border-color', 'rgba(0,255,135,0.25)', 'important');
+      fab.style.setProperty('box-shadow', '0 4px 24px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,255,135,0.06)', 'important');
+    };
+
+    fab.onclick = async (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const { subsrf_session } = await new Promise(r => chrome.storage.local.get('subsrf_session', r));
+      let url = 'https://scan.subsrf.dev/?url=' + encodeURIComponent(window.location.href) + '&autoScan=1';
+      if (subsrf_session?.accessToken) url += '&token=' + encodeURIComponent(subsrf_session.accessToken);
+      if (subsrf_session?.refreshToken) url += '&refresh=' + encodeURIComponent(subsrf_session.refreshToken);
+      window.open(url, '_blank');
+    };
+
+    document.body.appendChild(fab);
+  }
+
+  // Check preference then create button
+  chrome.storage.local.get('subsrf_scan_fab_enabled', (data) => {
+    if (data.subsrf_scan_fab_enabled === false) return;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', createScanButton);
+    } else {
+      createScanButton();
+    }
   });
 
   document.addEventListener('mousedown', startRegion);

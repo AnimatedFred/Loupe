@@ -2,6 +2,7 @@ import { handleStorage, handleResize } from './handlers/storage.js';
 import { handleNodeOps } from './handlers/nodeOps.js';
 import { handleImportElements } from './handlers/importElements.js';
 import { handleCompose, handleQuery, handleEval } from './handlers/compose.js';
+import { handleImportTokenVars } from './handlers/importVariables.js';
 
 figma.showUI(__html__, { width: 360, height: 720, themeColors: true });
 
@@ -9,12 +10,13 @@ const NODE_OPS = new Set(['CREATE_FRAME', 'SET_TEXT', 'SET_FILL', 'MOVE', 'DELET
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'GET_STORAGE' || msg.type === 'SET_STORAGE' || msg.type === 'DEL_STORAGE') return handleStorage(msg);
-  if (msg.type === 'RESIZE')          return handleResize(msg);
-  if (msg.type === 'FIGMA_QUERY')     return handleQuery(msg);
-  if (msg.type === 'EVAL')            return handleEval(msg);
-  if (NODE_OPS.has(msg.type))         return handleNodeOps(msg);
-  if (msg.type === 'IMPORT_ELEMENTS') return handleImportElements(msg);
-  if (msg.type === 'READ_SELECTION')  return handleCompose(msg);
+  if (msg.type === 'RESIZE')            return handleResize(msg);
+  if (msg.type === 'FIGMA_QUERY')       return handleQuery(msg);
+  if (msg.type === 'EVAL')              return handleEval(msg);
+  if (NODE_OPS.has(msg.type))           return handleNodeOps(msg);
+  if (msg.type === 'IMPORT_ELEMENTS')   return handleImportElements(msg);
+  if (msg.type === 'READ_SELECTION')    return handleCompose(msg);
+  if (msg.type === 'IMPORT_TOKEN_VARS') return handleImportTokenVars(msg);
 };
 
 function countNodes(node) {

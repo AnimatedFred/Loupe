@@ -55,6 +55,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       patLoaded = true;
       loadFigmaPat();
     }
+    if (btn.dataset.tab === 'vars') {
+      loadVarsProjects();
+    }
   });
 });
 
@@ -171,23 +174,147 @@ function updateSyncTab(data) {
     syncBtn.onclick = null;
   }
 
-  if (data.page?.url) {
-    const inp = document.getElementById('scanUrlInput');
-    if (inp && !inp.dataset.userEdited) {
-      inp.value = data.page.url.replace(/^https?:\/\//, '');
-    }
-  }
 }
+
+// ── Vars tab ──────────────────────────────────────────────────────────────────
+const SCAN = 'https://scan.subsrf.dev';
+let varsTokens = null; // tokens for the currently selected project
 
 function openScan() {
   const raw = document.getElementById('scanUrlInput').value.trim();
   if (!raw) return;
   const clean = raw.replace(/^https?:\/\//, '');
-  let target = 'https://scan.subsrf.dev/?url=' + encodeURIComponent(clean);
+  let target = SCAN + '/?url=' + encodeURIComponent(clean);
   if (session?.accessToken) target += '&token=' + encodeURIComponent(session.accessToken);
   if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
   window.open(target, '_blank');
 }
+
+async function loadVarsProjects() {
+  if (!session?.accessToken) return;
+  const el = document.getElementById('varsProjectsList');
+  el.innerHTML = '<div style="font-size:10px;color:var(--t3);font-family:\'Azeret Mono\',monospace;padding:6px 0;">Loading…</div>';
+  try {
+    const res = await fetch(SCAN + '/api/project', {
+      headers: { 'Authorization': 'Bearer ' + session.accessToken }
+    });
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    renderVarsProjects(data.projects || []);
+  } catch (_) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--err);font-family:\'Azeret Mono\',monospace;padding:6px 0;">Failed to load projects</div>';
+  }
+}
+
+function renderVarsProjects(projects) {
+  const el = document.getElementById('varsProjectsList');
+  if (!projects.length) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--t3);font-family:\'Azeret Mono\',monospace;padding:6px 0;">No projects yet — scan a site to get started.</div>';
+    return;
+  }
+  el.innerHTML = projects.map(p => {
+    const host = p.source_url ? p.source_url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : p.slug;
+    const ago = relativeTime(p.updated_at);
+    return `<div class="card" style="margin-bottom:4px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="selectVarsProject('${p.slug}', this)">
+      <div style="min-width:0;">
+        <div style="font-size:10px;color:var(--t1);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${host}</div>
+        <div style="font-size:9px;color:var(--t3);font-family:'Azeret Mono',monospace;margin-top:2px;">${ago}</div>
+      </div>
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--t3)"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  }).join('');
+}
+
+async function selectVarsProject(slug, el) {
+  document.querySelectorAll('#varsProjectsList .card').forEach(c => c.style.borderColor = '');
+  if (el) el.style.borderColor = 'var(--neon)';
+  document.getElementById('varsImportPanel').style.display = 'none';
+  try {
+    const res = await fetch(SCAN + '/api/project/' + slug, {
+      headers: { 'Authorization': 'Bearer ' + session.accessToken }
+    });
+    if (!res.ok) throw new Error('Not found');
+    const data = await res.json();
+    varsTokens = data.curated_tokens || data.tokens || null;
+    if (!varsTokens) throw new Error('No tokens');
+    const mode = varsTokens.dark || varsTokens.light;
+    const host = (data.source_url || slug).replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+    document.getElementById('varsSelectedUrl').textContent = host;
+    document.getElementById('colorsCount').textContent = (mode?.colors?.length || 0) + ' values';
+    document.getElementById('spacingCount').textContent = (mode?.spacing?.length || 0) + ' values';
+    document.getElementById('roundingCount').textContent = (mode?.radius?.length || 0) + ' values';
+    document.getElementById('varsImportPanel').style.display = '';
+    document.getElementById('varsImportStatus').textContent = '';
+  } catch (e) {
+    document.getElementById('varsImportPanel').style.display = 'none';
+    addLog('Failed to load project tokens', 'err');
+  }
+}
+
+function relativeTime(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 2) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function setVarsStatus(msg, color) {
+  const el = document.getElementById('varsImportStatus');
+  el.textContent = msg;
+  el.style.color = color || 'var(--t3)';
+}
+
+document.getElementById('btnImportColors').addEventListener('click', () => {
+  if (!varsTokens) return;
+  const mode = varsTokens.dark || varsTokens.light;
+  const colors = mode?.colors || [];
+  if (!colors.length) { setVarsStatus('No colors in this project', 'var(--warn)'); return; }
+  parent.postMessage({ pluginMessage: { type: 'IMPORT_TOKEN_VARS', category: 'colors', tokens: colors, collectionName: document.getElementById('varsSelectedUrl').textContent + '/Colors' } }, '*');
+  setVarsStatus('Importing colors…', 'var(--t3)');
+});
+
+document.getElementById('btnImportSpacing').addEventListener('click', () => {
+  if (!varsTokens) return;
+  const mode = varsTokens.dark || varsTokens.light;
+  const spacing = mode?.spacing || [];
+  if (!spacing.length) { setVarsStatus('No spacing values in this project', 'var(--warn)'); return; }
+  parent.postMessage({ pluginMessage: { type: 'IMPORT_TOKEN_VARS', category: 'spacing', tokens: spacing, collectionName: document.getElementById('varsSelectedUrl').textContent + '/Spacing' } }, '*');
+  setVarsStatus('Importing spacing…', 'var(--t3)');
+});
+
+document.getElementById('btnImportRounding').addEventListener('click', () => {
+  if (!varsTokens) return;
+  const mode = varsTokens.dark || varsTokens.light;
+  const radius = mode?.radius || [];
+  if (!radius.length) { setVarsStatus('No radius values in this project', 'var(--warn)'); return; }
+  parent.postMessage({ pluginMessage: { type: 'IMPORT_TOKEN_VARS', category: 'radius', tokens: radius, collectionName: document.getElementById('varsSelectedUrl').textContent + '/Rounding' } }, '*');
+  setVarsStatus('Importing rounding…', 'var(--t3)');
+});
+
+document.getElementById('btnImportJson').addEventListener('click', () => {
+  const raw = document.getElementById('varsJsonInput').value.trim();
+  if (!raw) return;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (_) {
+    setVarsStatus('Invalid JSON', 'var(--err)');
+    return;
+  }
+  // Accept either raw token set {dark:{colors,spacing,radius}} or flat {colors,spacing,radius}
+  const mode = parsed.dark || parsed.light || parsed;
+  const categories = [];
+  if (mode.colors?.length) categories.push({ category: 'colors', tokens: mode.colors, collectionName: 'JSON/Colors' });
+  if (mode.spacing?.length) categories.push({ category: 'spacing', tokens: mode.spacing, collectionName: 'JSON/Spacing' });
+  if (mode.radius?.length) categories.push({ category: 'radius', tokens: mode.radius, collectionName: 'JSON/Rounding' });
+  if (!categories.length) { setVarsStatus('No colors, spacing or radius found in JSON', 'var(--warn)'); return; }
+  for (const c of categories) {
+    parent.postMessage({ pluginMessage: { type: 'IMPORT_TOKEN_VARS', ...c } }, '*');
+  }
+  setVarsStatus('Importing ' + categories.map(c => c.category).join(', ') + '…', 'var(--t3)');
+});
 
 // ── Compose tab ───────────────────────────────────────────────────────────────
 function updateComposeBtn() {
@@ -659,6 +786,16 @@ window.onmessage = async (event) => {
     return;
   }
 
+  if (msg.type === 'IMPORT_TOKEN_VARS_DONE') {
+    if (msg.error) {
+      setVarsStatus('Error: ' + msg.error, 'var(--err)');
+    } else {
+      setVarsStatus('Imported ' + msg.count + ' ' + msg.category + ' variables', 'var(--ok)');
+      addLog('Imported ' + msg.count + ' ' + msg.category + ' vars', 'ok');
+    }
+    return;
+  }
+
   if (msg.type === 'SEND_SELECTION_TO_BRIDGE') {
     try {
       const h = { 'Content-Type': 'application/json' };
@@ -671,7 +808,8 @@ window.onmessage = async (event) => {
   }
 };
 
-// openScan is called inline from HTML
+// inline onclick handlers
 window.openScan = openScan;
-// setMinimized is called inline from toolbar onclick
 window.setMinimized = setMinimized;
+window.loadVarsProjects = loadVarsProjects;
+window.selectVarsProject = selectVarsProject;
