@@ -178,17 +178,7 @@ function updateSyncTab(data) {
 
 // ── Vars tab ──────────────────────────────────────────────────────────────────
 const SCAN = 'https://scan.subsrf.dev';
-let varsTokens = null; // tokens for the currently selected project
-
-function openScan() {
-  const raw = document.getElementById('scanUrlInput').value.trim();
-  if (!raw) return;
-  const clean = raw.replace(/^https?:\/\//, '');
-  let target = SCAN + '/?url=' + encodeURIComponent(clean);
-  if (session?.accessToken) target += '&token=' + encodeURIComponent(session.accessToken);
-  if (session?.refreshToken) target += '&refresh=' + encodeURIComponent(session.refreshToken);
-  window.open(target, '_blank');
-}
+let varsTokens = null;
 
 async function loadVarsProjects() {
   if (!session?.accessToken) return;
@@ -809,7 +799,6 @@ window.onmessage = async (event) => {
 };
 
 // inline onclick handlers
-window.openScan = openScan;
 window.setMinimized = setMinimized;
 window.loadVarsProjects = loadVarsProjects;
 window.selectVarsProject = selectVarsProject;
