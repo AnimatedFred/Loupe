@@ -839,3 +839,50 @@ button:disabled {
   background: var(--neon);
   transition: width 0.4s;
 }
+
+/* ── Settings input ── */
+.settings-input {
+  width: 100%;
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 8px 10px;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 10px;
+  color: var(--t1);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.settings-input:focus {
+  border-color: var(--border-md);
+}
+
+.settings-input::placeholder {
+  color: var(--t3);
+}
+
+/* ── Code block (MCP config) ── */
+.code-block {
+  background: var(--deep);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 10px;
+  margin: 0;
+  font-family: 'Azeret Mono', monospace;
+  font-size: 9px;
+  color: var(--t2);
+  white-space: pre;
+  overflow-x: auto;
+  line-height: 1.6;
+  user-select: all;
+  cursor: text;
+}
+
+.code-block::-webkit-scrollbar {
+  height: 2px;
+}
+
+.code-block::-webkit-scrollbar-thumb {
+  background: var(--border-md);
+}

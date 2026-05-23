@@ -44,12 +44,17 @@ function showView(name) {
 }
 
 // ── Tab nav ───────────────────────────────────────────────────────────────────
+let patLoaded = false;
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'settings' && !patLoaded) {
+      patLoaded = true;
+      loadFigmaPat();
+    }
   });
 });
 
@@ -468,6 +473,9 @@ function cancelOAuth() {
 function signOut() {
   if (pollInterval) clearInterval(pollInterval);
   session = null;
+  currentFigmaPat = null;
+  patLoaded = false;
+  renderPatState();
   storageDel('subsrf_session');
   showView('signin');
 }
@@ -486,6 +494,106 @@ function setMinimized(min) {
   parent.postMessage({ pluginMessage: { type: 'RESIZE', width: 360, height: min ? MINI_H : FULL_H } }, '*');
 }
 
+// ── Figma PAT & MCP config ────────────────────────────────────────────────────
+let currentFigmaPat = null;
+
+function buildMcpConfig(pat) {
+  const cfg = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', BRIDGE] } } };
+  if (pat) cfg.mcpServers.subsrf.env = { FIGMA_PAT: pat };
+  return JSON.stringify(cfg, null, 2);
+}
+
+function renderPatState() {
+  const label = document.getElementById('figmaPatLabel');
+  if (currentFigmaPat) {
+    label.textContent = 'figd_' + '•'.repeat(8);
+    label.style.color = 'var(--ok)';
+    document.getElementById('btnEditPat').textContent = 'Update Token';
+  } else {
+    label.textContent = 'Not set';
+    label.style.color = 'var(--t3)';
+    document.getElementById('btnEditPat').textContent = 'Set Token';
+  }
+  document.getElementById('mcpConfigText').textContent = buildMcpConfig(currentFigmaPat);
+}
+
+async function loadFigmaPat() {
+  if (!session?.accessToken) return;
+  try {
+    const res = await fetch(BRIDGE + '/api/user/figma-pat', {
+      headers: { 'Authorization': 'Bearer ' + session.accessToken }
+    });
+    if (res.ok) {
+      const d = await res.json();
+      currentFigmaPat = d.pat || null;
+      renderPatState();
+    }
+  } catch (_) {}
+}
+
+async function saveFigmaPat(pat) {
+  if (!session?.accessToken) return false;
+  try {
+    const res = await fetch(BRIDGE + '/api/user/figma-pat', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + session.accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pat })
+    });
+    return res.ok;
+  } catch (_) { return false; }
+}
+
+document.getElementById('btnEditPat').addEventListener('click', () => {
+  document.getElementById('figmaPatView').style.display = 'none';
+  document.getElementById('figmaPatEdit').style.display = '';
+  const inp = document.getElementById('figmaPatInput');
+  inp.value = currentFigmaPat || '';
+  inp.focus();
+});
+
+document.getElementById('btnCancelPat').addEventListener('click', () => {
+  document.getElementById('figmaPatEdit').style.display = 'none';
+  document.getElementById('figmaPatView').style.display = '';
+  document.getElementById('figmaPatInput').value = '';
+});
+
+document.getElementById('btnSavePat').addEventListener('click', async () => {
+  const pat = document.getElementById('figmaPatInput').value.trim();
+  if (!pat) return;
+  const btn = document.getElementById('btnSavePat');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  const ok = await saveFigmaPat(pat);
+  if (ok) {
+    currentFigmaPat = pat;
+    renderPatState();
+    document.getElementById('figmaPatEdit').style.display = 'none';
+    document.getElementById('figmaPatView').style.display = '';
+    document.getElementById('figmaPatInput').value = '';
+    addLog('Figma token saved', 'ok');
+  } else {
+    btn.textContent = 'Failed — retry';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('btnCopyMcp').addEventListener('click', () => {
+  const text = document.getElementById('mcpConfigText').textContent;
+  const btn = document.getElementById('btnCopyMcp');
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const orig = btn.innerHTML;
+    btn.innerHTML = ICO.check + ' Copied!';
+    setTimeout(() => { btn.innerHTML = orig; }, 2000);
+  } catch (_) {}
+});
+
 // ── Event wiring ──────────────────────────────────────────────────────────────
 document.getElementById('btnMinimize').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -496,6 +604,7 @@ document.getElementById('btnSignInCancel').onclick = cancelOAuth;
 document.getElementById('btnSignOut').onclick = signOut;
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
+renderPatState(); // renders config without PAT initially
 showView('signin');
 storageGet('subsrf_session');
 setTimeout(() => {

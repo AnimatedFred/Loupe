@@ -1158,6 +1158,13 @@ async function getUserFigmaPat(userId, accessToken) {
   } catch (_) { return null; }
 }
 
+app.get('/api/user/figma-pat', async (req, res) => {
+  const auth = await verifyToken(req);
+  if (!auth) return res.status(401).json({ error: 'Unauthorized' });
+  const pat = await getUserFigmaPat(auth.user.id, req.headers.authorization?.slice(7));
+  res.json({ pat: pat || null });
+});
+
 app.post('/api/user/figma-pat', async (req, res) => {
   const auth = await verifyToken(req);
   if (!auth) return res.status(401).json({ error: 'Unauthorized' });
