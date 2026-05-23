@@ -72,9 +72,9 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                     <span className="">Preserves layout, typography, and computed CSS properties accurately.</span>
                   </li>
                 </ul>
-                <div className="bg-deep border border-white-border p-md mt-md rounded w-full lg:w-max">
+                <div className="bg-deep border border-white-border p-md mt-md rounded w-full lg:w-max max-w-full overflow-hidden">
                   <div className="font-mono-data text-mono-data text-white-secondary text-[11px] mb-xs uppercase tracking-widest">Workflow Metadata</div>
-                  <div className="flex items-center gap-md text-[13px] font-mono-data text-white-primary">
+                  <div className="flex flex-wrap items-center gap-md text-[13px] font-mono-data text-white-primary">
                     <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">public</span> Browser</span>
                     <span className="text-neon-dim material-symbols-outlined text-[16px]">arrow_forward</span>
                     <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">extension</span> Extension</span>
@@ -83,10 +83,10 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-neon opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
-                <img alt="Browser to Figma Screenshot" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvpfjjHXgsP7LWE9K7cLJer7oVWTU3PuvqeteRIyh1NSLNMDLhFDLl2-5UUOd-LIDvmvS5_j9JHWiOXmvBgx3F-QKZx8Trmymui8nQLz84qraBR710wRKA5sHNj_LRPOJlP7VcKq-laZsR7NRv0_jFP4L9gm8_074g64r_rXPBeq2kSmqLTQy3qgFM4DiyqgmWsbzzlY_KdqVWzovSWPcCnLwU07dYSc61SNRnj3oGy0KJIEIyjHrYRFj26B5Pven8j7fUASbivA"/>
-                <div className="absolute bottom-md left-md right-md bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex justify-between items-center">
+              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+                <div className="absolute inset-0 bg-neon opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
+                <img alt="Browser to Figma Screenshot" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvpfjjHXgsP7LWE9K7cLJer7oVWTU3PuvqeteRIyh1NSLNMDLhFDLl2-5UUOd-LIDvmvS5_j9JHWiOXmvBgx3F-QKZx8Trmymui8nQLz84qraBR710wRKA5sHNj_LRPOJlP7VcKq-laZsR7NRv0_jFP4L9gm8_074g64r_rXPBeq2kSmqLTQy3qgFM4DiyqgmWsbzzlY_KdqVWzovSWPcCnLwU07dYSc61SNRnj3oGy0KJIEIyjHrYRFj26B5Pven8j7fUASbivA"/>
+                <div className="absolute bottom-md left-md right-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex justify-between items-center">
                   <span className="text-white-muted">src/modules/sync.ts</span>
                   <span className="text-neon flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">bolt</span> ACTIVE</span>
                 </div>
@@ -95,10 +95,10 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
 
             {/* Feature 2: AI Bridge (Media Left, Text Right) */}
             <article className="grid grid-cols-1 lg:grid-cols-2 gap-2xl items-center">
-              <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-tertiary-fixed-dim opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
-                <img alt="Figma to AI Diagram" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMdiDbaOfwQ-LTEULQrrGxxaAkcYaRdCSG8qJ6VCKgeXi_3NZMsIqcM8mMi89AQK2dYhkW_kQR5RmQAzWWX2tLuXMvWtMpan8rT1zJXiiKEjwpcbOOG_aizU6rN5OtZ6ThnM9SKdqCYjT2I3Zlr9D4i0DAj4UnyNCQbwRgzthr1HMxHaw9CJB5BVOqJw37r-okz_rUUhV_4cRo8DlOrWab10lP_N7pdIRpWSGV9ET_esolTdO92TDEd9SeX_a00y0FBPfKfPJkUA"/>
-                <div className="absolute top-md left-md bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1">
+              <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+                <div className="absolute inset-0 bg-tertiary-fixed-dim opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
+                <img alt="Figma to AI Diagram" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMdiDbaOfwQ-LTEULQrrGxxaAkcYaRdCSG8qJ6VCKgeXi_3NZMsIqcM8mMi89AQK2dYhkW_kQR5RmQAzWWX2tLuXMvWtMpan8rT1zJXiiKEjwpcbOOG_aizU6rN5OtZ6ThnM9SKdqCYjT2I3Zlr9D4i0DAj4UnyNCQbwRgzthr1HMxHaw9CJB5BVOqJw37r-okz_rUUhV_4cRo8DlOrWab10lP_N7pdIRpWSGV9ET_esolTdO92TDEd9SeX_a00y0FBPfKfPJkUA"/>
+                <div className="absolute top-md left-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1">
                   <span className="text-tertiary-fixed-dim flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">network_node</span> NODE CONNECTED</span>
                   <span className="text-white-muted text-[11px]">ws://localhost:3000/mcp</span>
                 </div>
@@ -164,9 +164,9 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                     <span className="">Token Aware: Automatically references your Figma Variables and styles.</span>
                   </li>
                 </ul>
-                <div className="bg-deep border border-white-border p-md mt-md rounded w-full lg:w-max">
+                <div className="bg-deep border border-white-border p-md mt-md rounded w-full lg:w-max max-w-full overflow-hidden">
                   <div className="font-mono-data text-mono-data text-white-secondary text-[11px] mb-xs uppercase tracking-widest">Pipeline Routing</div>
-                  <div className="flex items-center gap-md text-[13px] font-mono-data text-white-primary">
+                  <div className="flex flex-wrap items-center gap-md text-[13px] font-mono-data text-white-primary">
                     <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">highlight_alt</span> Figma Selection</span>
                     <span className="text-white-secondary material-symbols-outlined text-[16px]">arrow_forward</span>
                     <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">memory</span> Compose</span>
@@ -175,10 +175,10 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group">
-                <div className="absolute inset-0 bg-white-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
-                <img alt="Subsrf Compose Interface" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj_73PlrxeF6BwmIulxdF3U-dICESZBx6_K-ajw7QCK_pGLlxdN_Il9BDw5Isn9gTcV55-m_wgYupMe7eBm7t1PuQh0k3sjLtlRCAkbr-30fB7Y6Yu3SZInlmLUdInyYqDdb75a9NyDhRBxgmvA5QTGNnMMe1ELHlSvyRwRiLGdbTNqxUg5kcW8TAfKJMKrNNGJa4E-rTVgnqAejcQVw1Jk9WF9GQ5gTAoL1esmK8bpsPZSYrAfPTWPYlIBM5ywyIcz2Opq3sS0A"/>
-                <div className="absolute bottom-md right-md bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1 text-right">
+              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+                <div className="absolute inset-0 bg-white-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
+                <img alt="Subsrf Compose Interface" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj_73PlrxeF6BwmIulxdF3U-dICESZBx6_K-ajw7QCK_pGLlxdN_Il9BDw5Isn9gTcV55-m_wgYupMe7eBm7t1PuQh0k3sjLtlRCAkbr-30fB7Y6Yu3SZInlmLUdInyYqDdb75a9NyDhRBxgmvA5QTGNnMMe1ELHlSvyRwRiLGdbTNqxUg5kcW8TAfKJMKrNNGJa4E-rTVgnqAejcQVw1Jk9WF9GQ5gTAoL1esmK8bpsPZSYrAfPTWPYlIBM5ywyIcz2Opq3sS0A"/>
+                <div className="absolute bottom-md right-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1 text-right">
                   <span className="text-white-primary flex items-center justify-end gap-xs">PROMPT GENERATED <span className="material-symbols-outlined text-[14px]">done_all</span></span>
                   <span className="text-white-muted text-[11px]">Tokens extracted: 42</span>
                 </div>
