@@ -208,12 +208,9 @@ function sleep(ms) {
 
 // Promisified tab message — resolves null on error instead of rejecting
 function sendTabMessage(tabId, msg) {
-  return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, msg, (response) => {
-      if (chrome.runtime.lastError) resolve(null);
-      else resolve(response);
-    });
-  });
+  // Use the Promise form so the internal rejection is caught rather than surfaced
+  // as an unhandled "No tab with id" when the tab closes mid-capture.
+  return chrome.tabs.sendMessage(tabId, msg).catch(() => null);
 }
 
 // Direct capture (bypasses throttle queue, used inside the scroll loop)
@@ -256,9 +253,10 @@ async function captureFullPage(tabId, watermark = false) {
 
   const { totalHeight, viewportHeight, viewportWidth, dpr, originalScrollY } = dims;
 
-  // Hide Subsrf UI before starting
+  // Hide only Subsrf UI for the first segment so the page's natural top state
+  // (header, nav, hero) is captured correctly.
   await sendTabMessage(tabId, { type: 'HIDE_UI' });
-  await sleep(200);
+  await sleep(200); // let the browser repaint before first capture
 
   try {
     await ensureOffscreen();
@@ -267,6 +265,10 @@ async function captureFullPage(tabId, watermark = false) {
 
     let scrollY = 0;
     while (scrollY < totalHeight) {
+      // Before the second segment, hide fixed/sticky elements so they don't
+      // repeat on every subsequent scroll position.
+      if (scrollY > 0) await sendTabMessage(tabId, { type: 'HIDE_FIXED' });
+
       await sendTabMessage(tabId, { type: 'SCROLL_TO', y: scrollY });
       await sleep(600); // Chrome allows ~2 captureVisibleTab calls/sec; 600ms keeps us safely under
 
@@ -278,16 +280,22 @@ async function captureFullPage(tabId, watermark = false) {
       }
       if (!dataUrl) break;
 
-      const segH = Math.min(viewportHeight, totalHeight - scrollY);
-      await sendOffscreenMessage({ type: 'ADD_SEGMENT', dataUrl, x: 0, y: scrollY, w: viewportWidth, h: segH, sourceY: 0 });
+      // Browser caps scroll at (totalHeight - viewportHeight). On the last segment
+      // the viewport overlaps the previous one, so skip the already-captured top portion.
+      const maxScrollY = totalHeight - viewportHeight;
+      const actualScrollY = Math.min(scrollY, maxScrollY);
+      const sourceY = scrollY - actualScrollY;
+      const segH = Math.min(viewportHeight - sourceY, totalHeight - scrollY);
+      await sendOffscreenMessage({ type: 'ADD_SEGMENT', dataUrl, x: 0, y: scrollY, w: viewportWidth, h: segH, sourceY });
 
       scrollY += viewportHeight;
     }
 
     const result = await sendOffscreenMessage({ type: 'FINISH_STITCH' });
 
-    // Restore original scroll position and UI
+    // Restore scroll position, fixed/sticky elements, and Subsrf UI
     await sendTabMessage(tabId, { type: 'SCROLL_TO', y: originalScrollY });
+    await sendTabMessage(tabId, { type: 'SHOW_FIXED' });
     await sendTabMessage(tabId, { type: 'SHOW_UI' });
 
     if (result?.dataUrl) {
@@ -298,6 +306,7 @@ async function captureFullPage(tabId, watermark = false) {
   } catch (e) {
     console.error('[Subsrf] Full page capture failed:', e);
     await sendTabMessage(tabId, { type: 'SCROLL_TO', y: originalScrollY });
+    await sendTabMessage(tabId, { type: 'SHOW_FIXED' });
     await sendTabMessage(tabId, { type: 'SHOW_UI' });
   }
 }
@@ -455,8 +464,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.action.setBadgeText({
         text: count > 0 ? String(count) : '',
         tabId: sender.tab?.id
-      });
-      chrome.action.setBadgeBackgroundColor({ color: '#ff6b35' });
+      }).catch(() => {});
+      chrome.action.setBadgeBackgroundColor({ color: '#ff6b35' }).catch(() => {});
       break;
     }
 
@@ -473,8 +482,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       chrome.action.setBadgeText({
         text: lastElements.length > 0 ? String(lastElements.length) : '',
         tabId: sender.tab?.id
-      });
-      chrome.action.setBadgeBackgroundColor({ color: '#6366f1' });
+      }).catch(() => {});
+      chrome.action.setBadgeBackgroundColor({ color: '#6366f1' }).catch(() => {});
 
       // Persist so the popup and prompt page can read current state when they open
       chrome.storage.local.set({ selectedElements: lastElements, lastPageContext: lastContext });
@@ -636,7 +645,7 @@ syncTierToBridge();
 // Exclude chrome-extension:// URLs so opening editor.html doesn't wipe the selection
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'loading' && tab.url && !tab.url.startsWith('chrome-extension://')) {
-    chrome.action.setBadgeText({ text: '', tabId });
+    chrome.action.setBadgeText({ text: '', tabId }).catch(() => {});
     chrome.storage.local.remove(['selectedElements']);
   }
 });

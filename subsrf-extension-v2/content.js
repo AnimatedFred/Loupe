@@ -378,25 +378,6 @@
     showToast('Opening Prompt Studio...');
   }
 
-  // --- Selection Bounding Box ---
-  function getSelectionBoundingBox() {
-    if (highlightedElements.length === 0) return null;
-    let minLeft = Infinity, minTop = Infinity, maxRight = -Infinity, maxBottom = -Infinity;
-    highlightedElements.forEach(h => {
-      const r = h.data.rect;
-      minLeft   = Math.min(minLeft,   r.left);
-      minTop    = Math.min(minTop,    r.top);
-      maxRight  = Math.max(maxRight,  r.left + r.width);
-      maxBottom = Math.max(maxBottom, r.top  + r.height);
-    });
-    const PAD = 24;
-    return {
-      x: Math.max(0, minLeft - PAD),
-      y: Math.max(0, minTop  - PAD),
-      w: Math.min(window.innerWidth,  maxRight  + PAD) - Math.max(0, minLeft - PAD),
-      h: Math.min(window.innerHeight, maxBottom + PAD) - Math.max(0, minTop  - PAD),
-    };
-  }
 
   // --- Region / Screenshot Logic ---
   function startRegion(e) {
@@ -423,47 +404,70 @@
     regionOverlay.style.height = h + 'px';
   }
 
+  function hideSubsrfUI() {
+    if (toolbar) toolbar.style.opacity = '0';
+    const fab = document.getElementById('subsrf-scan-fab');
+    if (fab) fab.style.setProperty('opacity', '0', 'important');
+    document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
+    if (!document.getElementById('subsrf-hide-scrollbar')) {
+      const s = document.createElement('style');
+      s.id = 'subsrf-hide-scrollbar';
+      s.textContent = '::-webkit-scrollbar{width:0!important;height:0!important}html{scrollbar-width:none!important}';
+      document.head.appendChild(s);
+    }
+  }
+
+  function showSubsrfUI() {
+    if (toolbar) toolbar.style.opacity = '';
+    const fab = document.getElementById('subsrf-scan-fab');
+    if (fab) fab.style.removeProperty('opacity');
+    document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
+    const s = document.getElementById('subsrf-hide-scrollbar');
+    if (s) s.remove();
+  }
+
   function endRegion(_e) {
     if (!isDragging) return;
     isDragging = false;
-    if (regionOverlay) {
-      const rect = regionOverlay.getBoundingClientRect();
+    if (!regionOverlay) return;
 
-      if (currentMode === 'region') {
-        // Select all elements within the drawn region — no screenshot
-        const candidates = document.querySelectorAll('div, h1, h2, h3, h4, p, span, img, button, a');
-        candidates.forEach(el => {
-          if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
-          const r = el.getBoundingClientRect();
-          if (r.top >= rect.top && r.left >= rect.left && r.bottom <= rect.bottom && r.right <= rect.right) {
-            if (!highlightedElements.find(h => h.element === el)) addHighlight(el);
-          }
-        });
-        const hitCap = cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT;
-        showToast(hitCap
-          ? `${FREE_ELEMENT_LIMIT} elements selected (Free limit — upgrade to Starter for unlimited)`
-          : `${highlightedElements.length} elements selected`);
+    const rect = regionOverlay.getBoundingClientRect();
 
-      } else if (currentMode === 'screenshot') {
-        // Area screenshot — hide UI, capture region, open editor
-        if (toolbar) toolbar.style.opacity = '0';
-        document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
-
-        safeSendMessage({
-          type: 'CAPTURE_REGION',
-          rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
-          viewportWidth: window.innerWidth
-        });
-
-        setTimeout(() => {
-          if (toolbar) toolbar.style.opacity = '';
-          document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
-          showToast('Screenshot captured!');
-        }, 1200);
-      }
+    if (currentMode === 'region') {
+      // Select all elements within the drawn region — no screenshot
+      const candidates = document.querySelectorAll('div, h1, h2, h3, h4, p, span, img, button, a');
+      candidates.forEach(el => {
+        if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
+        const r = el.getBoundingClientRect();
+        if (r.top >= rect.top && r.left >= rect.left && r.bottom <= rect.bottom && r.right <= rect.right) {
+          if (!highlightedElements.find(h => h.element === el)) addHighlight(el);
+        }
+      });
+      const hitCap = cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT;
+      showToast(hitCap
+        ? `${FREE_ELEMENT_LIMIT} elements selected (Free limit — upgrade to Starter for unlimited)`
+        : `${highlightedElements.length} elements selected`);
 
       regionOverlay.remove();
       regionOverlay = null;
+
+    } else if (currentMode === 'screenshot') {
+      // Remove the selection overlay and hide all Subsrf UI BEFORE sending the
+      // capture message, so the DOM is clean when captureVisibleTab fires.
+      regionOverlay.remove();
+      regionOverlay = null;
+      hideSubsrfUI();
+
+      safeSendMessage({
+        type: 'CAPTURE_REGION',
+        rect: { x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+        viewportWidth: window.innerWidth
+      });
+
+      setTimeout(() => {
+        showSubsrfUI();
+        showToast('Screenshot captured!');
+      }, 1200);
     }
   }
 
@@ -513,17 +517,46 @@
     }
 
     if (msg.type === 'HIDE_UI') {
-      if (toolbar) toolbar.style.opacity = '0';
+      hideSubsrfUI();
       if (toast) toast.style.opacity = '0';
-      document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = '0'; });
       sendResponse({ ok: true });
       return true;
     }
 
     if (msg.type === 'SHOW_UI') {
-      if (toolbar) toolbar.style.opacity = '';
+      showSubsrfUI();
       if (toast) toast.style.opacity = '';
-      document.querySelectorAll('.uipb-highlight-box, .uipb-badge').forEach(el => { el.style.opacity = ''; });
+      sendResponse({ ok: true });
+      return true;
+    }
+
+    if (msg.type === 'HIDE_FIXED') {
+      const hidden = [];
+      document.querySelectorAll('*').forEach(el => {
+        // Never touch Subsrf's own UI elements
+        if (el.id === 'subsrf-scan-fab' || el.id === 'uipb-toolbar') return;
+        if (el.closest('[id^="uipb-"],[class*="uipb-"],[id^="subsrf"]')) return;
+        const pos = window.getComputedStyle(el).position;
+        if (pos === 'fixed' || pos === 'sticky') {
+          hidden.push({
+            el,
+            prev:     el.style.getPropertyValue('visibility'),
+            priority: el.style.getPropertyPriority('visibility'),
+          });
+          el.style.setProperty('visibility', 'hidden', 'important');
+        }
+      });
+      window._subsrfHiddenFixed = hidden;
+      sendResponse({ ok: true, count: hidden.length });
+      return true;
+    }
+
+    if (msg.type === 'SHOW_FIXED') {
+      (window._subsrfHiddenFixed || []).forEach(({ el, prev, priority }) => {
+        if (prev) el.style.setProperty('visibility', prev, priority);
+        else el.style.removeProperty('visibility');
+      });
+      window._subsrfHiddenFixed = null;
       sendResponse({ ok: true });
       return true;
     }

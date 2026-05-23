@@ -121,7 +121,7 @@ function applyWatermark() {
 }
 
 function setupEventListeners() {
-  const tools = ['select', 'rect', 'circle', 'star', 'arrow', 'text', 'emoji', 'pen'];
+  const tools = ['select', 'rect', 'circle', 'star', 'arrow', 'text', 'comment', 'emoji', 'pen'];
   tools.forEach(t => {
     const btn = document.getElementById(`tool-${t}`);
     if (btn) btn.onclick = () => setTool(t);
@@ -158,6 +158,20 @@ function setupEventListeners() {
   document.getElementById('text-input').onkeydown = (e) => { if(e.key === 'Enter') saveText(); };
   document.getElementById('btn-download').onclick = download;
   document.getElementById('btn-copy').onclick = copyToClipboard;
+
+  document.getElementById('btn-comment-save').onclick = saveComment;
+  document.getElementById('btn-comment-cancel').onclick = closeCommentOverlay;
+  document.getElementById('comment-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveComment();
+    if (e.key === 'Escape') closeCommentOverlay();
+  });
+
+  drawCanvas.addEventListener('dblclick', (e) => {
+    if (currentTool !== 'select') return;
+    if (selectedIndex !== -1 && objects[selectedIndex]?.type === 'comment') {
+      showCommentOverlay(getCanvasPos(e), selectedIndex);
+    }
+  });
 
   // Emoji listeners (Sidebar + Tray)
   document.querySelectorAll('.emoji-item, .tray-emoji').forEach(btn => {
@@ -283,6 +297,7 @@ function handleMouseDown(e) {
     refreshLayers();
   } else {
     if (currentTool === 'text') { showTextOverlay(pos); return; }
+    if (currentTool === 'comment') { showCommentOverlay(pos); return; }
     if (currentTool === 'pen') {
       dragAction = 'create';
       currentObject = {
@@ -338,8 +353,13 @@ function handleMouseMove(e) {
       obj.y = originalRect.y + dy;
     }
   } else if (dragAction === 'resize' && selectedIndex !== -1) {
-    objects[selectedIndex].w = Math.max(10, originalRect.w + dx);
-    objects[selectedIndex].h = Math.max(10, originalRect.h + dy);
+    if (objects[selectedIndex].type === 'comment') {
+      // Height is auto-computed from text wrap; only width is user-controlled
+      objects[selectedIndex].w = Math.max(160, originalRect.w + dx);
+    } else {
+      objects[selectedIndex].w = Math.max(10, originalRect.w + dx);
+      objects[selectedIndex].h = Math.max(10, originalRect.h + dy);
+    }
   } else if (dragAction === 'rotate' && selectedIndex !== -1) {
     const obj = objects[selectedIndex];
     obj.angle = Math.atan2(pos.y - (obj.y + obj.h/2), pos.x - (obj.x + obj.w/2));
@@ -381,6 +401,7 @@ function drawLoop() {
 }
 
 function drawObject(ctx, obj, isSelected) {
+  if (obj.type === 'comment') { drawComment(ctx, obj, isSelected); return; }
   ctx.save();
   const cx = obj.x + obj.w/2; const cy = obj.y + obj.h/2;
   ctx.translate(cx, cy); ctx.rotate(obj.angle || 0); ctx.translate(-cx, -cy);
@@ -426,7 +447,7 @@ function drawObject(ctx, obj, isSelected) {
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
 
-    if (obj.type !== 'pen') {
+    if (obj.type !== 'pen' && obj.type !== 'comment') {
       // Resize Handle (Bottom Right)
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = '#6366f1';
@@ -498,6 +519,13 @@ function getObjectAt(pos) {
 }
 
 function getHandleAt(pos, obj) {
+  if (obj.type === 'comment') {
+    // Resize handle sits at bottom-right of bubble body (totalH = h - tail)
+    const totalH = obj.h - COMMENT_TAIL_H;
+    const hx = obj.x + obj.w, hy = obj.y + totalH;
+    if (pos.x >= hx - 5 && pos.x <= hx + 15 && pos.y >= hy - 5 && pos.y <= hy + 15) return 'resize';
+    return 'none';
+  }
   const x = obj.x, y = obj.y, w = obj.w, h = obj.h;
   if (pos.x >= x + w - 5 && pos.x <= x + w + 15 && pos.y >= y + h - 5 && pos.y <= y + h + 15) return 'resize';
   if (Math.hypot(pos.x - (x + w/2), pos.y - (y - 25)) < 15) return 'rotate';
@@ -525,10 +553,15 @@ function refreshLayers() {
     info.className = 'layer-info';
     const thumbContent = obj.type === 'emoji'
       ? `<div class="layer-thumb" style="background: transparent; display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1;">${obj.text}</div>`
-      : `<div class="layer-thumb" style="background: ${obj.color};"></div>`;
+      : obj.type === 'comment'
+        ? `<div class="layer-thumb" style="background: rgba(0,255,135,0.12); border: 1px solid rgba(0,255,135,0.3); display: flex; align-items: center; justify-content: center;"><span class="material-symbols-outlined" style="font-size:9px; color:#00FF87;">chat_bubble</span></div>`
+        : `<div class="layer-thumb" style="background: ${obj.color};"></div>`;
+    const snippet = obj.type === 'comment' && obj.text
+      ? `<div class="layer-sub">${obj.text.substring(0, 22)}${obj.text.length > 22 ? '…' : ''}</div>`
+      : '';
     info.innerHTML = `
       ${thumbContent}
-      <div class="layer-name">${obj.type.toUpperCase()}</div>
+      <div><div class="layer-name">${obj.type === 'comment' ? 'COMMENT' : obj.type.toUpperCase()}</div>${snippet}</div>
     `;
     
     const actions = document.createElement('div');
@@ -549,11 +582,26 @@ function refreshLayers() {
     
     item.onclick = (e) => {
       if (e.target.closest('.layer-btn')) return;
-      selectedIndex = index; 
+      selectedIndex = index;
       setTool('select');
+      scrollToObject(objects[index]);
     };
     list.appendChild(item);
   });
+}
+
+function scrollToObject(obj) {
+  const scrollContainer = document.getElementById('editor-viewport');
+  if (!scrollContainer || !obj) return;
+  // getBoundingClientRect accounts for the CSS scale(zoom) transform correctly
+  const canvasRect = drawCanvas.getBoundingClientRect();
+  const vpRect = scrollContainer.getBoundingClientRect();
+  const scaleX = canvasRect.width / drawCanvas.width;
+  const scaleY = canvasRect.height / drawCanvas.height;
+  const cx = canvasRect.left + (obj.x + obj.w / 2) * scaleX;
+  const cy = canvasRect.top  + (obj.y + obj.h / 2) * scaleY;
+  scrollContainer.scrollLeft += cx - (vpRect.left + vpRect.width  / 2);
+  scrollContainer.scrollTop  += cy - (vpRect.top  + vpRect.height / 2);
 }
 
 function handleLayerDeleteById(id) {
@@ -579,7 +627,7 @@ function showToast(msg) {
 }
 
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'Delete' || e.key === 'Backspace') && document.activeElement.tagName !== 'INPUT') {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
     if (selectedIndex !== -1 && objects[selectedIndex]) handleLayerDeleteById(objects[selectedIndex].id);
   }
 });
@@ -602,6 +650,208 @@ function saveText() {
   }
   document.getElementById('text-overlay').style.display = 'none';
   textInput.value = '';
+}
+
+// ── Comment tool ──────────────────────────────────────────────────────────────
+
+function showCommentOverlay(pos, editIndex) {
+  const overlay = document.getElementById('comment-overlay');
+  const input = document.getElementById('comment-input');
+  const saveBtn = document.getElementById('btn-comment-save');
+  overlay.style.display = 'flex';
+  input.value = editIndex !== undefined ? (objects[editIndex].text || '') : '';
+  saveBtn.textContent = editIndex !== undefined ? 'Save Comment' : 'Add Comment';
+  input.focus();
+  window._pendingCommentPos = pos;
+  window._editingCommentIndex = editIndex;
+}
+
+function closeCommentOverlay() {
+  document.getElementById('comment-overlay').style.display = 'none';
+  document.getElementById('comment-input').value = '';
+  window._pendingCommentPos = null;
+  window._editingCommentIndex = undefined;
+}
+
+function saveComment() {
+  const text = document.getElementById('comment-input').value.trim();
+  if (!text) { closeCommentOverlay(); return; }
+
+  if (window._editingCommentIndex !== undefined) {
+    objects[window._editingCommentIndex].text = text;
+  } else {
+    const pos = window._pendingCommentPos || { x: 60, y: 60 };
+    objects.push({
+      id: Date.now() + Math.random(),
+      type: 'comment',
+      text,
+      x: pos.x,
+      y: pos.y,
+      w: COMMENT_DEFAULT_W,
+      h: 80,
+      angle: 0,
+      color: '#00FF87',
+      fill: true,
+    });
+    selectedIndex = objects.length - 1;
+    setTool('select');
+  }
+
+  refreshLayers();
+  closeCommentOverlay();
+}
+
+// ── Comment drawing ───────────────────────────────────────────────────────────
+
+const COMMENT_DEFAULT_W  = 300;
+const COMMENT_PAD        = 14;
+const COMMENT_HEADER_H   = 32;
+const COMMENT_FONT_SIZE  = 15;
+const COMMENT_LINE_H     = 23;
+const COMMENT_RADIUS     = 7;
+const COMMENT_TAIL_H     = 12;
+
+function wrapText(ctx, text, maxWidth) {
+  const lines = [];
+  for (const para of text.split('\n')) {
+    const words = para.split(' ');
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    lines.push(line);
+    if (lines.length >= 7) break;
+  }
+  return lines.slice(0, 7);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function roundRectTop(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawComment(ctx, obj, isSelected) {
+  ctx.save();
+
+  // Width is user-controlled; height is auto from text wrap
+  const cw = Math.max(obj.w || COMMENT_DEFAULT_W, 160);
+
+  ctx.font = `400 ${COMMENT_FONT_SIZE}px "Manrope", sans-serif`;
+  const textLines = wrapText(ctx, obj.text || '', cw - COMMENT_PAD * 2);
+  const bodyH     = Math.max(1, textLines.length) * COMMENT_LINE_H;
+  const totalH    = COMMENT_HEADER_H + COMMENT_PAD + bodyH + COMMENT_PAD;
+
+  // Keep hit-test bounds in sync
+  obj.w = cw;
+  obj.h = totalH + COMMENT_TAIL_H;
+
+  const x = obj.x;
+  const y = obj.y;
+  const borderColor = isSelected ? '#00FF87' : 'rgba(0,255,135,0.38)';
+  const borderWidth = isSelected ? 2 : 1;
+
+  // Drop shadow
+  ctx.shadowColor   = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur    = 18;
+  ctx.shadowOffsetY = 5;
+  roundRect(ctx, x, y, cw, totalH, COMMENT_RADIUS);
+  ctx.fillStyle = '#111118';
+  ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+  // Body border
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth   = borderWidth;
+  roundRect(ctx, x, y, cw, totalH, COMMENT_RADIUS);
+  ctx.stroke();
+
+  // Header fill
+  ctx.fillStyle = 'rgba(0,255,135,0.09)';
+  roundRectTop(ctx, x, y, cw, COMMENT_HEADER_H, COMMENT_RADIUS);
+  ctx.fill();
+
+  // Header divider
+  ctx.strokeStyle = 'rgba(0,255,135,0.18)';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y + COMMENT_HEADER_H);
+  ctx.lineTo(x + cw, y + COMMENT_HEADER_H);
+  ctx.stroke();
+
+  // Header label
+  ctx.fillStyle     = '#00FF87';
+  ctx.font          = `700 10px "Azeret Mono", monospace`;
+  ctx.textBaseline  = 'middle';
+  ctx.letterSpacing = '1.5px';
+  ctx.fillText('NOTE', x + COMMENT_PAD, y + COMMENT_HEADER_H / 2);
+  ctx.letterSpacing = '0px';
+
+  // Body text
+  ctx.fillStyle    = 'rgba(242,242,244,0.85)';
+  ctx.font         = `400 ${COMMENT_FONT_SIZE}px "Manrope", sans-serif`;
+  ctx.textBaseline = 'top';
+  textLines.forEach((line, i) => {
+    ctx.fillText(line, x + COMMENT_PAD, y + COMMENT_HEADER_H + COMMENT_PAD + i * COMMENT_LINE_H);
+  });
+
+  // Tail (downward pointer at bottom-left)
+  const tailX = x + 22;
+  const tailY = y + totalH;
+  ctx.fillStyle   = '#111118';
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth   = borderWidth;
+  ctx.beginPath();
+  ctx.moveTo(tailX - 12, tailY);
+  ctx.lineTo(tailX, tailY + COMMENT_TAIL_H);
+  ctx.lineTo(tailX + 16, tailY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Selection: dashed ring + resize handle (width-only, at bottom-right of bubble)
+  if (isSelected) {
+    ctx.strokeStyle = '#00FF87';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(x - 5, y - 5, cw + 10, obj.h + 10);
+    ctx.setLineDash([]);
+
+    // Resize handle — bottom-right corner of bubble body (not tail)
+    ctx.fillStyle   = '#fff';
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth   = 2;
+    ctx.fillRect(x + cw, y + totalH, 14, 14);
+    ctx.strokeRect(x + cw, y + totalH, 14, 14);
+  }
+
+  ctx.restore();
 }
 
 async function download() {

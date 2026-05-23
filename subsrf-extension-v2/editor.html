@@ -204,6 +204,11 @@
       display: flex; align-items: center; justify-content: center; transition: all 0.15s;
     }
     .layer-btn:hover { color: var(--err); background: rgba(255,77,77,0.12); }
+    .layer-sub {
+      font-size: 10px; color: var(--t2); margin-top: 2px;
+      font-family: 'Azeret Mono', monospace;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 148px;
+    }
 
     /* ── Analysis panel ────────────────────────────────────────────── */
     #panel-analysis {
@@ -322,6 +327,48 @@
       font-size: 16px; font-family: 'Manrope', sans-serif; outline: none;
     }
     .text-box input:focus { border-color: rgba(0,255,135,0.35); }
+
+    /* ── Comment overlay ───────────────────────────────────────────── */
+    #comment-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; z-index: 1000; align-items: center; justify-content: center;
+    }
+    .comment-box {
+      background: var(--layer); padding: 20px;
+      border: 1px solid rgba(0,255,135,0.25); width: 380px;
+    }
+    .comment-box-header {
+      display: flex; align-items: center; gap: 8px;
+      padding-bottom: 12px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .comment-box-title {
+      font-family: 'Azeret Mono', monospace; font-size: 11px;
+      font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--t1);
+    }
+    .comment-box-hint {
+      margin-left: auto; font-family: 'Azeret Mono', monospace;
+      font-size: 9px; color: var(--t3); letter-spacing: 0.5px;
+    }
+    .comment-box textarea {
+      box-sizing: border-box; width: 100%; background: var(--void);
+      border: 1px solid var(--border); color: var(--t1);
+      padding: 12px; margin-bottom: 12px;
+      font-size: 13px; font-family: 'Manrope', sans-serif; outline: none;
+      resize: vertical; min-height: 88px; line-height: 1.6; display: block;
+    }
+    .comment-box textarea:focus { border-color: rgba(0,255,135,0.35); }
+    .comment-box-actions { display: flex; gap: 8px; }
+    .comment-box-actions button {
+      flex: 1; border: none; padding: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: 'Manrope', sans-serif;
+    }
+    #btn-comment-cancel {
+      background: var(--surface); color: var(--t2);
+      border: 1px solid var(--border-md) !important;
+    }
+    #btn-comment-cancel:hover { color: var(--t1); }
+    #btn-comment-save { background: var(--neon); color: var(--void); }
   </style>
 </head>
 <body>
@@ -354,6 +401,9 @@
       </button>
       <button class="tool-btn" id="tool-text" title="Text">
         <span class="material-symbols-outlined" style="font-size:20px;">title</span>
+      </button>
+      <button class="tool-btn" id="tool-comment" title="Comment (C)">
+        <span class="material-symbols-outlined" style="font-size:20px;">chat_bubble</span>
       </button>
       <button class="tool-btn" id="tool-emoji" title="Emoji">
         <span class="material-symbols-outlined" style="font-size:20px;">mood</span>
@@ -537,6 +587,22 @@
     <div class="text-box">
       <input type="text" id="text-input" placeholder="Type your note…">
       <button id="btn-text-save" style="width:100%; background:var(--neon); color:var(--void); border:none; padding:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Manrope',sans-serif;">Add Note</button>
+    </div>
+  </div>
+
+  <!-- ── Comment overlay ─────────────────────────────────────────── -->
+  <div id="comment-overlay">
+    <div class="comment-box">
+      <div class="comment-box-header">
+        <span class="material-symbols-outlined" style="font-size:16px; color:var(--neon);">chat_bubble</span>
+        <span class="comment-box-title">Add Comment</span>
+        <span class="comment-box-hint">Ctrl+Enter to save · Esc to cancel</span>
+      </div>
+      <textarea id="comment-input" placeholder="Type your comment…"></textarea>
+      <div class="comment-box-actions">
+        <button id="btn-comment-cancel">Cancel</button>
+        <button id="btn-comment-save">Add Comment</button>
+      </div>
     </div>
   </div>
 
