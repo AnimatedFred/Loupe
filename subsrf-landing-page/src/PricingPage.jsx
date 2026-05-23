@@ -4,44 +4,44 @@ import { TopNavBar, Footer } from './App';
 const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
 
 export default function PricingPage({ onLogin, loading, session, tier, onLogout, mcpConfig }) {
-  const isPaid = tier === 'pro' || tier === 'starter';
-  const displayConfig = isPaid && mcpConfig ? mcpConfig : BASE_MCP;
-  const [upgrading, setUpgrading] = useState(null);
+  const isPro = tier === 'pro';
+  const displayConfig = isPro && mcpConfig ? mcpConfig : BASE_MCP;
+  const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [subInfo, setSubInfo] = useState(null);
+  const [cancelScheduled, setCancelScheduled] = useState(false);
 
   useEffect(() => {
-    if (!session?.access_token || tier === 'free') return;
+    if (!session?.access_token || !isPro) return;
     fetch('https://api.subsrf.dev/api/stripe/subscription', {
       headers: { Authorization: `Bearer ${session.access_token}` },
     })
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setSubInfo(data); })
+      .then(data => { if (data?.cancelAtPeriodEnd) setCancelScheduled(true); })
       .catch(() => {});
-  }, [session?.access_token, tier]);
+  }, [session?.access_token, isPro]);
 
-  const handleUpgrade = async (planTier) => {
+  const handleUpgrade = async () => {
     if (!session) return onLogin();
-    setUpgrading(planTier);
+    setUpgrading(true);
     setUpgradeError(null);
     try {
       const res = await fetch('https://api.subsrf.dev/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tier: planTier }),
+        body: JSON.stringify({ tier: 'pro' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start checkout');
       window.location.href = data.url;
     } catch (e) {
       setUpgradeError(e.message);
-      setUpgrading(null);
+      setUpgrading(false);
     }
   };
 
-  const handleManageBilling = async () => {
-    if (!session) return onLogin();
+  const handleCancelSubscription = async () => {
+    if (!session) return;
     setPortalLoading(true);
     try {
       const res = await fetch('https://api.subsrf.dev/api/stripe/create-portal-session', {
@@ -63,14 +63,14 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
       <TopNavBar onLogin={onLogin} loading={loading} session={session} tier={tier} onLogout={onLogout} />
 
       <main className="max-w-[1080px] mx-auto px-md pt-4xl pb-2xl relative flex-grow w-full">
-        {/* Hero Section */}
+        {/* Hero */}
         <section className="text-center mb-3xl">
           <div className="inline-block px-sm py-xs border border-white-border rounded-full mb-md">
             <span className="font-label-caps text-[10px] text-neon tracking-widest uppercase">Infrastructure Grade Tooling</span>
           </div>
           <h1 className="font-display-lg text-display-lg text-white-primary mb-md">Engineered for your <span className="text-neon">pipeline.</span></h1>
           <p className="max-w-2xl mx-auto text-white-secondary text-subheading font-body">
-            Choose the layer of access your workflow requires. From raw DOM inspection to full bidirectional AI-Figma orchestration.
+            Two tiers. Full access or essential tooling. No in-between complexity.
           </p>
         </section>
 
@@ -80,10 +80,11 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
           </div>
         )}
 
-        {/* Pricing Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-lg mb-4xl">
-          {/* Free Tier */}
-          <div className="bg-layer border border-white-border p-lg flex flex-col hover:border-white-secondary transition-colors group relative overflow-hidden">
+        {/* Pricing Grid — 2 columns */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-lg mb-4xl max-w-[720px] mx-auto">
+
+          {/* Free */}
+          <div className="bg-layer border border-white-border p-lg flex flex-col hover:border-white-secondary transition-colors relative overflow-hidden">
             <div className="mb-xl">
               <h3 className="font-label-caps text-white-secondary mb-sm">FREE</h3>
               <div className="flex items-baseline gap-xs mb-sm">
@@ -107,28 +108,31 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-status-warn text-[18px]">block</span>
-                <span className="font-mono-data text-white-muted text-label-caps">Capped Figma Sync (5 elems)</span>
+                <span className="font-mono-data text-white-muted text-label-caps">Capped Figma Sync (5 elements)</span>
+              </div>
+              <div className="flex items-start gap-sm">
+                <span className="material-symbols-outlined text-status-warn text-[18px]">block</span>
+                <span className="font-mono-data text-white-muted text-label-caps">Watermarked captures</span>
               </div>
             </div>
             <button
-              onClick={!session ? onLogin : tier === 'free' ? undefined : handleManageBilling}
-              disabled={portalLoading || tier === 'free'}
-              className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all disabled:opacity-60 disabled:cursor-default"
+              disabled
+              className="w-full py-md border border-white-border text-white-muted font-mono-data text-label-caps opacity-50 cursor-default"
             >
-              {!session ? 'START BUILDING' : tier === 'free' ? 'CURRENT PLAN' : portalLoading ? 'WAIT...' : 'MANAGE SUBSCRIPTION'}
+              {!session ? 'FREE FOREVER' : tier === 'free' ? 'CURRENT PLAN' : 'FREE TIER'}
             </button>
           </div>
 
-          {/* Starter Tier (Recommended) */}
-          <div className="bg-layer border-2 border-neon p-lg flex flex-col relative overflow-hidden shadow-[0_0_20px_rgba(0,255,135,0.15)] group">
+          {/* Pro */}
+          <div className="bg-layer border-2 border-neon p-lg flex flex-col relative overflow-hidden shadow-[0_0_20px_rgba(0,255,135,0.15)]">
             <div className="absolute top-0 right-0 bg-neon text-void font-label-caps text-[9px] px-md py-1 translate-x-[34%] translate-y-[100%] rotate-45">RECOMMENDED</div>
             <div className="mb-xl">
-              <h3 className="font-label-caps text-neon mb-sm">STARTER</h3>
+              <h3 className="font-label-caps text-neon mb-sm">PRO</h3>
               <div className="flex items-baseline gap-xs mb-sm">
-                <span className="font-display-lg text-heading-md text-white-primary">$9</span>
+                <span className="font-display-lg text-heading-md text-white-primary">$19</span>
                 <span className="font-mono-data text-white-muted text-label-caps">/MO</span>
               </div>
-              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Full pipeline access. 75 AI credits / month.</p>
+              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Full pipeline access. 250 AI credits / month.</p>
             </div>
             <div className="flex-grow space-y-md mb-xl">
               <div className="flex items-start gap-sm">
@@ -141,7 +145,7 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">MCP Bridge (Claude/Cursor)</span>
+                <span className="font-mono-data text-white-primary text-label-caps">MCP Bridge (Claude / Cursor)</span>
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
@@ -149,54 +153,31 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
               </div>
               <div className="flex items-start gap-sm">
                 <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">75 AI Credits / month</span>
+                <span className="font-mono-data text-white-primary text-label-caps">250 AI Credits / month</span>
               </div>
             </div>
-            {(() => {
-              const downgradeScheduled = subInfo?.cancelAtPeriodEnd || (subInfo?.scheduledTier && subInfo?.scheduledDate);
-              return (
-                <button
-                  onClick={!session ? onLogin : (tier === 'starter' || downgradeScheduled) ? undefined : () => handleUpgrade('starter')}
-                  disabled={upgrading === 'starter' || tier === 'starter' || !!downgradeScheduled}
-                  className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
-                >
-                  {upgrading === 'starter' ? 'WAIT...' : !session ? 'UPGRADE NOW' : tier === 'starter' ? 'CURRENT PLAN' : downgradeScheduled ? 'DOWNGRADE SCHEDULED' : tier === 'free' ? 'GET STARTER' : 'DOWNGRADE TO STARTER'}
-                </button>
-              );
-            })()}
-          </div>
 
-          {/* Pro Tier */}
-          <div className="bg-layer border border-white-border p-lg flex flex-col hover:border-neon transition-colors group relative overflow-hidden">
-            <div className="mb-xl">
-              <h3 className="font-label-caps text-white-secondary mb-sm">PRO</h3>
-              <div className="flex items-baseline gap-xs mb-sm">
-                <span className="font-display-lg text-heading-md text-white-primary">$19</span>
-                <span className="font-mono-data text-white-muted text-label-caps">/MO</span>
-              </div>
-              <p className="text-white-secondary font-mono-data text-label-caps leading-relaxed">Everything in Starter. 300 AI credits / month.</p>
-            </div>
-            <div className="flex-grow space-y-md mb-xl">
-              <div className="flex items-start gap-sm">
-                <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">Everything in Starter</span>
-              </div>
-              <div className="flex items-start gap-sm">
-                <span className="material-symbols-outlined text-neon text-[18px]">check</span>
-                <span className="font-mono-data text-white-primary text-label-caps">300 AI Credits / month</span>
-              </div>
-            </div>
-            <button
-              onClick={!session ? onLogin : tier === 'pro' ? undefined : () => handleUpgrade('pro')}
-              disabled={upgrading === 'pro' || tier === 'pro'}
-              className="w-full py-md border border-white-border text-white-primary font-mono-data text-label-caps hover:bg-white-primary hover:text-void transition-all disabled:opacity-60 disabled:cursor-default"
-            >
-              {upgrading === 'pro' ? 'WAIT...' : !session ? 'GO PRO' : tier === 'pro' ? 'CURRENT PLAN' : tier === 'starter' ? 'UPGRADE TO PRO' : 'GET PRO'}
-            </button>
+            {isPro ? (
+              <button
+                onClick={handleCancelSubscription}
+                disabled={portalLoading || cancelScheduled}
+                className="w-full py-md border border-white-border text-white-secondary font-mono-data text-label-caps hover:border-red-500/50 hover:text-red-400 transition-all disabled:opacity-50 disabled:cursor-default"
+              >
+                {cancelScheduled ? 'CANCELLATION SCHEDULED' : portalLoading ? 'WAIT...' : 'CANCEL SUBSCRIPTION'}
+              </button>
+            ) : (
+              <button
+                onClick={handleUpgrade}
+                disabled={upgrading}
+                className="w-full py-md bg-neon text-void font-mono-data text-label-caps hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-default"
+              >
+                {upgrading ? 'WAIT...' : !session ? 'GET PRO' : 'GET PRO'}
+              </button>
+            )}
           </div>
         </section>
 
-        {/* Detailed Feature Comparison */}
+        {/* Feature Comparison Table */}
         <section className="mb-4xl">
           <h2 className="font-heading-sm text-heading-sm text-white-primary mb-xl text-center">Technical Specification</h2>
           <div className="overflow-x-auto border border-white-border">
@@ -205,92 +186,76 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <tr className="bg-deep border-b border-white-border">
                   <th className="p-md text-white-muted font-normal">FEATURE</th>
                   <th className="p-md text-center text-white-muted font-normal">FREE</th>
-                  <th className="p-md text-center text-white-muted font-normal bg-white-border/5">STARTER</th>
-                  <th className="p-md text-center text-white-muted font-normal">PRO</th>
+                  <th className="p-md text-center text-neon font-normal bg-white-border/5">PRO</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white-border">
-                {/* Capture Modes */}
                 <tr className="bg-white-border/5">
-                  <td className="p-md text-neon" colSpan="4">CAPTURE MODES</td>
+                  <td className="p-md text-neon" colSpan="3">CAPTURE MODES</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Smart Click Selection</td>
                   <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Screenshot Capture</td>
                   <td className="p-md text-center text-white-muted text-xs">Watermarked</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Full Page Capture</td>
                   <td className="p-md text-center text-white-muted text-xs">Watermarked</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
-                {/* Studio Editor */}
                 <tr className="bg-white-border/5">
-                  <td className="p-md text-neon" colSpan="4">STUDIO EDITOR</td>
+                  <td className="p-md text-neon" colSpan="3">STUDIO EDITOR</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Annotation Canvas</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Layers & Hierarchy</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
-                {/* AI Analysis */}
                 <tr className="bg-white-border/5">
-                  <td className="p-md text-neon" colSpan="4">AI ANALYSIS</td>
+                  <td className="p-md text-neon" colSpan="3">AI ANALYSIS</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Credits / month</td>
                   <td className="p-md text-center text-white-muted">0</td>
-                  <td className="p-md text-center text-neon bg-white-border/5">75</td>
-                  <td className="p-md text-center text-neon">300</td>
+                  <td className="p-md text-center text-neon bg-white-border/5">250</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Build Prompt Generation</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Subsrf Compose (Figma)</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
-                {/* Figma Integration */}
                 <tr className="bg-white-border/5">
-                  <td className="p-md text-neon" colSpan="4">FIGMA INTEGRATION</td>
+                  <td className="p-md text-neon" colSpan="3">FIGMA INTEGRATION</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Element Sync Limit</td>
                   <td className="p-md text-center text-white-secondary">5 elements</td>
                   <td className="p-md text-center text-neon bg-white-border/5">Unlimited</td>
-                  <td className="p-md text-center text-neon">Unlimited</td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">MCP Bridge (Claude/Cursor)</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
                 <tr>
                   <td className="p-md text-white-secondary">Claude Live Control</td>
                   <td className="p-md text-center text-white-muted">—</td>
                   <td className="p-md text-center text-neon bg-white-border/5"><span className="material-symbols-outlined">check</span></td>
-                  <td className="p-md text-center text-neon"><span className="material-symbols-outlined">check</span></td>
                 </tr>
               </tbody>
             </table>
@@ -310,28 +275,45 @@ export default function PricingPage({ onLogin, loading, session, tier, onLogout,
                 <h4 className="font-mono-data text-white-primary mb-sm">Why do I need a Figma Token?</h4>
                 <p className="text-white-secondary font-body text-body">Subsrf utilizes a Bring Your Own Key (BYOK) model for design synchronization. You provide your own Figma Personal Access Token to authenticate the Claude-to-Figma bridge, ensuring secure, direct REST API access to your design files without third-party intermediaries.</p>
               </div>
+              <div>
+                <h4 className="font-mono-data text-white-primary mb-sm">How do I cancel?</h4>
+                <p className="text-white-secondary font-body text-body">Pro subscribers can cancel anytime from the pricing page. Your plan stays active until the end of the current billing period — no surprises.</p>
+              </div>
             </div>
           </div>
           <div className="bg-deep border border-white-border p-xl">
             <h4 className="font-mono-data text-white-primary mb-md">Bridge Configuration (Pro)</h4>
             <div className="bg-void p-md border border-white-border font-mono-data text-xs text-neon-dim overflow-hidden relative">
-              <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[3px] bg-void/30">
-                <span className="font-label-caps text-white-primary border border-white-border px-sm py-xs bg-layer rounded">PRO ACCESS REQUIRED</span>
-              </div>
-              <pre className="text-neon opacity-50 select-none blur-[2px]">{JSON.stringify(displayConfig, null, 2)}</pre>
+              {!isPro && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[3px] bg-void/30">
+                  <span className="font-label-caps text-white-primary border border-white-border px-sm py-xs bg-layer rounded">PRO ACCESS REQUIRED</span>
+                </div>
+              )}
+              <pre className={`text-neon ${!isPro ? 'opacity-50 select-none blur-[2px]' : ''}`}>{JSON.stringify(displayConfig, null, 2)}</pre>
             </div>
             <p className="mt-md text-white-muted text-label-caps">Connect Claude Desktop, Cursor, or Zed in seconds.</p>
           </div>
         </section>
 
-        {/* CTA Footer Section */}
+        {/* CTA Footer */}
         <section className="bg-neon p-2xl text-center rounded-xl relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white-primary to-transparent"></div>
           <h2 className="font-display-lg text-heading-md text-void mb-md relative z-10">Deploy the full pipeline today.</h2>
           <p className="text-void/80 text-subheading mb-xl max-w-xl mx-auto relative z-10">Join 2,000+ engineers building high-fidelity interfaces with AI orchestration.</p>
           <div className="flex flex-col sm:flex-row gap-md justify-center relative z-10">
-            <button className="bg-void text-neon font-mono-data text-label-caps px-2xl py-md rounded-lg hover:opacity-90 active:scale-95 transition-all">GET STARTED FOR FREE</button>
-            <button className="bg-void/10 border border-void/20 text-void font-mono-data text-label-caps px-2xl py-md rounded-lg hover:bg-void/20 transition-all">VIEW DOCUMENTATION</button>
+            <button
+              onClick={!session || !isPro ? handleUpgrade : undefined}
+              disabled={isPro}
+              className="bg-void text-neon font-mono-data text-label-caps px-2xl py-md rounded-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-60 disabled:cursor-default"
+            >
+              {isPro ? 'CURRENTLY ON PRO' : 'GET PRO — $19/MO'}
+            </button>
+            <button
+              onClick={() => window.location.href = '/docs'}
+              className="bg-void/10 border border-void/20 text-void font-mono-data text-label-caps px-2xl py-md rounded-lg hover:bg-void/20 transition-all"
+            >
+              VIEW DOCUMENTATION
+            </button>
           </div>
         </section>
       </main>

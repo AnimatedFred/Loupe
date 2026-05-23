@@ -93,8 +93,8 @@ btnFullPage.onclick = () => {
 
     const tier   = (session.tier || 'free').toLowerCase();
     const isPro  = tier === 'pro';
-    const isPaid = tier === 'starter' || tier === 'pro';
-    authTierBadge.textContent = isPro ? '⚡ PRO' : tier === 'starter' ? '✦ STARTER' : 'FREE';
+    const isPaid = tier === 'pro';
+    authTierBadge.textContent = isPro ? '⚡ PRO' : 'FREE';
     authTierBadge.className   = 'tier-badge ' + (isPaid ? 'tier-pro' : 'tier-free');
 
     const creditsEl = document.getElementById('acct-credits');
@@ -102,7 +102,7 @@ btnFullPage.onclick = () => {
     const creditsStrip = document.getElementById('credits-strip');
     if (creditsEl) {
       const credits = session.credits ?? 0;
-      const limit   = isPro ? 300 : tier === 'starter' ? 75 : 0;
+      const limit   = isPro ? 250 : 0;
       if (!isPaid) {
         creditsEl.textContent = '0 — Free tier';
         creditsEl.style.color = 'var(--t3)';
@@ -538,8 +538,8 @@ btnFullPage.onclick = () => {
 
   async function openImageInStudio(file) {
     const tier = (currentSession?.tier || 'free').toLowerCase();
-    if (tier !== 'starter' && tier !== 'pro') {
-      showUpgradeHint('Image Studio requires Starter or Pro.');
+    if (tier !== 'pro') {
+      showUpgradeHint('Image Studio requires Pro.');
       return;
     }
     if (!file || !file.type.startsWith('image/')) return;

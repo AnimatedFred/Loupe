@@ -190,7 +190,7 @@
     if (!el || el === document.body || el === document.documentElement) return;
     if (el.closest('[id^="uipb-"], [class*="uipb-"], [id^="subsrf"]')) return;
     if (cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT) {
-      showToast(`Free plan limited to ${FREE_ELEMENT_LIMIT} elements — upgrade to Starter`);
+      showToast(`Free plan limited to ${FREE_ELEMENT_LIMIT} elements — upgrade to Pro`);
       return;
     }
 
@@ -445,7 +445,7 @@
       });
       const hitCap = cachedTier === 'free' && highlightedElements.length >= FREE_ELEMENT_LIMIT;
       showToast(hitCap
-        ? `${FREE_ELEMENT_LIMIT} elements selected (Free limit — upgrade to Starter for unlimited)`
+        ? `${FREE_ELEMENT_LIMIT} elements selected (Free limit — upgrade to Pro for unlimited)`
         : `${highlightedElements.length} elements selected`);
 
       regionOverlay.remove();

@@ -516,7 +516,7 @@
       // Check tier
       const data = await safeStorageGet(['subsrf_session', CONNECTED_KEY]);
       const tier = data.subsrf_session?.tier?.toLowerCase();
-      if (!['pro', 'starter'].includes(tier)) return;
+      if (tier !== 'pro') return;
 
       const toolbar = findToolbar();
       if (!toolbar) return;

@@ -1022,7 +1022,7 @@ async function runEditorAnalysis() {
 
   const tier    = (subsrf_session.tier || 'free').toLowerCase();
   const credits = subsrf_session.credits ?? 0;
-  const isPaid  = tier === 'starter' || tier === 'pro';
+  const isPaid  = tier === 'pro';
 
   if (!isPaid)    { showToast('Paid plan required for AI Analysis'); return; }
   if (credits < 1) { showToast('No credits remaining'); return; }

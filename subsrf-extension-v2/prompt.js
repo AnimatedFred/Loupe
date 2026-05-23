@@ -64,13 +64,13 @@ function renderAiGate() {
 
   const tier = session?.tier || 'free';
   const credits = session?.credits ?? 0;
-  const isPaid = tier === 'starter' || tier === 'pro';
+  const isPaid = tier === 'pro';
 
   if (!isPaid) {
     gate.innerHTML = `
       <div class="upgrade-banner">
         <div class="upgrade-text">
-          <strong>AI Prompt Engine</strong> — Starter &amp; Pro<br>
+          <strong>AI Prompt Engine</strong> — Pro<br>
           Let Claude interpret your captured UI and generate a semantically rich, build-ready prompt.
         </div>
         <button class="btn-upgrade-sm" id="btn-upgrade-gate">Upgrade — $9/mo</button>
