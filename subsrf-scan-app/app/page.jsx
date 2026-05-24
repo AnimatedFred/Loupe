@@ -6,6 +6,7 @@ import TokenExplorer from '../components/TokenExplorer';
 import CodeSuggestDashboard from '../components/CodeSuggestDashboard';
 
 import { useUser } from '../context/UserContext';
+import { supabase } from '../lib/supabase';
 
 export default function Home() {
   const [mode, setMode] = useState('scan'); // 'scan' | 'review'
@@ -96,10 +97,16 @@ export default function Home() {
       setProjectSlug(null);
 
       // Auto-save project (fire-and-forget)
-      if (session?.access_token) {
+      let currentToken = session?.access_token;
+      if (!currentToken && supabase) {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        currentToken = currentSession?.access_token;
+      }
+      
+      if (currentToken) {
         fetch('/api/project', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentToken}` },
           body: JSON.stringify({ sourceUrl: target.trim(), tokens: data.tokens }),
         }).then(r => r.json()).then(d => {
           if (d.slug) {

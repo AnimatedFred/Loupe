@@ -33,10 +33,17 @@ export function UserProvider({ children }) {
       const refreshParam = params.get('refresh');
 
       if (tokenParam) {
-        await supabase.auth.setSession({
-          access_token:  tokenParam,
-          refresh_token: refreshParam || '',
-        });
+        try {
+          const sessionPayload = { access_token: tokenParam };
+          if (refreshParam) sessionPayload.refresh_token = refreshParam;
+          
+          const { error } = await supabase.auth.setSession(sessionPayload);
+          if (error) {
+            console.error('[UserContext] SSO Login failed:', error);
+          }
+        } catch (err) {
+          console.error('[UserContext] SSO Login threw error:', err);
+        }
         // Clean the SSO params from the URL
         const clean = new URL(window.location.href);
         clean.searchParams.delete('token');
