@@ -1253,48 +1253,407 @@ app.get('/auth/figma/start', (req, res) => {
 app.get('/auth/figma/callback', (req, res) => {
   const state = (req.query.state || '').replace(/[^a-zA-Z0-9_-]/g, '');
   res.setHeader('Content-Type', 'text/html');
-  res.send(`<!DOCTYPE html>
-<html>
-<head><title>Subsrf — Signing in...</title>
-<style>body{font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#0f172a;color:#f8fafc;flex-direction:column;gap:12px;margin:0}p{font-size:14px;color:#94a3b8}</style>
-</head>
-<body>
-<div id="msg">Completing sign-in...</div>
-<p id="sub"></p>
-<script>
-  var state = ${JSON.stringify(state)};
-  var hash = location.hash.slice(1);
-  var params = new URLSearchParams(hash);
-  var accessToken = params.get('access_token');
-  function setMsg(m, s) {
-    document.getElementById('msg').textContent = m;
-    document.getElementById('sub').textContent = s || '';
-  }
-  var refreshToken = params.get('refresh_token') || '';
-  var expiresIn = parseInt(params.get('expires_in') || '3600');
-  if (!accessToken) {
-    setMsg('Sign-in failed', 'No token received from Google. Please try again.');
-  } else if (!state) {
-    setMsg('Sign-in failed', 'Session state missing — please retry from the Figma plugin.');
-  } else {
-    fetch('/auth/figma/store', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state: state, accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn })
-    }).then(function(r) {
-      if (!r.ok) return r.text().then(function(t) { throw new Error('Server error ' + r.status + ': ' + t); });
-      return r.json();
-    }).then(function(d) {
-      if (d.ok) {
-        setMsg('✓ Signed in!', 'You can close this tab and return to Figma.');
-      } else {
-        setMsg('Sign-in failed', d.error || 'Unknown error. Please try again.');
+  res.send(`<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SUBSRF | AUTH_STATUS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@300;400;600&family=Manrope:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#00ff87",
+                    "lift": "#202028",
+                    "surface-container-highest": "#2d372e",
+                    "outline-variant": "#3b4b3d",
+                    "on-error": "#690005",
+                    "surface-bright": "#323c32",
+                    "on-tertiary-container": "#795f01",
+                    "on-secondary-fixed-variant": "#454749",
+                    "on-surface-variant": "#b9cbb9",
+                    "surface-tint": "#00e478",
+                    "tertiary-container": "#ffdb79",
+                    "primary-fixed": "#60ff98",
+                    "tertiary-fixed-dim": "#e5c364",
+                    "void": "#050508",
+                    "primary": "#f1ffef",
+                    "secondary-container": "#454749",
+                    "surface-dim": "#0c160e",
+                    "neon-dim": "rgba(0, 255, 135, 0.12)",
+                    "layer": "#111118",
+                    "error": "#ffb4ab",
+                    "surface-container-lowest": "#071009",
+                    "secondary": "#c6c6c8",
+                    "background": "#0c160e",
+                    "on-surface": "#dae6d8",
+                    "on-background": "#dae6d8",
+                    "surface-container-low": "#141e16",
+                    "neon": "#00FF87",
+                    "on-error-container": "#ffdad6",
+                    "status-ok": "#39D98A",
+                    "secondary-fixed-dim": "#c6c6c8",
+                    "white-muted": "rgba(242, 242, 244, 0.28)",
+                    "on-tertiary-fixed": "#241a00",
+                    "inverse-on-surface": "#29332a",
+                    "secondary-fixed": "#e2e2e4",
+                    "on-primary-container": "#007138",
+                    "primary-fixed-dim": "#00e478",
+                    "status-warn": "#FFAB00",
+                    "surface": "#18181F",
+                    "inverse-surface": "#dae6d8",
+                    "on-secondary-fixed": "#1a1c1d",
+                    "white-primary": "#F2F2F4",
+                    "status-err": "#FF4D4D",
+                    "on-tertiary": "#3d2f00",
+                    "neon-glow": "rgba(0, 255, 135, 0.06)",
+                    "surface-container-high": "#222c24",
+                    "surface-container": "#18221a",
+                    "on-primary": "#003919",
+                    "deep": "#0C0C12",
+                    "on-secondary-container": "#b4b5b7",
+                    "on-primary-fixed": "#00210c",
+                    "on-tertiary-fixed-variant": "#584400",
+                    "white-secondary": "rgba(242, 242, 244, 0.55)",
+                    "surface-variant": "#2d372e",
+                    "on-primary-fixed-variant": "#005227",
+                    "on-secondary": "#2f3132",
+                    "tertiary-fixed": "#ffe08d",
+                    "error-container": "#93000a",
+                    "inverse-primary": "#006d36",
+                    "tertiary": "#fffaf7",
+                    "white-border": "rgba(242, 242, 244, 0.12)",
+                    "outline": "#849585"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "xl": "48px",
+                    "lg": "32px",
+                    "xs": "4px",
+                    "2xl": "64px",
+                    "3xl": "96px",
+                    "md": "16px",
+                    "4xl": "128px"
+            },
+            "fontFamily": {
+                    "mono-data": ["Azeret Mono"],
+                    "label-caps": ["Azeret Mono"],
+                    "display-xl": ["Manrope"],
+                    "body": ["Manrope"],
+                    "subheading": ["Manrope"],
+                    "heading-sm": ["Manrope"],
+                    "heading-md": ["Manrope"],
+                    "display-lg": ["Manrope"]
+            },
+            "fontSize": {
+                    "mono-data": ["13px", {"lineHeight": "1.8", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "2px", "fontWeight": "400"}],
+                    "display-xl": ["160px", {"lineHeight": "0.88", "letterSpacing": "-6px", "fontWeight": "800"}],
+                    "body": ["16px", {"lineHeight": "1.8", "letterSpacing": "0", "fontWeight": "300"}],
+                    "subheading": ["22px", {"lineHeight": "1.3", "letterSpacing": "-0.3px", "fontWeight": "500"}],
+                    "heading-sm": ["32px", {"lineHeight": "1.1", "letterSpacing": "-0.8px", "fontWeight": "700"}],
+                    "heading-md": ["52px", {"lineHeight": "1.05", "letterSpacing": "-1.5px", "fontWeight": "700"}],
+                    "display-lg": ["64px", {"lineHeight": "0.9", "letterSpacing": "-4px", "fontWeight": "800"}]
+            }
+          },
+        },
       }
-    }).catch(function(err) {
-      setMsg('Sign-in failed', err.message);
-    });
-  }
-</script>
+    </script>
+<style>
+        body {
+            background-color: #050508;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(242, 242, 244, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(242, 242, 244, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -2;
+        }
+
+        .scan-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(0, 0, 0, 0.3) 51%,
+                transparent 51%
+            );
+            background-size: 100% 4px;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.03;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .neon-glow-card {
+            box-shadow: 0 0 40px rgba(0, 255, 135, 0.05);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .neon-glow-card.error-state {
+            box-shadow: 0 0 40px rgba(255, 77, 77, 0.1);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        @keyframes pulse-neon {
+            0% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.8; transform: scale(1); }
+        }
+
+        .animate-neon-pulse {
+            animation: pulse-neon 4s infinite ease-in-out;
+        }
+        
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+<div class="grid-overlay"></div>
+<div class="scan-lines"></div>
+<div class="noise"></div>
+<main class="relative z-10 w-full max-w-[520px] px-md">
+<div id="card" class="bg-layer border border-white-border rounded-lg neon-glow-card overflow-hidden flex flex-col transition-colors duration-300">
+<div class="flex justify-between items-center px-lg py-sm border-b border-white-border bg-deep">
+<span class="font-label-caps text-label-caps text-neon tracking-[2px]" id="protocol-text">SUBSRF_PROTOCOL</span>
+<div class="flex gap-xs" id="status-dots">
+<div class="w-1.5 h-1.5 rounded-full bg-status-warn animate-pulse" id="dot-1"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-white-border" id="dot-2"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-white-border" id="dot-3"></div>
+</div>
+</div>
+<div class="p-lg flex flex-col items-center text-center">
+<div class="relative mb-lg">
+<div id="glow-bg" class="absolute inset-0 bg-status-warn opacity-20 blur-xl animate-neon-pulse transition-colors duration-300"></div>
+<div id="icon-circle" class="relative w-24 h-24 rounded-full border-2 border-status-warn flex items-center justify-center bg-void transition-colors duration-300">
+<span id="main-icon" class="material-symbols-outlined text-[48px] text-status-warn spin transition-colors duration-300" style="font-variation-settings: 'FILL' 1;">
+                            sync
+                        </span>
+</div>
+</div>
+<h1 id="msg" class="font-heading-sm text-heading-sm text-white-primary mb-sm uppercase tracking-tight">
+                    COMPLETING SIGN-IN...
+                </h1>
+<p id="sub" class="font-body text-body text-white-secondary mb-xl leading-relaxed">
+                    Please wait while we verify your session.
+                </p>
+<div class="w-full bg-deep border border-white-border rounded p-md text-left font-mono-data text-mono-data">
+<div class="grid grid-cols-2 gap-sm">
+<span class="text-white-muted uppercase">AUTH_STATUS</span>
+<span id="meta-status" class="text-status-warn text-right">PENDING</span>
+<span class="text-white-muted uppercase">SESSION_ID</span>
+<span id="meta-session" class="text-white-primary text-right truncate">...</span>
+</div>
+</div>
+</div>
+<div class="px-lg py-md border-t border-white-border bg-deep flex justify-between items-center">
+<div class="flex items-center gap-sm">
+<span id="footer-icon" class="material-symbols-outlined text-white-secondary text-[16px]">lock_open</span>
+<span id="footer-text" class="font-label-caps text-label-caps text-white-secondary">AUTHENTICATING</span>
+</div>
+<div class="font-mono-data text-[10px] text-white-muted" id="timing">
+                    0.000ms_SYNC
+                </div>
+</div>
+</div>
+<div id="ambient-glow-1" class="absolute -top-12 -right-12 w-64 h-64 bg-neon opacity-[0.02] blur-[100px] pointer-events-none transition-colors duration-500"></div>
+<div id="ambient-glow-2" class="absolute -bottom-12 -left-12 w-64 h-64 bg-neon opacity-[0.02] blur-[100px] pointer-events-none transition-colors duration-500"></div>
+</main>
+<canvas class="fixed top-0 left-0 w-full h-full pointer-events-none z-0" id="atmosphere" width="1280" height="1024"></canvas>
+<script>
+        const canvas = document.getElementById('atmosphere');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let pColor = '0, 255, 135';
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.3;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0;
+                if (this.y < 0) this.y = canvas.height;
+            }
+
+            draw() {
+                ctx.fillStyle = 'rgba(' + pColor + ', ' + this.opacity + ')';
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        function init() {
+            for (let i = 0; i < 40; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+
+        var state = ${JSON.stringify(state)};
+        var hash = location.hash.slice(1);
+        var params = new URLSearchParams(hash);
+        var accessToken = params.get('access_token');
+        var startTime = performance.now();
+        
+        document.getElementById('meta-session').textContent = state ? state.slice(0, 12) + '...' : 'NONE';
+        
+        function updateTiming() {
+           var elapsed = performance.now() - startTime;
+           document.getElementById('timing').textContent = elapsed.toFixed(3) + 'ms_SYNC';
+        }
+        setInterval(updateTiming, 50);
+
+        function setStatus(type, m, s) {
+            document.getElementById('msg').textContent = m;
+            document.getElementById('sub').textContent = s || '';
+            
+            const mainIcon = document.getElementById('main-icon');
+            const iconCircle = document.getElementById('icon-circle');
+            const glowBg = document.getElementById('glow-bg');
+            const metaStatus = document.getElementById('meta-status');
+            const protocolText = document.getElementById('protocol-text');
+            const card = document.getElementById('card');
+            const footerIcon = document.getElementById('footer-icon');
+            const footerText = document.getElementById('footer-text');
+            const dot1 = document.getElementById('dot-1');
+            const dot2 = document.getElementById('dot-2');
+            const dot3 = document.getElementById('dot-3');
+            
+            mainIcon.classList.remove('spin', 'text-status-warn', 'text-status-err', 'text-neon');
+            iconCircle.classList.remove('border-status-warn', 'border-status-err', 'border-neon');
+            glowBg.classList.remove('bg-status-warn', 'bg-status-err', 'bg-neon');
+            metaStatus.classList.remove('text-status-warn', 'text-status-err', 'text-neon');
+            protocolText.classList.remove('text-status-err', 'text-neon');
+            
+            if (type === 'success') {
+                mainIcon.textContent = 'check_circle';
+                mainIcon.classList.add('text-neon');
+                iconCircle.classList.add('border-neon');
+                glowBg.classList.add('bg-neon');
+                metaStatus.textContent = 'TRUE';
+                metaStatus.classList.add('text-neon');
+                protocolText.classList.add('text-neon');
+                card.classList.remove('error-state');
+                footerIcon.textContent = 'lock';
+                footerText.textContent = 'INFRASTRUCTURE SECURED';
+                pColor = '0, 255, 135';
+                
+                dot1.className = 'w-1.5 h-1.5 rounded-full bg-status-ok animate-pulse';
+                dot2.className = 'w-1.5 h-1.5 rounded-full bg-white-border';
+                dot3.className = 'w-1.5 h-1.5 rounded-full bg-white-border';
+            } else if (type === 'error') {
+                mainIcon.textContent = 'error';
+                mainIcon.classList.add('text-status-err');
+                iconCircle.classList.add('border-status-err');
+                glowBg.classList.add('bg-status-err');
+                metaStatus.textContent = 'FALSE';
+                metaStatus.classList.add('text-status-err');
+                protocolText.classList.add('text-status-err');
+                card.classList.add('error-state');
+                footerIcon.textContent = 'gpp_bad';
+                footerText.textContent = 'AUTHENTICATION FAILED';
+                pColor = '255, 77, 77';
+                
+                dot1.className = 'w-1.5 h-1.5 rounded-full bg-status-err';
+                dot2.className = 'w-1.5 h-1.5 rounded-full bg-status-err';
+                dot3.className = 'w-1.5 h-1.5 rounded-full bg-status-err animate-pulse';
+            }
+        }
+
+        var refreshToken = params.get('refresh_token') || '';
+        var expiresIn = parseInt(params.get('expires_in') || '3600');
+        
+        if (!accessToken) {
+            setStatus('error', 'AUTHENTICATION FAILED', 'No token received from Google. Please try again.');
+        } else if (!state) {
+            setStatus('error', 'AUTHENTICATION FAILED', 'Session state missing — please retry from the Figma plugin.');
+        } else {
+            fetch('/auth/figma/store', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: state, accessToken: accessToken, refreshToken: refreshToken, expiresIn: expiresIn })
+            }).then(function(r) {
+                if (!r.ok) return r.text().then(function(t) { throw new Error('Server error ' + r.status + ': ' + t); });
+                return r.json();
+            }).then(function(d) {
+                if (d.ok) {
+                    setStatus('success', 'AUTHENTICATION SUCCESSFUL', 'Your session is now active. You can safely close this window and return to Figma.');
+                } else {
+                    setStatus('error', 'AUTHENTICATION FAILED', d.error || 'Unknown error. Please try again.');
+                }
+            }).catch(function(err) {
+                setStatus('error', 'AUTHENTICATION FAILED', err.message);
+            });
+        }
+    </script>
 </body></html>`);
 });
 

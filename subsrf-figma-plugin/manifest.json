@@ -1,9 +1,11 @@
 {
-  "name": "Subsrf Designer",
+  "name": "Subsrf Intelligence",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
-  "editorType": ["figma"],
+  "editorType": [
+    "figma"
+  ],
   "networkAccess": {
     "allowedDomains": [
       "https://api.subsrf.dev",
