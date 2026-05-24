@@ -8,14 +8,26 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code');
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    if (code) {
+      params.delete('code');
+    }
+    const queryString = params.toString();
+    const targetUrl = queryString ? `/?${queryString}` : '/';
+
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(() => {
-        router.replace('/');
+        router.replace(targetUrl);
+      }).catch((err) => {
+        console.error('Session exchange error:', err);
+        router.replace(targetUrl);
       });
     } else {
-      router.replace('/');
+      router.replace(targetUrl);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
