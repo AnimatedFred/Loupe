@@ -1,21 +1,35 @@
 'use client';
 
+import { useEffect, useCallback } from 'react';
 import { useUser } from '../context/UserContext';
 import { supabase } from '../lib/supabase';
 
 export default function LoginGate({ children }) {
   const { user, loading } = useUser();
 
-  async function handleGoogleLogin() {
+  const handleGoogleLogin = useCallback(async () => {
     if (!supabase) {
       alert('Supabase is not configured yet. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local');
       return;
     }
+    
+    if (typeof window !== 'undefined' && window.location.search) {
+      localStorage.setItem('postLoginParams', window.location.search);
+    }
+
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback${window.location.search}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-  }
+  }, []);
+
+  useEffect(() => {
+    if (loading || user) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('autoScan') === '1') {
+      handleGoogleLogin();
+    }
+  }, [loading, user, handleGoogleLogin]);
 
   if (loading) {
     return (

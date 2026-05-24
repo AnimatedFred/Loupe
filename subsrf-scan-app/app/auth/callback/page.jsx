@@ -14,6 +14,17 @@ export default function AuthCallback() {
     if (code) {
       params.delete('code');
     }
+    
+    // Retrieve stored parameters
+    const storedParamsStr = localStorage.getItem('postLoginParams');
+    if (storedParamsStr) {
+      const storedParams = new URLSearchParams(storedParamsStr);
+      for (const [key, value] of storedParams.entries()) {
+        if (!params.has(key)) params.set(key, value);
+      }
+      localStorage.removeItem('postLoginParams');
+    }
+
     const queryString = params.toString();
     const targetUrl = queryString ? `/?${queryString}` : '/';
 
