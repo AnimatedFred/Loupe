@@ -97,7 +97,7 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
             <article className="grid grid-cols-1 lg:grid-cols-2 gap-2xl items-center">
               <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
                 <div className="absolute inset-0 bg-tertiary-fixed-dim opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
-                <img alt="Figma to AI Diagram" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMdiDbaOfwQ-LTEULQrrGxxaAkcYaRdCSG8qJ6VCKgeXi_3NZMsIqcM8mMi89AQK2dYhkW_kQR5RmQAzWWX2tLuXMvWtMpan8rT1zJXiiKEjwpcbOOG_aizU6rN5OtZ6ThnM9SKdqCYjT2I3Zlr9D4i0DAj4UnyNCQbwRgzthr1HMxHaw9CJB5BVOqJw37r-okz_rUUhV_4cRo8DlOrWab10lP_N7pdIRpWSGV9ET_esolTdO92TDEd9SeX_a00y0FBPfKfPJkUA"/>
+                <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/FigmaBridge.mov"/>
                 <div className="absolute top-md left-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1">
                   <span className="text-tertiary-fixed-dim flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">network_node</span> NODE CONNECTED</span>
                   <span className="text-white-muted text-[11px]">ws://localhost:3000/mcp</span>
