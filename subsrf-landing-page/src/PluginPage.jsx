@@ -99,8 +99,8 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                 <div className="absolute inset-0 bg-tertiary-fixed-dim opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
                 <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/FigmaBridge.mov"/>
                 <div className="absolute top-md left-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1">
-                  <span className="text-tertiary-fixed-dim flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">network_node</span> NODE CONNECTED</span>
-                  <span className="text-white-muted text-[11px]">ws://localhost:3000/mcp</span>
+                  <span className="text-neon flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">network_node</span> SUBSRF CONNECTED</span>
+                  <span className="text-white-muted text-[11px]">api.subsrf.dev</span>
                 </div>
               </div>
               <div className="flex flex-col gap-lg order-2 lg:order-2">
