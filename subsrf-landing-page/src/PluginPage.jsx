@@ -83,18 +83,17 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg relative overflow-hidden group min-w-0">
                 <div className="absolute inset-0 bg-neon opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
-                <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/ExtentionPlugin.mov"/>
-
+                <video autoPlay loop muted playsInline className="w-full h-auto object-contain opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/ExtentionPlugin.mov"/>
               </div>
             </article>
 
             {/* Feature 2: AI Bridge (Media Left, Text Right) */}
             <article className="grid grid-cols-1 lg:grid-cols-2 gap-2xl items-center">
-              <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+              <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg relative overflow-hidden group min-w-0">
                 <div className="absolute inset-0 bg-tertiary-fixed-dim opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
-                <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/FigmaBridge.mov"/>
+                <video autoPlay loop muted playsInline className="w-full h-auto object-contain opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/FigmaBridge.mov"/>
                 <div className="absolute top-md left-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1">
                   <span className="text-neon flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">network_node</span> SUBSRF CONNECTED</span>
                   <span className="text-white-muted text-[11px]">api.subsrf.dev</span>
@@ -172,12 +171,93 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
                   </div>
                 </div>
               </div>
-              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
+              <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg relative overflow-hidden group min-w-0">
                 <div className="absolute inset-0 bg-white-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
-                <img alt="Subsrf Compose Interface" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj_73PlrxeF6BwmIulxdF3U-dICESZBx6_K-ajw7QCK_pGLlxdN_Il9BDw5Isn9gTcV55-m_wgYupMe7eBm7t1PuQh0k3sjLtlRCAkbr-30fB7Y6Yu3SZInlmLUdInyYqDdb75a9NyDhRBxgmvA5QTGNnMMe1ELHlSvyRwRiLGdbTNqxUg5kcW8TAfKJMKrNNGJa4E-rTVgnqAejcQVw1Jk9WF9GQ5gTAoL1esmK8bpsPZSYrAfPTWPYlIBM5ywyIcz2Opq3sS0A"/>
+                <img alt="Subsrf Compose Interface" className="w-full h-auto object-contain opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj_73PlrxeF6BwmIulxdF3U-dICESZBx6_K-ajw7QCK_pGLlxdN_Il9BDw5Isn9gTcV55-m_wgYupMe7eBm7t1PuQh0k3sjLtlRCAkbr-30fB7Y6Yu3SZInlmLUdInyYqDdb75a9NyDhRBxgmvA5QTGNnMMe1ELHlSvyRwRiLGdbTNqxUg5kcW8TAfKJMKrNNGJa4E-rTVgnqAejcQVw1Jk9WF9GQ5gTAoL1esmK8bpsPZSYrAfPTWPYlIBM5ywyIcz2Opq3sS0A"/>
                 <div className="absolute bottom-md right-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex flex-col gap-1 text-right">
                   <span className="text-white-primary flex items-center justify-end gap-xs">PROMPT GENERATED <span className="material-symbols-outlined text-[14px]">done_all</span></span>
                   <span className="text-white-muted text-[11px]">Tokens extracted: 42</span>
+                </div>
+              </div>
+            </article>
+
+            {/* Feature 4: Subsrf Scan (Media Left, Text Right) */}
+            <article className="grid grid-cols-1 lg:grid-cols-2 gap-2xl items-center">
+              <div className="order-1 lg:order-1 bg-layer border border-white-border p-md rounded-lg relative overflow-hidden group min-w-0">
+                <div className="absolute inset-0 bg-neon opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
+                <div className="w-full rounded bg-deep border border-white-border p-lg flex flex-col gap-md font-mono-data text-mono-data text-[12px]">
+                  <div className="flex items-center justify-between border-b border-white-border pb-sm mb-xs">
+                    <span className="text-white-secondary uppercase tracking-widest text-[10px]">Vars Tab — Token Export</span>
+                    <span className="text-neon flex items-center gap-xs text-[11px]"><span className="material-symbols-outlined text-[13px]">check_circle</span> 128 vars scanned</span>
+                  </div>
+                  <div className="flex flex-col gap-xs">
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">color/brand/primary</span>
+                      <span className="text-neon">#00FF85</span>
+                    </div>
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">color/surface/void</span>
+                      <span className="text-neon">#0A0A0F</span>
+                    </div>
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">spacing/md</span>
+                      <span className="text-tertiary-fixed-dim">16px</span>
+                    </div>
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">spacing/lg</span>
+                      <span className="text-tertiary-fixed-dim">24px</span>
+                    </div>
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">font/heading-md</span>
+                      <span className="text-white-secondary">28px / 600</span>
+                    </div>
+                    <div className="flex items-center gap-md">
+                      <span className="text-white-muted w-28 shrink-0">radius/DEFAULT</span>
+                      <span className="text-white-secondary">6px</span>
+                    </div>
+                  </div>
+                  <div className="border-t border-white-border pt-sm flex gap-sm flex-wrap">
+                    <span className="bg-surface px-2 py-1 rounded border border-neon text-neon text-[10px]">CSS Variables</span>
+                    <span className="bg-surface px-2 py-1 rounded border border-white-border text-white-muted text-[10px]">Tailwind Config</span>
+                    <span className="bg-surface px-2 py-1 rounded border border-white-border text-white-muted text-[10px]">Style Dictionary</span>
+                    <span className="bg-surface px-2 py-1 rounded border border-white-border text-white-muted text-[10px]">AI Prompt</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-lg order-2 lg:order-2">
+                <div className="flex flex-col gap-sm">
+                  <div className="w-12 h-12 rounded-full bg-surface border border-white-border flex items-center justify-center text-neon mb-sm">
+                    <span className="material-symbols-outlined text-[24px]">palette</span>
+                  </div>
+                  <div className="font-label-caps text-label-caps text-neon uppercase tracking-widest mb-1">Design Token Engine</div>
+                  <h2 className="font-heading-md text-heading-md text-white-primary">Subsrf Scan</h2>
+                </div>
+                <p className="font-subheading text-subheading text-white-secondary leading-relaxed">
+                  Instantly scan every Figma Variable in your file — colors, spacing, typography, and radii — and export them as production-ready code tokens in any format.
+                </p>
+                <ul className="flex flex-col gap-md font-body text-body text-white-secondary mt-sm">
+                  <li className="flex items-start gap-md">
+                    <span className="material-symbols-outlined text-neon text-[24px]">check_circle</span>
+                    <span>Scans all Figma Variable collections across every mode and group.</span>
+                  </li>
+                  <li className="flex items-start gap-md">
+                    <span className="material-symbols-outlined text-neon text-[24px]">check_circle</span>
+                    <span>Exports to CSS custom properties, Tailwind config, Style Dictionary, and AI-ready prompts.</span>
+                  </li>
+                  <li className="flex items-start gap-md">
+                    <span className="material-symbols-outlined text-neon text-[24px]">check_circle</span>
+                    <span>Zero manual copy-paste — your design system syncs directly to your codebase.</span>
+                  </li>
+                </ul>
+                <div className="bg-deep border border-white-border p-md mt-md rounded w-full lg:w-max max-w-full overflow-hidden">
+                  <div className="font-mono-data text-mono-data text-white-secondary text-[11px] mb-xs uppercase tracking-widest">Export Pipeline</div>
+                  <div className="flex flex-wrap items-center gap-md text-[13px] font-mono-data text-white-primary">
+                    <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">hub</span> Figma Vars</span>
+                    <span className="text-neon-dim material-symbols-outlined text-[16px]">arrow_forward</span>
+                    <span className="bg-surface px-3 py-1.5 rounded border border-white-border flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">document_scanner</span> Scan</span>
+                    <span className="text-neon-dim material-symbols-outlined text-[16px]">arrow_forward</span>
+                    <span className="bg-surface px-3 py-1.5 rounded border border-neon text-neon flex items-center gap-2"><span className="material-symbols-outlined text-[16px]">code</span> Code Tokens</span>
+                  </div>
                 </div>
               </div>
             </article>
