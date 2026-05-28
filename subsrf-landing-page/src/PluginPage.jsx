@@ -85,11 +85,8 @@ export default function PluginPage({ onLogin, loading, session, tier, onLogout }
               </div>
               <div className="order-1 lg:order-2 bg-layer border border-white-border p-md rounded-lg aspect-square lg:aspect-auto lg:h-[600px] flex items-center justify-center relative overflow-hidden group min-w-0">
                 <div className="absolute inset-0 bg-neon opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none z-20"></div>
-                <img alt="Browser to Figma Screenshot" className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvpfjjHXgsP7LWE9K7cLJer7oVWTU3PuvqeteRIyh1NSLNMDLhFDLl2-5UUOd-LIDvmvS5_j9JHWiOXmvBgx3F-QKZx8Trmymui8nQLz84qraBR710wRKA5sHNj_LRPOJlP7VcKq-laZsR7NRv0_jFP4L9gm8_074g64r_rXPBeq2kSmqLTQy3qgFM4DiyqgmWsbzzlY_KdqVWzovSWPcCnLwU07dYSc61SNRnj3oGy0KJIEIyjHrYRFj26B5Pven8j7fUASbivA"/>
-                <div className="absolute bottom-md left-md right-md z-10 bg-void/80 backdrop-blur border border-white-border p-sm rounded font-mono-data text-mono-data text-white-primary flex justify-between items-center">
-                  <span className="text-white-muted">src/modules/sync.ts</span>
-                  <span className="text-neon flex items-center gap-xs"><span className="material-symbols-outlined text-[14px]">bolt</span> ACTIVE</span>
-                </div>
+                <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-60 mix-blend-luminosity hover:mix-blend-normal transition-all duration-500 rounded relative z-0" src="/ExtentionPlugin.mov"/>
+
               </div>
             </article>
 
