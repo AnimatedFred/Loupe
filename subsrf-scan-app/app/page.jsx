@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import LoginGate from '../components/LoginGate';
 import TokenExplorer from '../components/TokenExplorer';
 import CodeSuggestDashboard from '../components/CodeSuggestDashboard';
+import MarkdownConverter from '../components/MarkdownConverter';
 
 import { useUser } from '../context/UserContext';
 import { supabase } from '../lib/supabase';
@@ -23,6 +24,13 @@ export default function Home() {
   // Auto-fill URL from ?url= and start scan when autoScan=1
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    
+    // Check mode
+    const modeParam = params.get('mode');
+    if (modeParam && ['scan', 'review', 'markdown'].includes(modeParam)) {
+      setMode(modeParam);
+    }
+
     const urlParam = params.get('url');
     if (!urlParam) return;
     setUrlInput(urlParam);
@@ -171,6 +179,7 @@ export default function Home() {
               {[
                 { id: 'scan',   label: 'URL Scan' },
                 { id: 'review', label: 'Code Review' },
+                { id: 'markdown', label: 'Markdown' },
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -368,6 +377,11 @@ export default function Home() {
           {/* ── Code Review mode ──────────────────────────────────────────── */}
           {mode === 'review' && (
             <CodeSuggestDashboard />
+          )}
+
+          {/* ── Markdown mode ─────────────────────────────────────────────── */}
+          {mode === 'markdown' && (
+            <MarkdownConverter />
           )}
 
           {mode === 'scan' && !tokens ? (

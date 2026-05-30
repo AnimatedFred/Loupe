@@ -539,20 +539,50 @@ btnFullPage.onclick = () => {
   async function openImageInStudio(file) {
     const tier = (currentSession?.tier || 'free').toLowerCase();
     if (tier !== 'pro') {
-      showUpgradeHint('Image Studio requires Pro.');
+      showUpgradeHint('Markdown/Image extraction requires Pro.');
       return;
     }
     if (!file || !file.type.startsWith('image/')) return;
+    
+    // We want to keep the popup open until injection finishes, so we show a loading state
+    const dropHint = document.getElementById('popup-drop-hint');
+    if (dropHint) dropHint.innerHTML = '<span style="color:var(--neon); font-weight:700;">Processing...</span> opening scan app...';
+    
     const reader = new FileReader();
     reader.onload = async (e) => {
-      await chrome.storage.local.set({
-        lastCapture:   e.target.result,
-        lastCaptureTime: Date.now(),
-        openAnalysisTab: {},
+      const targetUrl = 'https://app.subsrf.dev/?mode=markdown';
+      
+      chrome.tabs.create({ url: targetUrl }, (tab) => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (attempts > 15) { // 3 seconds max
+            clearInterval(interval);
+            window.close();
+            return;
+          }
+          
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (base64) => {
+              if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                sessionStorage.setItem('subsrf_ext_markdown_payload', base64);
+                window.dispatchEvent(new Event('subsrf_payload_injected'));
+                return true; // Successfully injected
+              }
+              return false;
+            },
+            args: [e.target.result]
+          }).then(results => {
+            if (results && results[0] && results[0].result === true) {
+              clearInterval(interval);
+              window.close();
+            }
+          }).catch(() => {
+            // Scripting might fail if page isn't ready, we just ignore and retry
+          });
+        }, 200);
       });
-      chrome.storage.local.remove(['lastCaptureRect', 'lastCaptureViewportWidth']);
-      chrome.tabs.create({ url: chrome.runtime.getURL('editor.html') });
-      window.close();
     };
     reader.readAsDataURL(file);
   }
