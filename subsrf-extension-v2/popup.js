@@ -536,13 +536,13 @@ btnFullPage.onclick = () => {
     hint._timer = setTimeout(() => hint.remove(), 5000);
   }
 
-  async function openImageInStudio(file) {
+  async function openFileInStudio(file) {
     const tier = (currentSession?.tier || 'free').toLowerCase();
     if (tier !== 'pro') {
-      showUpgradeHint('Markdown/Image extraction requires Pro.');
+      showUpgradeHint('Markdown/File extraction requires Pro.');
       return;
     }
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file) return;
     
     // We want to keep the popup open until injection finishes, so we show a loading state
     const dropHint = document.getElementById('popup-drop-hint');
@@ -550,7 +550,7 @@ btnFullPage.onclick = () => {
     
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const targetUrl = 'https://app.subsrf.dev/?mode=markdown';
+      const targetUrl = 'https://scan.subsrf.dev/?mode=markdown';
       
       chrome.tabs.create({ url: targetUrl }, (tab) => {
         let attempts = 0;
@@ -600,9 +600,9 @@ btnFullPage.onclick = () => {
     e.preventDefault();
     popupDropZone.style.borderColor = '';
     popupDropZone.style.background  = '';
-    openImageInStudio(e.dataTransfer?.files?.[0]);
+    openFileInStudio(e.dataTransfer?.files?.[0]);
   });
-  popupImgInput.addEventListener('change', () => openImageInStudio(popupImgInput.files?.[0]));
+  popupImgInput.addEventListener('change', () => openFileInStudio(popupImgInput.files?.[0]));
 
   document.getElementById('btn-clear-all').onclick = async () => {
     // Clear highlight boxes on the page
