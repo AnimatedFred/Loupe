@@ -69,8 +69,8 @@ export default function MarkdownConverter() {
   }
 
   function handleFile(file) {
-    if (!file || !file.type.startsWith('image/')) {
-      setError('Please upload a valid image file.');
+    if (!file) {
+      setError('Please upload a valid file.');
       return;
     }
     const reader = new FileReader();
@@ -131,7 +131,7 @@ export default function MarkdownConverter() {
             <input 
               id="markdown-upload" 
               type="file" 
-              accept="image/*" 
+              accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,audio/*,.html,.csv,.json,.xml,.zip" 
               style={{ display: 'none' }} 
               onChange={(e) => handleFile(e.target.files[0])} 
             />
@@ -146,7 +146,7 @@ export default function MarkdownConverter() {
               </svg>
             </div>
             <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: 12, color: dragActive ? '#00FF87' : '#F2F2F4' }}>
-              {dragActive ? 'Drop image here' : 'Click or drag image to convert'}
+              {dragActive ? 'Drop file here' : 'Click or drag file to convert'}
             </div>
           </div>
         )}
