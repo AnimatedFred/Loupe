@@ -122,7 +122,7 @@ export default function MarkdownConverter() {
             onDrop={onDrop}
             onClick={() => document.getElementById('markdown-upload').click()}
             style={{
-              border: \`2px dashed \${dragActive ? '#00FF87' : 'rgba(242,242,244,0.12)'}\`,
+              border: dragActive ? '2px dashed #00FF87' : '2px dashed rgba(242,242,244,0.12)',
               background: dragActive ? 'rgba(0,255,135,0.04)' : '#111118',
               borderRadius: 8, padding: '48px 32px', textAlign: 'center',
               cursor: 'pointer', transition: 'all 0.2s',
