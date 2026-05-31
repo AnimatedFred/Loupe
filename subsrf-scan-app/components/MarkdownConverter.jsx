@@ -48,7 +48,7 @@ export default function MarkdownConverter() {
         sessionStorage.removeItem('subsrf_ext_markdown_payload');
         sessionStorage.removeItem('subsrf_ext_markdown_payload_name');
         if (extPayloadName) setActiveFile(extPayloadName);
-        processImage(extPayload);
+        processFile(null, extPayload);
       }
     };
     handlePayload();
@@ -56,32 +56,75 @@ export default function MarkdownConverter() {
     return () => window.removeEventListener('subsrf_payload_injected', handlePayload);
   }, [session?.access_token]);
 
-  async function processImage(base64Data) {
+  async function processFile(file, extPayload = null) {
     if (!session?.access_token) { setError('Please sign in to generate Markdown.'); return; }
+    
+    // Set preview image if it's an image
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewImage(e.target.result);
+      reader.readAsDataURL(file);
+    } else if (extPayload) {
+      setPreviewImage(extPayload);
+    } else {
+      setPreviewImage(null);
+    }
+
     setLoading(true);
     setError(null);
-    setPreviewImage(base64Data);
+    setMarkdown('');
+    
     try {
-      const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
-      const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+      const formData = new FormData();
+      if (file) {
+        formData.append('file', file);
+      } else if (extPayload) {
+        // Handle extension payload (base64 string)
+        const mimeMatch = extPayload.match(/^data:(.*?);base64,/);
+        const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+        const b64Data = extPayload.includes(',') ? extPayload.split(',')[1] : extPayload;
+        
+        // Convert base64 to Blob to send as file
+        const byteCharacters = atob(b64Data);
+        const byteArrays = [];
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) byteNumbers[i] = slice.charCodeAt(i);
+          byteArrays.push(new Uint8Array(byteNumbers));
+        }
+        const blob = new Blob(byteArrays, { type: mimeType });
+        formData.append('file', blob, activeFile || 'extension-upload');
+      }
+
       const res = await fetch('/api/markdown', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ imageBase64: base64Data, mimeType }),
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        // Do NOT set Content-Type header. The browser will automatically set it to multipart/form-data with the correct boundary
+        body: formData,
       });
+      
+      // Check for raw HTML error pages (like Vercel 413 Payload Too Large)
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        if (res.status === 413) throw new Error('File is too large to upload (Vercel limit is 4.5MB).');
+        throw new Error(`Server returned HTML error: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate markdown');
       setMarkdown(data.markdown);
-    } catch (err) { setError(err.message); }
-    finally { setLoading(false); }
+    } catch (err) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   }
 
   function handleFile(file) {
     if (!file) { setError('Please upload a valid file.'); return; }
     setActiveFile(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => processImage(e.target.result);
-    reader.readAsDataURL(file);
+    processFile(file, null);
   }
 
   function onDragOver(e) { e.preventDefault(); e.stopPropagation(); setDragActive(true); }

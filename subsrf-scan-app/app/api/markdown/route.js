@@ -16,8 +16,13 @@ export async function POST(request) {
   const { ok, credits: creditsRemaining } = await deductCredit(auth.user.id);
   if (!ok) return NextResponse.json({ error: 'No credits remaining. Upgrade your plan at subsrf.dev.' }, { status: 402 });
 
-  const { imageBase64, mimeType = 'image/png' } = await request.json();
-  if (!imageBase64) return NextResponse.json({ error: 'imageBase64 required' }, { status: 400 });
+  const formData = await request.formData();
+  const file = formData.get('file');
+  if (!file) return NextResponse.json({ error: 'file is required' }, { status: 400 });
+
+  const mimeType = file.type || 'application/octet-stream';
+  const arrayBuffer = await file.arrayBuffer();
+  const imageBase64 = Buffer.from(arrayBuffer).toString('base64');
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 });
