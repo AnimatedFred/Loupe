@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
 
 export default function MarkdownConverter() {
@@ -24,11 +24,7 @@ export default function MarkdownConverter() {
         processImage(extPayload);
       }
     };
-
-    // Check on mount
     handlePayload();
-
-    // Listen for custom event from extension injection
     window.addEventListener('subsrf_payload_injected', handlePayload);
     return () => window.removeEventListener('subsrf_payload_injected', handlePayload);
   }, [session?.access_token]);
@@ -38,15 +34,12 @@ export default function MarkdownConverter() {
       setError('Please sign in to generate Markdown.');
       return;
     }
-    
     setLoading(true);
     setError(null);
     setPreviewImage(base64Data);
-
     try {
       const mimeMatch = base64Data.match(/^data:(.*?);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-
       const res = await fetch('/api/markdown', {
         method: 'POST',
         headers: {
@@ -55,12 +48,9 @@ export default function MarkdownConverter() {
         },
         body: JSON.stringify({ imageBase64: base64Data, mimeType }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to generate markdown');
-
       setMarkdown(data.markdown);
-      
     } catch (err) {
       setError(err.message);
     } finally {
@@ -69,42 +59,21 @@ export default function MarkdownConverter() {
   }
 
   function handleFile(file) {
-    if (!file) {
-      setError('Please upload a valid file.');
-      return;
-    }
+    if (!file) { setError('Please upload a valid file.'); return; }
     setActiveFile(file.name);
     const reader = new FileReader();
     reader.onload = (e) => processImage(e.target.result);
     reader.readAsDataURL(file);
   }
 
-  function onDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(true);
-  }
-
-  function onDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-  }
-
+  function onDragOver(e) { e.preventDefault(); e.stopPropagation(); setDragActive(true); }
+  function onDragLeave(e) { e.preventDefault(); e.stopPropagation(); setDragActive(false); }
   function onDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   }
 
-  const handleCopy = () => {
-    if (markdown) {
-      navigator.clipboard.writeText(markdown);
-    }
-  };
+  const handleCopy = () => { if (markdown) navigator.clipboard.writeText(markdown); };
 
   const handleExport = () => {
     if (!markdown) return;
@@ -117,204 +86,238 @@ export default function MarkdownConverter() {
     URL.revokeObjectURL(url);
   };
 
-  const renderMarkdownLines = () => {
-    if (!markdown) return null;
-    const lines = markdown.split('\n');
-    return lines.map((line, index) => {
-      const isHeading = line.trim().startsWith('#');
+  /* ── Derived values ──────────────────────────────────────── */
+  const lines = markdown ? markdown.split('\n') : [];
+  const lineCount = Math.max(15, lines.length);
+  const baselineTokens = markdown ? Math.round(markdown.length / 4).toLocaleString() : '0';
+  const mdTokens       = markdown ? Math.round(markdown.length / 5).toLocaleString() : '0';
+  const creditsSaved   = markdown ? '$' + (markdown.length / 1000).toFixed(2) : '$0.00';
+
+  /* ── Render a single markdown line with syntax colouring ── */
+  const renderLine = (line, i) => {
+    const trimmed = line.trimStart();
+    // ### heading – neon with left accent bar + dim bg
+    if (trimmed.startsWith('### ')) {
       return (
-        <div key={index} style={{
-          minHeight: '26px', // ensures empty lines take up space
-          color: isHeading ? '#00FF87' : 'rgba(242, 242, 244, 0.55)',
-          fontWeight: isHeading ? '600' : 'normal',
-          whiteSpace: 'pre-wrap'
-        }}>
-          {line || ' '}
-        </div>
+        <p key={i} style={{ color: '#00FF87', borderLeft: '2px solid #00FF87', paddingLeft: 16, paddingTop: 4, paddingBottom: 4, background: 'rgba(0,255,135,0.12)', marginBottom: 8 }}>
+          {line}
+        </p>
       );
-    });
+    }
+    // ## heading – neon, bold, uppercase, wide tracking
+    if (trimmed.startsWith('## ')) {
+      return (
+        <p key={i} style={{ color: '#00FF87', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '3px', marginBottom: 8 }}>
+          {line}
+        </p>
+      );
+    }
+    // # heading – neon
+    if (trimmed.startsWith('# ')) {
+      return <p key={i} style={{ color: '#00FF87', marginBottom: 16 }}>{line}</p>;
+    }
+    // > blockquote – italic, muted
+    if (trimmed.startsWith('>') || (trimmed.startsWith('"') && trimmed.endsWith('"'))) {
+      return <p key={i} style={{ color: 'rgba(242,242,244,0.55)', fontStyle: 'italic', marginBottom: 16 }}>{line}</p>;
+    }
+    // default
+    return <p key={i} style={{ minHeight: '1.8em' }}>{line || '\u00A0'}</p>;
   };
 
+  /* ══════════════════════════════════════════════════════════ */
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', backgroundColor: '#050508' }}>
-      
-      {/* LEFT: WORKSPACE SIDEBAR */}
-      <aside style={{ display: 'flex', flexDirection: 'column', width: '340px', backgroundColor: '#111118', borderRight: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0, overflowY: 'auto' }}>
-        
-        {/* Drop Zone */}
-        <div style={{ padding: '16px' }}>
-          <div 
-            onDragOver={onDragOver}
-            onDragLeave={onDragLeave}
-            onDrop={onDrop}
-            onClick={() => document.getElementById('sidebar-upload').click()}
-            style={{
-              width: '100%', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: dragActive ? 'rgba(0, 255, 135, 0.12)' : '#050508',
-              border: `1px dashed ${dragActive ? '#00FF87' : 'rgba(242, 242, 244, 0.12)'}`,
-              cursor: 'pointer', transition: 'background-color 0.2s',
-              backgroundImage: dragActive ? 'none' : `url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' stroke='%2300FF87' stroke-width='1' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e")`
-            }}
-          >
-            <input 
-              id="sidebar-upload" 
-              type="file" 
-              accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,audio/*,.html,.csv,.json,.xml,.zip" 
-              style={{ display: 'none' }} 
-              onChange={(e) => handleFile(e.target.files[0])} 
-            />
-            <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#00FF87', marginBottom: '8px', transition: 'transform 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>cloud_upload</span>
-            <h3 style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '12px', color: '#F2F2F4', marginBottom: '4px', letterSpacing: '2px' }}>Drag &amp; Drop file</h3>
-            <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', textAlign: 'center', padding: '0 16px' }}>PDF, DOCX, HTML, Images</p>
-          </div>
-        </div>
+    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', backgroundColor: 'var(--void)' }}>
 
-        {/* Metrics Stacked */}
-        <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', borderBottom: '1px solid rgba(242, 242, 244, 0.12)', paddingBottom: '4px', letterSpacing: '2px' }}>SESSION ANALYTICS</div>
-          
-          {/* Metric 1 */}
-          <div style={{ backgroundColor: '#050508', padding: '16px', border: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-              <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.55)', textTransform: 'uppercase', letterSpacing: '2px' }}>Baseline Tokens</p>
-              <span className="material-symbols-outlined" style={{ color: 'rgba(242, 242, 244, 0.28)', fontSize: '18px' }}>data_array</span>
-            </div>
-            <h4 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '24px', fontWeight: '700', color: '#F2F2F4', margin: 0 }}>{markdown ? Math.round(markdown.length / 4).toLocaleString() : '0'}</h4>
-          </div>
+      {/* ── CENTER: IDE PREVIEW AREA ──────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: 'var(--void)', borderRight: '1px solid var(--border-md)' }}>
 
-          {/* Metric 2 */}
-          <div style={{ backgroundColor: '#050508', padding: '16px', border: '1px solid rgba(0, 255, 135, 0.12)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-              <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: '#00FF87', textTransform: 'uppercase', letterSpacing: '2px' }}>Markdown Tokens</p>
-              <span className="material-symbols-outlined" style={{ color: '#00FF87', fontSize: '18px' }}>terminal</span>
-            </div>
-            <h4 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '24px', fontWeight: '700', color: '#00FF87', margin: 0 }}>{markdown ? Math.round(markdown.length / 5).toLocaleString() : '0'}</h4>
-          </div>
-
-          {/* Metric 3 */}
-          <div style={{ backgroundColor: '#050508', padding: '16px', border: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 255, 135, 0.06)', pointerEvents: 'none' }}></div>
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.55)', textTransform: 'uppercase', letterSpacing: '2px' }}>Credits Saved</p>
-                <span className="material-symbols-outlined" style={{ color: '#39D98A', fontSize: '18px' }}>payments</span>
-              </div>
-              <h4 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '24px', fontWeight: '700', color: '#39D98A', margin: 0 }}>{markdown ? '$' + (markdown.length / 1000).toFixed(2) : '$0.00'}</h4>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{ backgroundColor: '#141E16', border: '1px solid rgba(242, 242, 244, 0.12)', padding: '16px' }}>
-            <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px' }}>Quick Actions</p>
-            <button 
-              onClick={handleExport} 
-              style={{ 
-                width: '100%', backgroundColor: '#00FF87', padding: '12px 16px', border: 'none', 
-                display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer',
-                fontFamily: "'Manrope', sans-serif", fontSize: '12px', fontWeight: '700', color: '#050508',
-                textTransform: 'uppercase', transition: 'transform 0.15s'
-              }} 
-              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'} 
-              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-            >
-              DOWNLOAD MARKDOWN
-            </button>
-          </div>
-
-        </div>
-
-        {/* Footer Left */}
-        <div style={{ padding: '16px', backgroundColor: '#050508', borderTop: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontFamily: "'Azeret Mono', monospace", color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase' }}>
-            <span>CPU Load: {loading ? '84%' : '12%'}</span>
-            <span>Latency: {loading ? '...' : '44ms'}</span>
-          </div>
-        </div>
-
-      </aside>
-
-      {/* RIGHT: IDE PREVIEW AREA */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: '#050508' }}>
-        
         {/* Status Banner */}
-        <div style={{ backgroundColor: 'rgba(24, 34, 26, 0.5)', borderBottom: '1px solid rgba(57, 217, 138, 0.2)', padding: '4px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ height: '6px', width: '6px', backgroundColor: '#39D98A', borderRadius: '50%', boxShadow: '0 0 8px rgba(57,217,138,0.5)' }}></span>
-            <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: '#F2F2F4', letterSpacing: '-0.025em' }}>
-              Active: <span style={{ color: '#00FF87' }}>{activeFile || 'None'}</span>
+        <div style={{
+          backgroundColor: 'rgba(24,34,26,0.5)', borderBottom: '1px solid rgba(57,217,138,0.2)',
+          padding: '4px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ height: 6, width: 6, backgroundColor: '#39D98A', borderRadius: '50%', boxShadow: '0 0 8px rgba(57,217,138,0.5)', display: 'inline-block' }} />
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--t1)', letterSpacing: '-0.025em' }}>
+              Active: <span style={{ color: 'var(--neon)' }}>{activeFile || 'None'}</span>
             </span>
           </div>
-          <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--t3)' }}>
             {loading ? 'PROCESSING...' : (markdown ? 'READY' : 'WAITING')}
           </span>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0C0C12', overflow: 'hidden' }}>
-          
-          {/* Toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', backgroundColor: '#111118', borderBottom: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 77, 77, 0.2)', border: '1px solid rgba(255, 77, 77, 0.4)' }}></div>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 171, 0, 0.2)', border: '1px solid rgba(255, 171, 0, 0.4)' }}></div>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(57, 217, 138, 0.2)', border: '1px solid rgba(57, 217, 138, 0.4)' }}></div>
+        {/* IDE body */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--deep)', overflow: 'hidden' }}>
+
+          {/* Toolbar (traffic lights + label + copy) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 16px', backgroundColor: 'var(--layer)', borderBottom: '1px solid var(--border-md)', flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(255,77,77,0.2)', border: '1px solid rgba(255,77,77,0.4)' }} />
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(255,171,0,0.2)', border: '1px solid rgba(255,171,0,0.4)' }} />
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'rgba(57,217,138,0.2)', border: '1px solid rgba(57,217,138,0.4)' }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', letterSpacing: '2px' }}>MARKDOWN PREVIEW</span>
-              <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(242, 242, 244, 0.55)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
-                <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Copy</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: 2 }}>MARKDOWN PREVIEW</span>
+              <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--t2)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>content_copy</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 2 }}>Copy</span>
               </button>
             </div>
           </div>
 
-          {/* Markdown Content Area */}
+          {/* Scrollable markdown content */}
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }} className="custom-scrollbar">
-            
-            {/* Line Numbers */}
-            <div style={{ width: '40px', backgroundColor: '#050508', borderRight: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', padding: '16px 8px', textAlign: 'right', userSelect: 'none', flexShrink: 0 }}>
-              {Array.from({ length: Math.max(15, (markdown.match(/\n/g) || []).length + 1) }).map((_, i) => (
-                <span key={i} style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: 'rgba(242, 242, 244, 0.1)', minHeight: '26px' }}>{i + 1}</span>
+
+            {/* Line numbers */}
+            <div style={{
+              width: 40, backgroundColor: 'var(--void)', borderRight: '1px solid var(--border-md)',
+              display: 'flex', flexDirection: 'column', paddingTop: 16, paddingRight: 8, textAlign: 'right',
+              userSelect: 'none', flexShrink: 0,
+            }}>
+              {Array.from({ length: lineCount }).map((_, i) => (
+                <span key={i} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'rgba(242,242,244,0.1)', lineHeight: '1.8', display: 'block' }}>{i + 1}</span>
               ))}
             </div>
 
-            {/* Actual Text */}
-            <div style={{ flex: 1, padding: '16px', fontFamily: "'Azeret Mono', monospace", fontSize: '13px', lineHeight: '2', color: 'rgba(242, 242, 244, 0.55)', position: 'relative' }}>
+            {/* Text body */}
+            <div style={{ flex: 1, padding: 16, fontFamily: 'var(--mono)', fontSize: 13, lineHeight: '1.8', color: 'var(--t2)', position: 'relative' }}>
               {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
-                  <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', letterSpacing: '2px', color: 'rgba(0, 255, 135, 0.7)' }}>● EXTRACTING MARKDOWN...</div>
-                  {previewImage && <img src={previewImage} style={{ maxWidth: '300px', maxHeight: '300px', opacity: 0.2, objectFit: 'contain' }} alt="Preview" />}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 10, letterSpacing: 2, color: 'rgba(0,255,135,0.7)' }}>● EXTRACTING MARKDOWN...</div>
+                  {previewImage && <img src={previewImage} style={{ maxWidth: 300, maxHeight: 300, opacity: 0.2, objectFit: 'contain' }} alt="Preview" />}
                 </div>
               ) : error ? (
-                <div style={{ color: '#FF4D4D', backgroundColor: 'rgba(255, 77, 77, 0.08)', padding: '12px', border: '1px solid rgba(255, 77, 77, 0.2)', borderRadius: '4px' }}>
+                <div style={{ color: '#FF4D4D', background: 'rgba(255,77,77,0.08)', padding: 12, border: '1px solid rgba(255,77,77,0.2)', borderRadius: 4 }}>
                   {error}
                 </div>
               ) : !markdown ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(242, 242, 244, 0.28)' }}>
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t3)' }}>
                   Select or drop a file to see the markdown output here.
                 </div>
               ) : (
-                <div style={{ width: '100%', height: '100%' }}>
-                  {renderMarkdownLines()}
-                </div>
+                <div>{lines.map(renderLine)}</div>
               )}
             </div>
           </div>
-
         </div>
 
-        {/* Footer Right */}
-        <footer style={{ backgroundColor: '#050508', borderTop: '1px solid rgba(242, 242, 244, 0.12)', width: '100%', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 32px' }}>
-          <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', letterSpacing: '2px' }}>
+        {/* Footer */}
+        <footer style={{
+          backgroundColor: 'var(--void)', borderTop: '1px solid var(--border-md)', width: '100%', flexShrink: 0,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 32px',
+        }}>
+          <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t3)', letterSpacing: 2 }}>
             © 2024 SUBSURFACE INFRASTRUCTURE
           </p>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#" style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: '#00FF87', letterSpacing: '2px', textDecoration: 'none' }}>Security Status</a>
-          </div>
+          <a href="#" style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--neon)', letterSpacing: 2 }}>Security Status</a>
         </footer>
-
       </div>
 
+      {/* ── RIGHT: WORKSPACE SIDEBAR ─────────────────────── */}
+      <aside style={{
+        display: 'flex', flexDirection: 'column', width: 340, backgroundColor: 'var(--layer)',
+        borderLeft: '1px solid var(--border-md)', flexShrink: 0, overflowY: 'auto',
+      }} className="custom-scrollbar">
+
+        {/* Drop Zone */}
+        <div style={{ padding: 16 }}>
+          <div
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            onClick={() => document.getElementById('md-upload').click()}
+            className="neon-border-dashed"
+            style={{
+              width: '100%', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: dragActive ? 'rgba(0,255,135,0.12)' : 'var(--void)',
+              border: '1px solid var(--border-md)', cursor: 'pointer', transition: 'background-color 0.2s',
+            }}
+          >
+            <input
+              id="md-upload"
+              type="file"
+              accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,audio/*,.html,.csv,.json,.xml,.zip"
+              style={{ display: 'none' }}
+              onChange={(e) => handleFile(e.target.files[0])}
+            />
+            <span className="material-symbols-outlined" style={{ fontSize: 32, color: 'var(--neon)', marginBottom: 8, transition: 'transform 0.2s' }}>cloud_upload</span>
+            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--t1)', marginBottom: 4, letterSpacing: 2 }}>Drag &amp; Drop file</h3>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--t3)', textTransform: 'uppercase', textAlign: 'center', padding: '0 16px' }}>PDF, DOCX, HTML, Images</p>
+          </div>
+        </div>
+
+        {/* Session Analytics */}
+        <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t3)', borderBottom: '1px solid var(--border-md)', paddingBottom: 4, letterSpacing: 2, marginBottom: 4 }}>SESSION ANALYTICS</div>
+
+          {/* Metric 1 – Baseline Tokens */}
+          <div style={{ backgroundColor: 'var(--void)', padding: 16, border: '1px solid var(--border-md)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: 2, margin: 0 }}>Baseline Tokens</p>
+              <span className="material-symbols-outlined" style={{ color: 'var(--t3)', fontSize: 18 }}>data_array</span>
+            </div>
+            <h4 style={{ fontFamily: 'var(--mono)', fontSize: 20, fontWeight: 700, color: 'var(--t1)', margin: 0 }}>{baselineTokens}</h4>
+          </div>
+
+          {/* Metric 2 – Markdown Tokens */}
+          <div style={{ backgroundColor: 'var(--void)', padding: 16, border: '1px solid var(--neon-dim)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--neon)', textTransform: 'uppercase', letterSpacing: 2, margin: 0 }}>Markdown Tokens</p>
+              <span className="material-symbols-outlined" style={{ color: 'var(--neon)', fontSize: 18 }}>terminal</span>
+            </div>
+            <h4 style={{ fontFamily: 'var(--mono)', fontSize: 20, fontWeight: 700, color: 'var(--neon)', margin: 0 }}>{mdTokens}</h4>
+          </div>
+
+          {/* Metric 3 – Credits Saved */}
+          <div style={{ backgroundColor: 'var(--void)', padding: 16, border: '1px solid var(--border-md)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'var(--neon-glow)', pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t2)', textTransform: 'uppercase', letterSpacing: 2, margin: 0 }}>Credits Saved</p>
+                <span className="material-symbols-outlined" style={{ color: '#39D98A', fontSize: 18 }}>payments</span>
+              </div>
+              <h4 style={{ fontFamily: 'var(--mono)', fontSize: 20, fontWeight: 700, color: '#39D98A', margin: 0 }}>{creditsSaved}</h4>
+            </div>
+          </div>
+
+          {/* Quick Actions – 2-col grid */}
+          <div style={{ backgroundColor: '#141E16', border: '1px solid var(--border-md)', padding: 16 }}>
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--t3)', textTransform: 'uppercase', marginBottom: 16, letterSpacing: 2 }}>Quick Actions</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <button
+                onClick={handleExport}
+                style={{ backgroundColor: 'var(--surface)', padding: 8, border: '1px solid var(--border-md)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--neon)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-md)'}
+              >
+                <span className="material-symbols-outlined" style={{ color: 'var(--t2)', display: 'block', marginBottom: 4 }}>download</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--t3)' }}>Export MD</span>
+              </button>
+              <button
+                onClick={handleCopy}
+                style={{ backgroundColor: 'var(--surface)', padding: 8, border: '1px solid var(--border-md)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }}
+                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--neon)'}
+                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-md)'}
+              >
+                <span className="material-symbols-outlined" style={{ color: 'var(--t2)', display: 'block', marginBottom: 4 }}>share</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 9, color: 'var(--t3)' }}>Share Link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer – CPU / Latency */}
+        <div style={{ padding: 16, backgroundColor: 'var(--void)', borderTop: '1px solid var(--border-md)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontFamily: 'var(--mono)', color: 'var(--t3)', textTransform: 'uppercase' }}>
+            <span>CPU Load: {loading ? '84%' : '12%'}</span>
+            <span>Latency: {loading ? '...' : '44ms'}</span>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
