@@ -117,97 +117,29 @@ export default function MarkdownConverter() {
     URL.revokeObjectURL(url);
   };
 
+  const renderMarkdownLines = () => {
+    if (!markdown) return null;
+    const lines = markdown.split('\n');
+    return lines.map((line, index) => {
+      const isHeading = line.trim().startsWith('#');
+      return (
+        <div key={index} style={{
+          minHeight: '26px', // ensures empty lines take up space
+          color: isHeading ? '#00FF87' : 'rgba(242, 242, 244, 0.55)',
+          fontWeight: isHeading ? '600' : 'normal',
+          whiteSpace: 'pre-wrap'
+        }}>
+          {line || ' '}
+        </div>
+      );
+    });
+  };
+
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', width: '100%', backgroundColor: '#050508' }}>
       
-      {/* CENTER: IDE PREVIEW AREA */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: '#050508', borderRight: '1px solid rgba(242, 242, 244, 0.12)' }}>
-        
-        {/* Status Banner */}
-        <div style={{ backgroundColor: 'rgba(24, 34, 26, 0.5)', borderBottom: '1px solid rgba(57, 217, 138, 0.2)', padding: '4px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ height: '6px', width: '6px', backgroundColor: '#39D98A', borderRadius: '50%', boxShadow: '0 0 8px rgba(57,217,138,0.5)' }}></span>
-            <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: '#F2F2F4', letterSpacing: '-0.025em' }}>
-              Active: <span style={{ color: '#00FF87' }}>{activeFile || 'None'}</span>
-            </span>
-          </div>
-          <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)' }}>
-            {loading ? 'PROCESSING...' : (markdown ? 'READY' : 'WAITING')}
-          </span>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0C0C12', overflow: 'hidden' }}>
-          
-          {/* Toolbar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', backgroundColor: '#111118', borderBottom: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 77, 77, 0.2)', border: '1px solid rgba(255, 77, 77, 0.4)' }}></div>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 171, 0, 0.2)', border: '1px solid rgba(255, 171, 0, 0.4)' }}></div>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(57, 217, 138, 0.2)', border: '1px solid rgba(57, 217, 138, 0.4)' }}></div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', letterSpacing: '2px' }}>MARKDOWN PREVIEW</span>
-              <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(242, 242, 244, 0.55)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
-                <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Copy</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Markdown Content Area */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }} className="custom-scrollbar">
-            
-            {/* Line Numbers */}
-            <div style={{ width: '40px', backgroundColor: '#050508', borderRight: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', padding: '16px 8px', textAlign: 'right', userSelect: 'none', flexShrink: 0 }}>
-              {Array.from({ length: Math.max(15, (markdown.match(/\n/g) || []).length + 1) }).map((_, i) => (
-                <span key={i} style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: 'rgba(242, 242, 244, 0.1)' }}>{i + 1}</span>
-              ))}
-            </div>
-
-            {/* Actual Text */}
-            <div style={{ flex: 1, padding: '16px', fontFamily: "'Azeret Mono', monospace", fontSize: '13px', lineHeight: '2', color: 'rgba(242, 242, 244, 0.55)', position: 'relative' }}>
-              {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
-                  <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', letterSpacing: '2px', color: 'rgba(0, 255, 135, 0.7)' }}>● EXTRACTING MARKDOWN...</div>
-                  {previewImage && <img src={previewImage} style={{ maxWidth: '300px', maxHeight: '300px', opacity: 0.2, objectFit: 'contain' }} alt="Preview" />}
-                </div>
-              ) : error ? (
-                <div style={{ color: '#FF4D4D', backgroundColor: 'rgba(255, 77, 77, 0.08)', padding: '12px', border: '1px solid rgba(255, 77, 77, 0.2)', borderRadius: '4px' }}>
-                  {error}
-                </div>
-              ) : !markdown ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(242, 242, 244, 0.28)' }}>
-                  Select or drop a file to see the markdown output here.
-                </div>
-              ) : (
-                <textarea
-                  readOnly
-                  value={markdown}
-                  style={{
-                    width: '100%', height: '100%', backgroundColor: 'transparent', border: 'none', color: '#F2F2F4',
-                    fontFamily: "'Azeret Mono', monospace", fontSize: '13px', lineHeight: '2', outline: 'none', resize: 'none'
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Footer */}
-        <footer style={{ backgroundColor: '#050508', borderTop: '1px solid rgba(242, 242, 244, 0.12)', width: '100%', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 32px' }}>
-          <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', letterSpacing: '2px' }}>
-            © 2024 SUBSURFACE INFRASTRUCTURE
-          </p>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#" style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: '#00FF87', letterSpacing: '2px', textDecoration: 'none' }}>Security Status</a>
-          </div>
-        </footer>
-
-      </div>
-
-      {/* RIGHT: WORKSPACE SIDEBAR */}
-      <aside style={{ display: 'flex', flexDirection: 'column', width: '340px', backgroundColor: '#111118', borderLeft: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0, overflowY: 'auto' }}>
+      {/* LEFT: WORKSPACE SIDEBAR */}
+      <aside style={{ display: 'flex', flexDirection: 'column', width: '340px', backgroundColor: '#111118', borderRight: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0, overflowY: 'auto' }}>
         
         {/* Drop Zone */}
         <div style={{ padding: '16px' }}>
@@ -274,21 +206,25 @@ export default function MarkdownConverter() {
           {/* Quick Actions */}
           <div style={{ backgroundColor: '#141E16', border: '1px solid rgba(242, 242, 244, 0.12)', padding: '16px' }}>
             <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '2px' }}>Quick Actions</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <button onClick={handleExport} style={{ backgroundColor: '#18181F', padding: '8px', border: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#00FF87'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(242, 242, 244, 0.12)'}>
-                <span className="material-symbols-outlined" style={{ color: 'rgba(242, 242, 244, 0.55)', marginBottom: '4px' }}>download</span>
-                <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)' }}>Export MD</span>
-              </button>
-              <button onClick={handleCopy} style={{ backgroundColor: '#18181F', padding: '8px', border: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#00FF87'} onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(242, 242, 244, 0.12)'}>
-                <span className="material-symbols-outlined" style={{ color: 'rgba(242, 242, 244, 0.55)', marginBottom: '4px' }}>share</span>
-                <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)' }}>Share Link</span>
-              </button>
-            </div>
+            <button 
+              onClick={handleExport} 
+              style={{ 
+                width: '100%', backgroundColor: '#00FF87', padding: '12px 16px', border: 'none', 
+                display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer',
+                fontFamily: "'Manrope', sans-serif", fontSize: '12px', fontWeight: '700', color: '#050508',
+                textTransform: 'uppercase', transition: 'transform 0.15s'
+              }} 
+              onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'} 
+              onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              DOWNLOAD MARKDOWN
+            </button>
           </div>
 
         </div>
 
-        {/* Footer Right */}
+        {/* Footer Left */}
         <div style={{ padding: '16px', backgroundColor: '#050508', borderTop: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontFamily: "'Azeret Mono', monospace", color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase' }}>
             <span>CPU Load: {loading ? '84%' : '12%'}</span>
@@ -297,6 +233,88 @@ export default function MarkdownConverter() {
         </div>
 
       </aside>
+
+      {/* RIGHT: IDE PREVIEW AREA */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, backgroundColor: '#050508' }}>
+        
+        {/* Status Banner */}
+        <div style={{ backgroundColor: 'rgba(24, 34, 26, 0.5)', borderBottom: '1px solid rgba(57, 217, 138, 0.2)', padding: '4px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ height: '6px', width: '6px', backgroundColor: '#39D98A', borderRadius: '50%', boxShadow: '0 0 8px rgba(57,217,138,0.5)' }}></span>
+            <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: '#F2F2F4', letterSpacing: '-0.025em' }}>
+              Active: <span style={{ color: '#00FF87' }}>{activeFile || 'None'}</span>
+            </span>
+          </div>
+          <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '9px', color: 'rgba(242, 242, 244, 0.28)' }}>
+            {loading ? 'PROCESSING...' : (markdown ? 'READY' : 'WAITING')}
+          </span>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#0C0C12', overflow: 'hidden' }}>
+          
+          {/* Toolbar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', backgroundColor: '#111118', borderBottom: '1px solid rgba(242, 242, 244, 0.12)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 77, 77, 0.2)', border: '1px solid rgba(255, 77, 77, 0.4)' }}></div>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(255, 171, 0, 0.2)', border: '1px solid rgba(255, 171, 0, 0.4)' }}></div>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(57, 217, 138, 0.2)', border: '1px solid rgba(57, 217, 138, 0.4)' }}></div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', textTransform: 'uppercase', letterSpacing: '2px' }}>MARKDOWN PREVIEW</span>
+              <button onClick={handleCopy} style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'rgba(242, 242, 244, 0.55)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                <span style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Copy</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Markdown Content Area */}
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }} className="custom-scrollbar">
+            
+            {/* Line Numbers */}
+            <div style={{ width: '40px', backgroundColor: '#050508', borderRight: '1px solid rgba(242, 242, 244, 0.12)', display: 'flex', flexDirection: 'column', padding: '16px 8px', textAlign: 'right', userSelect: 'none', flexShrink: 0 }}>
+              {Array.from({ length: Math.max(15, (markdown.match(/\n/g) || []).length + 1) }).map((_, i) => (
+                <span key={i} style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '11px', color: 'rgba(242, 242, 244, 0.1)', minHeight: '26px' }}>{i + 1}</span>
+              ))}
+            </div>
+
+            {/* Actual Text */}
+            <div style={{ flex: 1, padding: '16px', fontFamily: "'Azeret Mono', monospace", fontSize: '13px', lineHeight: '2', color: 'rgba(242, 242, 244, 0.55)', position: 'relative' }}>
+              {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
+                  <div style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', letterSpacing: '2px', color: 'rgba(0, 255, 135, 0.7)' }}>● EXTRACTING MARKDOWN...</div>
+                  {previewImage && <img src={previewImage} style={{ maxWidth: '300px', maxHeight: '300px', opacity: 0.2, objectFit: 'contain' }} alt="Preview" />}
+                </div>
+              ) : error ? (
+                <div style={{ color: '#FF4D4D', backgroundColor: 'rgba(255, 77, 77, 0.08)', padding: '12px', border: '1px solid rgba(255, 77, 77, 0.2)', borderRadius: '4px' }}>
+                  {error}
+                </div>
+              ) : !markdown ? (
+                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(242, 242, 244, 0.28)' }}>
+                  Select or drop a file to see the markdown output here.
+                </div>
+              ) : (
+                <div style={{ width: '100%', height: '100%' }}>
+                  {renderMarkdownLines()}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer Right */}
+        <footer style={{ backgroundColor: '#050508', borderTop: '1px solid rgba(242, 242, 244, 0.12)', width: '100%', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 32px' }}>
+          <p style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: 'rgba(242, 242, 244, 0.28)', letterSpacing: '2px' }}>
+            © 2024 SUBSURFACE INFRASTRUCTURE
+          </p>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <a href="#" style={{ fontFamily: "'Azeret Mono', monospace", fontSize: '10px', color: '#00FF87', letterSpacing: '2px', textDecoration: 'none' }}>Security Status</a>
+          </div>
+        </footer>
+
+      </div>
+
     </div>
   );
 }
