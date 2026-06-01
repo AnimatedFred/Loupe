@@ -45,10 +45,14 @@ export default function MarkdownConverter() {
       const extPayload = sessionStorage.getItem('subsrf_ext_markdown_payload');
       const extPayloadName = sessionStorage.getItem('subsrf_ext_markdown_payload_name');
       if (extPayload) {
+        if (!session?.access_token) {
+          // Wait for session to load before processing
+          return;
+        }
         sessionStorage.removeItem('subsrf_ext_markdown_payload');
         sessionStorage.removeItem('subsrf_ext_markdown_payload_name');
         if (extPayloadName) setActiveFile(extPayloadName);
-        processFile(null, extPayload);
+        processFile(null, extPayload, extPayloadName);
       }
     };
     handlePayload();
@@ -56,7 +60,7 @@ export default function MarkdownConverter() {
     return () => window.removeEventListener('subsrf_payload_injected', handlePayload);
   }, [session?.access_token]);
 
-  async function processFile(file, extPayload = null) {
+  async function processFile(file, extPayload = null, payloadName = null) {
     if (!session?.access_token) { setError('Please sign in to generate Markdown.'); return; }
     
     // Set preview image if it's an image
@@ -94,7 +98,7 @@ export default function MarkdownConverter() {
           byteArrays.push(new Uint8Array(byteNumbers));
         }
         const blob = new Blob(byteArrays, { type: mimeType });
-        formData.append('file', blob, activeFile || 'extension-upload');
+        formData.append('file', blob, payloadName || activeFile || 'extension-upload');
       }
 
       const res = await fetch('/api/markdown', {
@@ -254,7 +258,7 @@ export default function MarkdownConverter() {
               width: '100%', padding: '32px 0', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
               backgroundColor: dragActive ? NEON_DIM : VOID,
-              border: `1px solid ${BORDER}`, cursor: 'pointer', transition: 'background-color 0.2s',
+              cursor: 'pointer', transition: 'background-color 0.2s',
             }}
           >
             <input

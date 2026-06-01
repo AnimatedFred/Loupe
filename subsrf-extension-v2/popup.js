@@ -564,15 +564,18 @@ btnFullPage.onclick = () => {
           
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
-            func: (base64) => {
+            func: (base64, fileName) => {
               if (document.readyState === 'complete' || document.readyState === 'interactive') {
                 sessionStorage.setItem('subsrf_ext_markdown_payload', base64);
+                if (fileName) {
+                  sessionStorage.setItem('subsrf_ext_markdown_payload_name', fileName);
+                }
                 window.dispatchEvent(new Event('subsrf_payload_injected'));
                 return true; // Successfully injected
               }
               return false;
             },
-            args: [e.target.result]
+            args: [e.target.result, file.name]
           }).then(results => {
             if (results && results[0] && results[0].result === true) {
               clearInterval(interval);
