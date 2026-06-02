@@ -34,6 +34,12 @@ if (RELAY_ENDPOINT) {
   console.error(`[Subsrf MCP] Relay endpoint: ${RELAY_ENDPOINT}`);
 }
 
+// Run setup wizard if requested
+if (process.argv[2] === 'setup') {
+  await import('./setup.js');
+  process.exit(0);
+}
+
 // --- Figma REST API Auth ---
 const FIGMA_API_BASE = 'https://api.figma.com';
 const FIGMA_AUTH_FILE = join(homedir(), '.claude', 'figma-auth.json');

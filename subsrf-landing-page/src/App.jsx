@@ -693,12 +693,12 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
     }
   }
 
-  const mcpConfig = figmaPat
-    ? { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'], env: { FIGMA_PAT: figmaPat } } } }
-    : { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } }
+  const mcpCommand = figmaPat
+    ? `FIGMA_PAT="${figmaPat}" npx -y subsrf-intelligence setup --endpoint https://api.subsrf.dev`
+    : `npx -y subsrf-intelligence setup --endpoint https://api.subsrf.dev`
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2))
+    navigator.clipboard.writeText(mcpCommand)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -922,17 +922,17 @@ function Dashboard({ session, tier, onLogout, paymentStatus, onTierRefresh }) {
                         <span className="w-1.5 h-1.5 rounded-full bg-status-ok"></span> CONNECTED
                       </span>
                     </div>
-                    <p className="font-mono-data text-mono-data text-white-secondary mb-md">Configure your local MCP server to interface with Subsrf infrastructure.</p>
+                    <p className="font-mono-data text-mono-data text-white-secondary mb-md">Run this command in your terminal to automatically configure your MCP server.</p>
                     
                     {/* Code Block */}
                     <div className="bg-deep border border-white-border rounded-lg p-md overflow-x-auto">
-                      <pre className="font-mono-data text-mono-data text-[13px] leading-relaxed" dangerouslySetInnerHTML={{ __html: highlightJson(mcpConfig) }} />
+                      <pre className="font-mono-data text-mono-data text-[13px] leading-relaxed text-neon">{mcpCommand}</pre>
                     </div>
 
                     <div className="flex justify-end mt-sm">
                       <button onClick={handleCopy} className="px-md py-sm rounded-DEFAULT border border-white-border text-white-primary hover:bg-white-border transition-colors font-mono-data text-mono-data text-xs flex items-center gap-sm">
                         <span className="material-symbols-outlined text-[16px]" data-icon={copied ? 'check' : 'content_copy'}>{copied ? 'check' : 'content_copy'}</span> 
-                        {copied ? 'Copied!' : 'Copy JSON'}
+                        {copied ? 'Copied!' : 'Copy Command'}
                       </button>
                     </div>
                   </div>

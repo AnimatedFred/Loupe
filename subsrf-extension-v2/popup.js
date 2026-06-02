@@ -54,14 +54,13 @@ btnFullPage.onclick = () => {
   const btnSignOut     = document.getElementById('btn-sign-out');
 
   function buildMcpConfig(pat) {
-    const base = { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] };
-    if (pat) base.env = { FIGMA_PAT: pat };
-    return { mcpServers: { subsrf: base } };
+    const base = 'npx -y subsrf-intelligence setup --endpoint https://api.subsrf.dev';
+    return pat ? `FIGMA_PAT="${pat}" ${base}` : base;
   }
 
   let mcpConfig = buildMcpConfig(null);
   const mcpConfigBlock = document.getElementById('mcp-config-block');
-  if (mcpConfigBlock) mcpConfigBlock.textContent = JSON.stringify(mcpConfig, null, 2);
+  if (mcpConfigBlock) mcpConfigBlock.textContent = mcpConfig;
 
   function renderMcpTab(isPro) {
     document.getElementById('mcp-loading').style.display = 'none';
@@ -125,7 +124,7 @@ btnFullPage.onclick = () => {
       if (btnShowRest) btnShowRest.innerText = pat ? 'Update Token' : 'Configure Token';
       mcpConfig = buildMcpConfig(pat);
       const block = document.getElementById('mcp-config-block');
-      if (block) block.textContent = JSON.stringify(mcpConfig, null, 2);
+      if (block) block.textContent = mcpConfig;
     });
 
     // Account tab feature rows
@@ -232,7 +231,7 @@ btnFullPage.onclick = () => {
   // MCP copy button
   document.getElementById('btn-copy-mcp')?.addEventListener('click', () => {
     const btn = document.getElementById('btn-copy-mcp');
-    navigator.clipboard.writeText(JSON.stringify(mcpConfig, null, 2)).then(() => {
+    navigator.clipboard.writeText(mcpConfig).then(() => {
       btn.textContent = '✓ Copied!';
       setTimeout(() => { btn.textContent = 'Copy Config'; }, 2000);
     });
@@ -468,15 +467,7 @@ btnFullPage.onclick = () => {
       }).catch(() => {});
     }
 
-    const mcpWithFigma = {
-      mcpServers: {
-        subsrf: {
-          command: 'npx',
-          args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'],
-          env: { FIGMA_PAT: token }
-        }
-      }
-    };
+    const mcpWithFigma = buildMcpConfig(token);
 
     // Replace the input UI with a copy-able config snippet
     restInputUi.innerHTML = `
@@ -484,16 +475,16 @@ btnFullPage.onclick = () => {
         ${serverSaveOk ? '✓ Token saved to your account.' : '⚠ Saved locally only — sign in to persist across devices.'}
       </div>
       <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
-        Add this to your MCP client config (Claude Desktop / Cursor):
+        Run this command in your terminal:
       </div>
-      <pre id="figma-mcp-snippet" style="font-size:10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:10px; overflow:auto; white-space:pre; cursor:pointer; user-select:all;">${JSON.stringify(mcpWithFigma, null, 2)}</pre>
+      <pre id="figma-mcp-snippet" style="font-size:10px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:10px; overflow:auto; white-space:pre; cursor:pointer; user-select:all;">${mcpWithFigma}</pre>
       <div style="display:flex; gap:8px; margin-top:8px;">
         <button id="btn-copy-figma-mcp" class="btn btn-primary" style="flex:1; font-size:11px; padding:6px;">Copy Config</button>
         <button id="btn-done-figma" class="btn" style="flex:1; font-size:11px; padding:6px;">Done</button>
       </div>`;
 
     document.getElementById('btn-copy-figma-mcp').onclick = () => {
-      navigator.clipboard.writeText(JSON.stringify(mcpWithFigma, null, 2)).then(() => {
+      navigator.clipboard.writeText(mcpWithFigma).then(() => {
         document.getElementById('btn-copy-figma-mcp').textContent = '✓ Copied!';
         setTimeout(() => { document.getElementById('btn-copy-figma-mcp').textContent = 'Copy Config'; }, 2000);
       });

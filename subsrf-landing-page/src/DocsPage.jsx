@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { TopNavBar, Footer } from './App';
 
-const BASE_MCP = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', 'https://api.subsrf.dev'] } } };
+const BASE_CMD = `npx -y subsrf-intelligence setup --endpoint https://api.subsrf.dev`;
 
 export default function DocsPage({ onLogin, loading, session, tier, onLogout, mcpConfig }) {
   const isPro = tier === 'pro';
   const isPaid = tier === 'pro' || tier === 'starter';
-  const displayConfig = isPaid && mcpConfig ? mcpConfig : BASE_MCP;
+  const displayCmd = isPaid && mcpConfig?.mcpServers?.subsrf?.env?.FIGMA_PAT 
+    ? `FIGMA_PAT="${mcpConfig.mcpServers.subsrf.env.FIGMA_PAT}" ${BASE_CMD}`
+    : BASE_CMD;
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(JSON.stringify(displayConfig, null, 2));
+    navigator.clipboard.writeText(displayCmd);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -105,14 +107,14 @@ export default function DocsPage({ onLogin, loading, session, tier, onLogout, mc
             {/* Code Block */}
             <div className={`bg-deep border border-white-border overflow-hidden ${!isPro ? 'opacity-30 pointer-events-none' : ''}`}>
               <div className="flex items-center justify-between px-md py-sm border-b border-white-border bg-surface">
-                <span className="font-mono-data text-label-caps text-white-muted">claude_desktop_config.json</span>
+                <span className="font-mono-data text-label-caps text-white-muted">Terminal Setup Command</span>
                 <button onClick={handleCopy} className="flex items-center gap-xs font-mono-data text-label-caps text-white-muted hover:text-neon transition-colors bg-transparent border-none cursor-pointer">
                   <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'content_copy'}</span>
                   {copied ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <pre className="p-md font-mono-data text-mono-data overflow-x-auto"><code className="text-white-primary">
-{JSON.stringify(displayConfig, null, 2)}
+              <pre className="p-md font-mono-data text-mono-data overflow-x-auto"><code className="text-neon">
+{displayCmd}
               </code></pre>
             </div>
             <div className={`mt-lg aspect-video bg-surface-container border border-white-border flex flex-col items-center justify-center group cursor-pointer hover:border-neon transition-colors ${!isPro ? 'opacity-30 pointer-events-none' : ''}`}>

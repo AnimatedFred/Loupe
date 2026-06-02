@@ -133,3 +133,35 @@ async function validateLicense(key) {
 | `suggest_improvements` | UX + code improvements | Free + Pro |
 | `generate_tests` | Playwright/Cypress/Selenium tests | **Pro** |
 | `generate_documentation` | Markdown/JSDoc/Storybook docs | **Pro** |
+
+---
+
+## Using with AI IDEs (Cursor, Windsurf, Claude Desktop)
+## Using with AI IDEs (Cursor, Windsurf, Claude Desktop)
+
+If your IDE gives you an **"executable file not found"** error for `npx`, it's because IDEs launched from macOS Launchpad/Spotlight don't inherit your terminal's `$PATH`.
+
+### Easiest Fix: The Auto-Setup Script
+Since users don't have this folder locally, tell them to run this one command in their terminal (which automatically passes their endpoint and Figma PAT):
+
+```bash
+FIGMA_PAT="your_pat_here" npx -y subsrf-intelligence setup --endpoint https://api.subsrf.dev
+```
+
+This script will automatically detect their exact, absolute path for `npx` (which solves the IDE bug) and give them the perfect, copy-pasteable JSON block for Cursor or Windsurf. If they use Claude Desktop, it will even configure it for them automatically!
+
+### Alternative: Build a Standalone Binary
+To completely bypass the Node.js/npx requirement for your users, you can compile this server into a standalone executable:
+
+```bash
+# Uses bun to compile the server into a single executable file
+npm run build:exe
+```
+
+Users can then configure their IDE to point directly to the binary:
+```json
+{
+  "command": "/absolute/path/to/subsrf-server",
+  "args": []
+}
+```

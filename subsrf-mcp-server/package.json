@@ -1,6 +1,6 @@
 {
   "name": "subsrf-intelligence",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Subsrf Intelligence — MCP server for AI-powered Figma sync",
   "main": "server.js",
   "type": "module",
@@ -9,10 +9,13 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build:exe": "npx bun build server.js --compile --outfile subsrf-server",
+    "setup": "node setup.js"
   },
   "files": [
     "server.js",
+    "setup.js",
     "subsrf-icon.png"
   ],
   "keywords": [

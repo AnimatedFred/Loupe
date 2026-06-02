@@ -618,9 +618,8 @@ function setMinimized(min) {
 let currentFigmaPat = null;
 
 function buildMcpConfig(pat) {
-  const cfg = { mcpServers: { subsrf: { command: 'npx', args: ['-y', 'subsrf-intelligence', '--endpoint', BRIDGE] } } };
-  if (pat) cfg.mcpServers.subsrf.env = { FIGMA_PAT: pat };
-  return JSON.stringify(cfg, null, 2);
+  const base = `npx -y subsrf-intelligence setup --endpoint ${BRIDGE}`;
+  return pat ? `FIGMA_PAT="${pat}" ${base}` : base;
 }
 
 function renderPatState() {
