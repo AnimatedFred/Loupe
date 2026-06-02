@@ -307,10 +307,10 @@ export default function MarkdownConverter() {
             </div>
           </div>
 
-          {/* Quick Actions – 2-col grid */}
+          {/* Quick Actions */}
           <div style={{ backgroundColor: '#141E16', border: `1px solid ${BORDER}`, padding: 16 }}>
             <p style={{ fontFamily: MONO, fontSize: 10, color: T3, textTransform: 'uppercase', marginBottom: 16, letterSpacing: 2 }}>Quick Actions</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               <button
                 onClick={handleExport}
                 style={{ backgroundColor: SURFACE, padding: 8, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s', fontFamily: MONO }}
@@ -319,15 +319,6 @@ export default function MarkdownConverter() {
               >
                 <span className="material-symbols-outlined" style={{ color: T2, display: 'block', marginBottom: 4 }}>download</span>
                 <span style={{ fontSize: 9, color: T3 }}>Export MD</span>
-              </button>
-              <button
-                onClick={handleCopy}
-                style={{ backgroundColor: SURFACE, padding: 8, border: `1px solid ${BORDER}`, display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', transition: 'border-color 0.2s', fontFamily: MONO }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = NEON}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = BORDER}
-              >
-                <span className="material-symbols-outlined" style={{ color: T2, display: 'block', marginBottom: 4 }}>share</span>
-                <span style={{ fontSize: 9, color: T3 }}>Share Link</span>
               </button>
             </div>
           </div>
